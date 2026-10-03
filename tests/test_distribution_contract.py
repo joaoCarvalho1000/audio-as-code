@@ -1,0 +1,109 @@
+"""Regressions for private-file leaks and broken installed distribution metadata."""
+
+import importlib.util
+import zipfile
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location(
+    "distribution_check", ROOT / ".github/scripts/check_distribution.py"
+)
+assert SPEC is not None and SPEC.loader is not None
+CHECK = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(CHECK)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "src/audio_as_code/.env.production",
+        "docs/.codex/session.json",
+        "examples/.agents/memory.md",
+        "web/.impeccable/review/report.md",
+        "web/.wrangler/state/cache.json",
+        "examples/output/render.wav",
+        "src/audio_as_code/__pycache__/model.pyc",
+        "docs/debug.log",
+        "examples/credentials.json",
+        "examples/private.key",
+        "%SystemDrive%/ProgramData/cache.db",
+        "docs\\.env.local",
+        "../outside.txt",
+        "/absolute.txt",
+        "C:/private.txt",
+    ],
+)
+def test_private_or_unsafe_archive_members_are_rejected(name):
+    assert CHECK.private_path(name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        ".github/workflows/ci.yml",
+        "src/audio_as_code/py.typed",
+        "examples/music/classics-full.json",
+        "examples/music/classics-sources/ode_to_joy-ode_to_joy.ly",
+        "docs/releasing.md",
+    ],
+)
+def test_portable_source_members_are_allowed(name):
+    assert not CHECK.private_path(name)
+
+
+def wheel(tmp_path, *, extra=None, omit=None, version="0.1.0"):
+    files = {
+        f"audio_as_code/{name}": ""
+        for name in (
+            "__init__.py",
+            "__main__.py",
+            "cli.py",
+            "model.py",
+            "pattern.py",
+            "render.py",
+            "extended.py",
+            "py.typed",
+        )
+    }
+    info = f"audio_as_code-{version}.dist-info"
+    files.update(
+        {
+            f"{info}/METADATA": (
+                f"Metadata-Version: 2.4\nName: audio-as-code\nVersion: {version}\n"
+                "Requires-Python: >=3.10\nLicense-Expression: MIT\n"
+                "Requires-Dist: numpy<3,>=1.24\nRequires-Dist: pydantic<3,>=2.7\n"
+                "Requires-Dist: mido<2,>=1.3\n"
+            ),
+            f"{info}/WHEEL": "Wheel-Version: 1.0\n",
+            f"{info}/entry_points.txt": "[console_scripts]\naac = audio_as_code.cli:main\n",
+            f"{info}/licenses/LICENSE": "MIT License\n",
+        }
+    )
+    if extra:
+        files.update(extra)
+    if omit:
+        files.pop(omit)
+    path = tmp_path / "example.whl"
+    with zipfile.ZipFile(path, "w") as archive:
+        for name, content in files.items():
+            archive.writestr(name, content)
+    return path
+
+
+def test_wheel_checker_requires_type_marker_and_rejects_nested_private_state(tmp_path):
+    assert CHECK.check_wheel(wheel(tmp_path), "0.1.0")["typed"]
+    with pytest.raises(ValueError, match="Missing wheel files"):
+        CHECK.check_wheel(wheel(tmp_path, omit="audio_as_code/py.typed"), "0.1.0")
+    with pytest.raises(ValueError, match="Unexpected wheel member"):
+        CHECK.check_wheel(wheel(tmp_path, extra={"audio_as_code/.env": "test-secret"}), "0.1.0")
+
+
+def test_wheel_checker_detects_version_and_entry_point_drift(tmp_path):
+    with pytest.raises(ValueError, match="Unexpected wheel member"):
+        CHECK.check_wheel(wheel(tmp_path, version="0.2.0"), "0.1.0")
+    with pytest.raises(ValueError, match="console entry point"):
+        CHECK.check_wheel(
+            wheel(tmp_path, extra={"audio_as_code-0.1.0.dist-info/entry_points.txt": ""}), "0.1.0"
+        )

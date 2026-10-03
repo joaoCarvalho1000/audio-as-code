@@ -1,0 +1,27 @@
+name: Feature request
+description: Describe a composition workflow or API capability you need.
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: What are you trying to make?
+      description: Describe the musical or integration task and what currently gets in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: A small score, command, or Python example helps make the request concrete.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current workaround and constraints
+      description: Include compatibility needs, timing, instrument controls, or export requirements.
+  - type: markdown
+    attributes:
+      value: |
+        Instrument sources must be generated from code. Recorded samples, SoundFonts,
+        and measured impulse responses are outside this project's synthesis direction.

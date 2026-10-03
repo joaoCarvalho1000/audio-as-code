@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible score, rendering, export, or CLI problem.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is an early procedural-audio prototype. Please use a minimal original
+        or public-domain score. Do not include credentials or private project files.
+        For a suspected vulnerability, read SECURITY.md before sharing details.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Smallest reproduction
+      description: Paste the command and a small JSON score or Python example.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include your OS, Python version, aac --version, and installation method.
+      placeholder: Source checkout or source ZIP; Python version; OS; package version.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics and audio observations
+      description: |
+        Include the complete JSON error or relevant render/analyze report. For sound
+        problems, identify the instrument, pitch, tempo, and what you heard. State
+        whether you listened; signal measurements alone do not establish sound quality.
+      render: text

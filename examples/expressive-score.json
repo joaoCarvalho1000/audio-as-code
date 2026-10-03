@@ -1,0 +1,303 @@
+{
+  "schema_version": "1",
+  "title": "After the last beat",
+  "bpm": 112.0,
+  "beats": 16.0,
+  "sample_rate": 44100,
+  "seed": 2026,
+  "master_gain": 0.72,
+  "tracks": [
+    {
+      "name": "Moving tines",
+      "instrument": "electric_piano",
+      "gain": 0.6,
+      "pan": 0.0,
+      "tone": {
+        "brightness": 0.6,
+        "decay_seconds": null,
+        "pluck_position": null,
+        "breath": null,
+        "vibrato_depth_cents": null,
+        "vibrato_rate_hz": null,
+        "glide_semitones": null,
+        "detune_cents": null
+      },
+      "notes": [
+        {
+          "pitch": "E4",
+          "start": 0.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "G4",
+          "start": 1.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "B4",
+          "start": 2.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "D5",
+          "start": 3.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "B4",
+          "start": 4.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "G4",
+          "start": 5.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "A4",
+          "start": 6.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "F#4",
+          "start": 7.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "E4",
+          "start": 8.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "G4",
+          "start": 9.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "B4",
+          "start": 10.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "E5",
+          "start": 11.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "D5",
+          "start": 12.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "B4",
+          "start": 13.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "G4",
+          "start": 14.0,
+          "duration": 0.7,
+          "velocity": 0.8,
+          "release_seconds": null
+        },
+        {
+          "pitch": "E4",
+          "start": 15.0,
+          "duration": 1.0,
+          "velocity": 0.8,
+          "release_seconds": null
+        }
+      ],
+      "release_seconds": 0.7,
+      "automation": [
+        {
+          "parameter": "pan",
+          "points": [
+            {
+              "beat": 0.0,
+              "value": -0.75
+            },
+            {
+              "beat": 8.0,
+              "value": 0.75
+            },
+            {
+              "beat": 16.0,
+              "value": -0.4
+            }
+          ],
+          "interpolation": "linear"
+        },
+        {
+          "parameter": "gain",
+          "points": [
+            {
+              "beat": 0.0,
+              "value": 0.45
+            },
+            {
+              "beat": 8.0,
+              "value": 0.7
+            },
+            {
+              "beat": 16.0,
+              "value": 0.5
+            }
+          ],
+          "interpolation": "linear"
+        }
+      ],
+      "effects": [
+        {
+          "type": "delay",
+          "time_seconds": 0.27,
+          "feedback": 0.48,
+          "repeats": 5,
+          "mix": 0.27
+        }
+      ]
+    },
+    {
+      "name": "Bass",
+      "instrument": "bass_guitar",
+      "gain": 0.44,
+      "pan": -0.1,
+      "tone": null,
+      "notes": [
+        {
+          "pitch": "E2",
+          "start": 0.0,
+          "duration": 3.5,
+          "velocity": 0.65,
+          "release_seconds": null
+        },
+        {
+          "pitch": "C3",
+          "start": 4.0,
+          "duration": 3.5,
+          "velocity": 0.65,
+          "release_seconds": null
+        },
+        {
+          "pitch": "A2",
+          "start": 8.0,
+          "duration": 3.5,
+          "velocity": 0.65,
+          "release_seconds": null
+        },
+        {
+          "pitch": "B2",
+          "start": 12.0,
+          "duration": 3.5,
+          "velocity": 0.65,
+          "release_seconds": null
+        }
+      ],
+      "release_seconds": 0.2,
+      "automation": [],
+      "effects": []
+    },
+    {
+      "name": "Breath across the change",
+      "instrument": "flute",
+      "gain": 0.24,
+      "pan": 0.3,
+      "tone": null,
+      "notes": [
+        {
+          "pitch": "B4",
+          "start": 6.0,
+          "duration": 4.0,
+          "velocity": 0.6,
+          "release_seconds": null
+        },
+        {
+          "pitch": "G4",
+          "start": 11.0,
+          "duration": 2.0,
+          "velocity": 0.6,
+          "release_seconds": null
+        },
+        {
+          "pitch": "E4",
+          "start": 14.0,
+          "duration": 2.0,
+          "velocity": 0.6,
+          "release_seconds": null
+        }
+      ],
+      "release_seconds": 0.45,
+      "automation": [],
+      "effects": []
+    }
+  ],
+  "tempo_map": [
+    {
+      "beat": 8.0,
+      "bpm": 84.0
+    },
+    {
+      "beat": 12.0,
+      "bpm": 126.0
+    }
+  ],
+  "automation": [
+    {
+      "parameter": "master_gain",
+      "points": [
+        {
+          "beat": 0.0,
+          "value": 0.58
+        },
+        {
+          "beat": 4.0,
+          "value": 0.72
+        },
+        {
+          "beat": 12.0,
+          "value": 0.72
+        },
+        {
+          "beat": 16.0,
+          "value": 0.6
+        }
+      ],
+      "interpolation": "linear"
+    }
+  ],
+  "effects": [
+    {
+      "type": "reverb",
+      "decay_seconds": 1.8,
+      "mix": 0.23
+    }
+  ]
+}

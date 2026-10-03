@@ -1,0 +1,76 @@
+# Changelog
+
+This project is an unpublished prototype. `0.1.0` identifies the current development
+baseline; it is not a claim that a package or tagged release exists. Changes below
+are unreleased. Package versions and score schema versions are separate.
+
+## Unreleased
+
+### Added
+
+- Piano `PedalEvent`/`Track.pedal` controls, tempo-aware damper gates, tail-aware
+  inspection and MIDI CC64 export, with a reproducible dry/pedal comparison.
+- Original exact-duration video, game-loop and presentation workflows with
+  revisions, measurable preservation contracts and two-cycle loop verification.
+- Cloudflare Workers/R2 website staging and streamed large downloads with range
+  support; hosting tools are separate from the Python engine.
+- Immutable, validated schema-version-1 scores and procedural instrument discovery.
+- Seeded offline stereo WAV rendering, stems, MIDI export, and signal reports.
+- Tempo changes, gain/pan automation, note releases, generated delay and reverb.
+- `Pattern.overlay()`, `stretch()`, and `scale_velocity()` for arranging phrases.
+- Read-only `inspect_score()` and `aac inspect` with score facts, tail-aware render
+  readiness, MIDI readiness, and structured issues. Inspection does not synthesize
+  audio or establish perceptual quality.
+- Complete public-domain classic performances with paired new arrangements, source
+  credits, editable scores, and repeat-expansion records.
+- Portable agent instructions, composition examples, and local listening pages.
+- Mandolin, kalimba, celesta and recorder models with discoverable controls,
+  approximate MIDI mappings and register-specific auditions: 49 playable voices
+  and 147 instrument clips in total.
+- Instrument-browser subset generation and validated resume caching, keyed by
+  synthesis/generator source, score data, runtime versions and artifact hashes.
+- Typed-package marker, distribution inspection and isolated installation checks,
+  issue/PR templates, and contribution, architecture, security, and release guides.
+
+### Changed
+
+- Synthesis calculations reuse temporary buffers and repeated envelope terms
+  without changing the measured seeded float32 output. See the reproducible
+  rendering benchmark for workload-specific timings.
+- Piano unisons at and above 65 Hz use passive shared bridge damping; the lower
+  single-string register retains its existing decay. Bowed-string brightness
+  uses absolute-frequency bandwidth and body resonances now include phase.
+- Classical reimaginings use the new voices, phrase dynamics and instrument
+  contrast while retaining complete source-note coverage. Original classical
+  scores keep their notes, timing and instrumentation.
+- Instrument auditions use family-specific phrasing, useful registers and
+  exposed note attacks/releases. These models remain procedural prototypes;
+  numerical checks do not establish perceptual realism.
+
+### Fixed
+
+- Regenerating only classical reimagination scores invalidates an earlier
+  listening manifest, preventing fresh scores from being paired with stale audio.
+- MIDI export warnings describe the features present in the score, preserving
+  the JSON report shape and exported MIDI bytes.
+
+- Shared path preflight rejects conflicting outputs before CLI or Python rendering
+  can overwrite a source or another output.
+- Malformed WAV files with a zero sample rate fail with a clear value error and a
+  structured CLI diagnostic rather than an uncaught division error.
+- Source distributions and wheels exclude local agent state, credentials, logs,
+  caches, and generated audio; archive checks enforce the packaging boundary.
+
+### Compatibility and limits
+
+- Python 3.10+; the CI matrix exercises 3.10 and 3.13 on Linux/Windows and 3.13 on
+  macOS. The prototype does not promise a stable Python API yet.
+- Existing instrument IDs, seeded score behavior, and schema version `"1"` remain.
+- The piano and bowed-string refinement intentionally changes their rendered
+  audio. The original eleven electronic/physical voices remain unchanged.
+- Offline rendering is limited to 300 seconds including releases and effect tails.
+  Deterministic rendering is scoped to a fixed software environment.
+- Instruments use procedural/physical/modal or source/filter approximations.
+  Recorded samples, SoundFonts, and measured impulse responses are not sources.
+- MIDI sound depends on the receiving synthesizer; procedural effects, tone
+  controls, automation and audio tails do not transfer as equivalent audio.

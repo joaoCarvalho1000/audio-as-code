@@ -1,0 +1,8 @@
+{
+  "name": "Audio as Code",
+  "canonical_origin": "https://audioascode.com",
+  "description": "An open-source framework for AI agents and developers to compose music and synthesize instruments from code.",
+  "package": "audio-as-code",
+  "python_import": "audio_as_code",
+  "cli": "aac"
+}

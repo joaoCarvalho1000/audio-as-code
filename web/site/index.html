@@ -1,0 +1,230 @@
+<!-- title: Audio as Code · music composed as code, rendered by synthesized instruments | description: An open-source Python framework for developers and AI agents: write a score in Python or JSON, render WAV and MIDI offline with instruments synthesized from code, measure the result, revise. -->
+<script>
+  // Mark script support before first paint; the headliner stays visible and its fixed box absorbs the font swap.
+  document.documentElement.classList.add("js");
+</script>
+<section class="poster" id="listen" data-console aria-labelledby="hero-title">
+  <canvas class="plates" data-trace aria-hidden="true"></canvas>
+  <div class="poster-grid">
+    <div class="bill-head">
+      <h1 id="hero-title" class="presenter"><span class="presenter-name" data-knockout>Audio as Code</span> <span class="presenter-verb" data-knockout>presents</span></h1>
+      <p class="tagline" data-knockout>Describe the music your video, game or slides need. Your agent writes the score. Audio as Code brings the band.</p>
+    </div>
+
+    <div class="headliner" data-headliner aria-hidden="true"><div class="hl-ink"><span class="hl-line">{{HEADLINE_1}}</span><span class="hl-line">{{HEADLINE_2}}</span></div></div>
+
+    <div class="scope" data-scope>
+      <input class="scrub" type="range" min="0" max="1000" value="0" step="1" data-scrub aria-label="Seek within the piece" disabled>
+      <p class="scope-msg" data-scope-msg role="status" aria-live="polite"></p>
+      <div class="stickers">
+        <button type="button" class="sticker" data-play disabled>
+          <svg class="sticker-ring" viewBox="0 0 200 200" aria-hidden="true"><defs><path id="ring-path" d="M100 100m-84 0a84 84 0 1 1 168 0a84 84 0 1 1-168 0"/></defs><text><textPath href="#ring-path" data-ring-text>rendered offline · synthesized from code · no samples ·</textPath></text></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="i-play"><path d="M6.5 3.8v16.4L20 12z" fill="currentColor"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="i-pause"><path d="M5.5 4h5v16h-5zM13.5 4h5v16h-5z" fill="currentColor"/></svg>
+          <span class="sticker-word" data-play-label>Play</span>
+          <span class="sticker-clock"><output data-time>0:00</output> / <output data-length>–</output></span>
+        </button>
+        <a class="tag tag-ink key-agent" href="#handoff">Give it to your agent<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v14m-6-5 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
+      </div>
+    </div>
+
+    <div class="bill">
+      <div class="lineup" role="radiogroup" aria-label="{{LINEUP_LABEL}}" data-selector style="{{LINEUP_STYLE}}"></div>
+      <dl class="facts" aria-live="off" data-knockout>
+        <div><dt>Tempo</dt><dd><output data-bpm>–</output> BPM</dd></div>
+        <div><dt>Voices</dt><dd><output data-tracks>–</output></dd></div>
+        <div><dt>Notes</dt><dd><output data-notes>–</output></dd></div>
+        <div><dt>Seed</dt><dd><output data-seed>–</output></dd></div>
+      </dl>
+      <p class="lede" data-knockout>An open-source music framework for creative agents. Compose with {{PLAYABLE}} instruments synthesized from code, take the WAV into your project, and keep every note editable. No recorded samples.</p>
+      <p class="admission" data-knockout>Writing it yourself? <a class="key-quick" href="{{FIRST_GUIDE}}">Developer quickstart</a> · <a href="source.html">Get the source</a>. Version {{VERSION}} · Python 3.10+.</p>
+    </div>
+
+    <div class="tabs" data-frames role="group" aria-label="Sections: jump to a section"></div>
+  </div>
+</section>
+
+<section class="stock stock-blue handoff" id="handoff" aria-labelledby="handoff-title" data-handoff>
+  <div class="handoff-head">
+    <h2 id="handoff-title">Give it to your agent</h2>
+    <p class="section-lede"><strong>Give your project a soundtrack.</strong> A tiny dragon's boss fight. A quarterly report with a villain arc. A launch video with a pulse. Describe the scene; your agent composes the music and delivers a WAV you can use. You can change the score whenever the scene changes.</p>
+  </div>
+  <ol class="handoff-steps">
+    <li class="handoff-step handoff-brief">
+      <h3><label for="brief">Describe the music</label></h3>
+      <div class="brief-chips" role="group" aria-label="Example briefs for a game, a presentation, a video, or music on its own">
+        <button type="button" aria-pressed="true" data-brief="A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my game: timpani and drums, low brass stabs and a frantic string ostinato at about 150 BPM, then a separate 2-second victory sting. Deliver each cue as its own WAV for the game's audio folder, and keep the editable scores.">Dragon boss fight</button>
+        <button type="button" aria-pressed="false" data-brief="A quarterly report with a villain arc, for my slide deck: a 6-second ominous opening for the 'costs went up' slide (low strings, a slow minor pulse) and a 4-second triumphant reveal for 'but revenue went up more' (bright brass and bells). Two separate WAV cues, quiet enough to talk over.">Villain-arc report</button>
+        <button type="button" aria-pressed="false" data-brief="A 12-second launch video for a very serious moon-cheese company: curious marimba, a bass entrance at second 4 and a confident ending on the last frame. One WAV to drop on the video timeline, plus the score so we can retime it later.">Launch video</button>
+        <button type="button" aria-pressed="false" data-brief="An original two-minute street groove in E dorian at 104 BPM, just to listen to: bass guitar, electric piano and clipped trumpet and trombone answers, a stop-time break, then the full band coming home.">Just music</button>
+      </div>
+      <textarea id="brief" name="brief" rows="7" spellcheck="true" data-brief-input>A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my game: timpani and drums, low brass stabs and a frantic string ostinato at about 150 BPM, then a separate 2-second victory sting. Deliver each cue as its own WAV for the game's audio folder, and keep the editable scores.</textarea>
+      <p class="fineprint">{{HANDOFF_NOTE}}</p>
+    </li>
+    <li class="handoff-step handoff-prompt">
+      <h3>Copy the prompt</h3>
+      <figure class="code prompt-card">
+        <figcaption><span>Prompt for your coding agent</span></figcaption>
+        <pre><code data-prompt>Use Audio as Code to create the music in the brief below.
+1. Read the skill at skills/audio-as-code/SKILL.md and the guide index at llms.txt on the Audio as Code website.
+2. If you don't already have an Audio as Code checkout, download {{ARCHIVE}} from the same website and extract it into a new project folder. Then follow its bundled skills/audio-as-code/SKILL.md.
+3. Install its Python dependencies, compose an original score (Audio as Code makes instrumental music and cues, not speech or sound effects), then validate and render it locally.
+4. Deliver the WAV, the MIDI file, the editable score JSON, the Python source you wrote and the render report. If I'm working in a video, game or presentation project, put the WAV where that project expects audio and keep the score and source beside it for revisions. Then tell me what you would try next.
+
+Music brief:
+A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my game: timpani and drums, low brass stabs and a frantic string ostinato at about 150 BPM, then a separate 2-second victory sting. Deliver each cue as its own WAV for the game's audio folder, and keep the editable scores.</code></pre>
+      </figure>
+      <button type="button" class="tag tag-paper handoff-copy" data-handoff-copy hidden>Copy agent prompt<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11v12H8zM5 16V4h11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg></button>
+      <p class="handoff-status" data-handoff-status role="status" aria-live="polite"></p>
+      <p class="handoff-file" data-handoff-file hidden>This local preview has no public link. Download the source ZIP below and give your agent the extracted folder; the skill is inside.</p>
+      <noscript><p class="handoff-status">Select the prompt text and copy it into your agent.</p></noscript>
+    </li>
+    <li class="handoff-step handoff-return">
+      <h3>Paste it in, then listen</h3>
+      <div class="handoff-get">
+        <p>Your agent writes and renders the music, then places the WAV in your creative project. Keep the whole composition for the next revision:</p>
+        <ul class="deliverables">
+          <li><b>WAV</b> ready for your project</li>
+          <li><b>MIDI</b> notes for your DAW</li>
+          <li><b>score.json</b> the editable score</li>
+          <li><b>source</b> the composition code</li>
+          <li><b>report</b> duration and level checks</li>
+        </ul>
+      </div>
+      <div class="handoff-revise">
+        <p>Then ask for changes the way you'd talk to a musician:</p>
+        <blockquote class="revision">Keep the melody. Give it to the marimba, calm the drums down, and land the final note on the reveal.</blockquote>
+      </div>
+    </li>
+  </ol>
+  <p class="handoff-next">Working in Hyperframes, Codex or Claude Code? The <a href="docs/integrations.html">integrations guide</a> has recipes for a video timeline, a game's audio folder and a slide deck.</p>
+  <ul class="handoff-links" aria-label="Agent and developer resources">
+    <li><a class="tag" href="docs/integrations.html">Integrations guide</a></li>
+    <li><a class="tag" data-handoff-skill href="skills/audio-as-code/SKILL.md">Agent skill · SKILL.md</a></li>
+    <li><a class="tag" data-handoff-zip href="{{ARCHIVE}}" download>Source ZIP</a></li>
+    <li><a class="tag" data-handoff-llms href="llms.txt">llms.txt</a></li>
+    <li><a class="tag" href="docs/agents.html">Agent guide</a></li>
+    <li><a class="tag" href="{{FIRST_GUIDE}}">Developer quickstart</a></li>
+  </ul>
+</section>
+
+<section class="stock stock-yellow program" aria-labelledby="piece-title" data-piece-panel>
+  <p class="program-intro">{{PROGRAM_INTRO}}</p>
+  <div class="program-head">
+    <div>
+      <h2 id="piece-title" data-piece-title>Inside the score</h2>
+      <p class="piece-meta" data-piece-meta></p>
+      <p class="piece-desc" data-piece-desc></p>
+      <ul class="voices" data-piece-voices aria-label="Instruments in this piece"></ul>
+    </div>
+    <div class="piece-files">
+      <ul class="downloads" data-downloads aria-label="Downloads for this piece"></ul>
+      <p class="piece-needs" data-piece-needs hidden>The runnable bundle and the <a href="{{ARCHIVE}}" download>full source ZIP</a> include this script and its supporting files: <code data-needs-list></code>.</p>
+    </div>
+  </div>
+  <figure class="roll">
+    <div class="roll-screen"><canvas data-roll aria-hidden="true"></canvas><p class="roll-msg" data-roll-msg></p></div>
+    <figcaption><span>Follow the notes. Each instrument has its own color and pattern.</span><span class="roll-key" data-roll-key></span></figcaption>
+  </figure>
+  <div class="piece-code" data-piece-code hidden>
+    <h3>From the source</h3>
+    <div data-code-slot></div>
+  </div>
+  <p class="piece-credit" data-piece-credit></p>
+  <div class="credits" id="credits"{{CREDITS_HIDDEN}}>
+    <h3>Score credits</h3>
+    <p>{{CREDITS_NOTE}}</p>
+    {{CREDITS_LINKS}}
+    <ul>
+      {{CREDITS}}
+    </ul>
+  </div>
+  <p class="fineprint">Play streams a compressed preview. Download WAV for the full render, or MIDI to continue in a DAW with its own instrument sounds.</p>
+</section>
+
+<section class="stock stock-paper loop" aria-labelledby="loop-title">
+  <h2 id="loop-title">The loop your agent runs</h2>
+  <p class="section-lede">A few lines become a score you can hear and change. Run this example yourself, or let your agent do the typing.</p>
+  <ol class="loop-steps">
+    <li class="loop-step step-write">
+      <h3>It writes a score</h3>
+      {{LOOP_CODE}}
+    </li>
+    <li class="loop-step step-render">
+      <h3>It renders, you listen</h3>
+      <div class="mini-player" data-mini data-src="{{LOOP_WAV}}" data-title="My first loop">
+        <button type="button" class="mini-key" data-mini-play><svg viewBox="0 0 24 24" aria-hidden="true" class="i-play"><path d="M6.5 3.8v16.4L20 12z" fill="currentColor"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-pause"><path d="M5.5 4h5v16h-5zM13.5 4h5v16h-5z" fill="currentColor"/></svg><span>Play loop.wav</span></button>
+        <canvas class="mini-trace" data-mini-trace data-envelope='{{LOOP_ENVELOPE}}' aria-hidden="true"></canvas>
+      </div>
+      <ul class="files">
+        <li><a href="{{LOOP_WAV}}" download>loop.wav</a></li>
+        <li><a href="{{LOOP_MID}}" download>loop.mid</a></li>
+        <li><a href="{{LOOP_JSON}}" download>loop.json</a></li>
+      </ul>
+      <p class="cli-note">Run it from a terminal:</p>
+      {{LOOP_CLI}}
+    </li>
+    <li class="loop-step step-measure">
+      <h3>It measures, then revises</h3>
+      <dl class="meters">
+        {{LOOP_METERS}}
+      </dl>
+      <p class="fineprint">Level checks catch silence and clipping. Your ears decide whether the music works.</p>
+    </li>
+  </ol>
+</section>
+
+<section class="stock stock-pink agents" id="agents" aria-labelledby="agents-title">
+  <div class="agents-copy">
+    <h2 id="agents-title">Keep the good bit. Change the rest.</h2>
+    <p class="section-lede">The melody, timing and instrumentation stay in an editable score. Your agent can make a precise change and render another take.</p>
+    <ul class="contract">
+      <li><strong>Make the music fit.</strong> Plan entrances, pauses and endings around the scene.</li>
+      <li><strong>Revise the arrangement.</strong> Change a voice, thin the accompaniment or shift the tempo.</li>
+      <li><strong>Keep the recipe.</strong> Save the score and source alongside the audio for the next edit.</li>
+    </ul>
+    <a class="tag tag-ink" href="docs/agents.html">Read the agent guide<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
+  </div>
+  <div class="tearoff-sheet">
+    <p class="tearoff-call">Take one</p>
+    <ul class="tearoffs" aria-label="Machine-readable resources">
+      <li><a href="skills/audio-as-code/SKILL.md"><span class="port-name">SKILL.md</span><span class="port-desc">The portable composition skill</span></a></li>
+      <li><a href="llms.txt"><span class="port-name">llms.txt</span><span class="port-desc">Every guide, indexed for language models</span></a></li>
+      <li><a href="schemas/song-v1.schema.json"><span class="port-name">song-v1.schema.json</span><span class="port-desc">JSON Schema for the version 1 score</span></a></li>
+      <li><a href="instruments.json"><span class="port-name">instruments.json</span><span class="port-desc">Families, engines, voices, tone controls</span></a></li>
+      <li><a href="music/manifest.json"><span class="port-name">music/manifest.json</span><span class="port-desc">This site's pieces, sections and files</span></a></li>
+      <li><a href="docs/quickstart.md"><span class="port-name">docs/*.md</span><span class="port-desc">Every guide as plain Markdown</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<section class="stock stock-blue instruments" aria-labelledby="inst-title">
+  <h2 id="inst-title">{{PLAYABLE}} instruments, all synthesized</h2>
+  <ul class="families" aria-label="Instrument families and how many voices each has">
+    {{FAMILIES}}
+  </ul>
+  <div class="inst-foot">
+    <div>
+      <p class="section-lede">Pluck a string, strike a bell, call in the brass. Every voice is generated from equations. These are playful, simplified instrument models; audition them to find the character your piece needs.</p>
+      <p class="section-lede">Shape the timing, move parts across the stereo field, and give the ending room to ring. <a href="docs/composition.html#tempo-movement-and-space">Explore tempo, movement and space</a>.</p>
+    </div>
+    <div>
+      <a class="tag" href="instruments/index.html">Open the instrument library<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
+      <p class="fineprint">{{CLIPS}} preview clips: a famous-music arrangement, a phrase, and a single note or hit for every voice.</p>
+    </div>
+  </div>
+</section>
+
+<section class="stock stock-paper limits" aria-labelledby="limits-title">
+  <h2 id="limits-title">A small, opinionated orchestra</h2>
+  <ul class="limit-list">
+    <li>Version 0.1 runs locally in Python. Download the source to get started.</li>
+    <li>All {{PLAYABLE}} voices are synthesized prototypes, each with its own character and limits.</li>
+    <li>Make instrumental music and musical cues for videos, games and slides. Speech and everyday sound effects need other tools.</li>
+    <li>Render offline, listen, then revise. The <a href="docs/reference.html">technical reference</a> covers timing, expression and export limits.</li>
+  </ul>
+  <a class="tag tag-ink" href="source.html">Get the source<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
+</section>
+
+<script type="application/json" id="pieces-data">{{PIECES}}</script>
+<script src="assets/agent-handoff.js" defer></script>

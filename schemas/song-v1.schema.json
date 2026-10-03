@@ -1,0 +1,607 @@
+{
+  "$defs": {
+    "Automation": {
+      "additionalProperties": false,
+      "properties": {
+        "parameter": {
+          "enum": [
+            "gain",
+            "pan",
+            "master_gain"
+          ],
+          "title": "Parameter",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/AutomationPoint"
+          },
+          "maxItems": 1024,
+          "minItems": 1,
+          "title": "Points",
+          "type": "array"
+        },
+        "interpolation": {
+          "default": "linear",
+          "enum": [
+            "linear",
+            "step"
+          ],
+          "title": "Interpolation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parameter",
+        "points"
+      ],
+      "title": "Automation",
+      "type": "object"
+    },
+    "AutomationPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "beat": {
+          "minimum": 0,
+          "title": "Beat",
+          "type": "number"
+        },
+        "value": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "beat",
+        "value"
+      ],
+      "title": "AutomationPoint",
+      "type": "object"
+    },
+    "Delay": {
+      "additionalProperties": false,
+      "description": "Finite echo train: first echo at full wet gain, successive echoes decay.",
+      "properties": {
+        "type": {
+          "const": "delay",
+          "default": "delay",
+          "title": "Type",
+          "type": "string"
+        },
+        "time_seconds": {
+          "default": 0.25,
+          "maximum": 2,
+          "minimum": 0.01,
+          "title": "Time Seconds",
+          "type": "number"
+        },
+        "feedback": {
+          "default": 0.4,
+          "maximum": 0.85,
+          "minimum": 0,
+          "title": "Feedback",
+          "type": "number"
+        },
+        "repeats": {
+          "default": 4,
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Repeats",
+          "type": "integer"
+        },
+        "mix": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "title": "Delay",
+      "type": "object"
+    },
+    "Note": {
+      "additionalProperties": false,
+      "properties": {
+        "pitch": {
+          "anyOf": [
+            {
+              "maximum": 127,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^[A-Ga-g](?:#|b)?-?[0-9]$",
+              "type": "string"
+            }
+          ],
+          "default": "C4",
+          "title": "Pitch"
+        },
+        "start": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Start",
+          "type": "number"
+        },
+        "duration": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "title": "Duration",
+          "type": "number"
+        },
+        "velocity": {
+          "default": 0.8,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Velocity",
+          "type": "number"
+        },
+        "release_seconds": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Release Seconds"
+        }
+      },
+      "title": "Note",
+      "type": "object"
+    },
+    "PedalEvent": {
+      "additionalProperties": false,
+      "description": "Binary piano damper pedal; events apply before note-offs at the same beat.",
+      "properties": {
+        "beat": {
+          "minimum": 0,
+          "title": "Beat",
+          "type": "number"
+        },
+        "down": {
+          "title": "Down",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "beat",
+        "down"
+      ],
+      "title": "PedalEvent",
+      "type": "object"
+    },
+    "Reverb": {
+      "additionalProperties": false,
+      "description": "Generated stereo comb network with diffusion; no measured impulse response.",
+      "properties": {
+        "type": {
+          "const": "reverb",
+          "default": "reverb",
+          "title": "Type",
+          "type": "string"
+        },
+        "decay_seconds": {
+          "default": 1.2,
+          "maximum": 5,
+          "minimum": 0.1,
+          "title": "Decay Seconds",
+          "type": "number"
+        },
+        "mix": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "title": "Reverb",
+      "type": "object"
+    },
+    "TempoChange": {
+      "additionalProperties": false,
+      "properties": {
+        "beat": {
+          "minimum": 0,
+          "title": "Beat",
+          "type": "number"
+        },
+        "bpm": {
+          "maximum": 300,
+          "minimum": 20,
+          "title": "Bpm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "beat",
+        "bpm"
+      ],
+      "title": "TempoChange",
+      "type": "object"
+    },
+    "Tone": {
+      "additionalProperties": false,
+      "description": "Instrument-specific generated tone controls; never refers to an audio asset.",
+      "properties": {
+        "brightness": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Brightness",
+          "type": "number"
+        },
+        "decay_seconds": {
+          "anyOf": [
+            {
+              "maximum": 20,
+              "minimum": 0.1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decay Seconds"
+        },
+        "pluck_position": {
+          "anyOf": [
+            {
+              "maximum": 0.45,
+              "minimum": 0.05,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pluck Position"
+        },
+        "breath": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Breath"
+        },
+        "vibrato_depth_cents": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vibrato Depth Cents"
+        },
+        "vibrato_rate_hz": {
+          "anyOf": [
+            {
+              "maximum": 12,
+              "minimum": 0.1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vibrato Rate Hz"
+        },
+        "glide_semitones": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": -24,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Glide Semitones"
+        },
+        "detune_cents": {
+          "anyOf": [
+            {
+              "maximum": 40,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detune Cents"
+        }
+      },
+      "title": "Tone",
+      "type": "object"
+    },
+    "Track": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "instrument": {
+          "default": "pluck",
+          "enum": [
+            "sine",
+            "triangle",
+            "pluck",
+            "bass",
+            "pad",
+            "kick",
+            "snare",
+            "hat",
+            "guitar",
+            "marimba",
+            "bell",
+            "electric_guitar",
+            "bass_guitar",
+            "harp",
+            "ukulele",
+            "banjo",
+            "violin",
+            "viola",
+            "cello",
+            "double_bass",
+            "piano",
+            "electric_piano",
+            "organ",
+            "harpsichord",
+            "flute",
+            "clarinet",
+            "saxophone",
+            "oboe",
+            "bassoon",
+            "trumpet",
+            "trombone",
+            "french_horn",
+            "tuba",
+            "toms",
+            "cymbal",
+            "congas",
+            "bongos",
+            "tambourine",
+            "xylophone",
+            "vibraphone",
+            "glockenspiel",
+            "timpani",
+            "synthesizer",
+            "drum_machine",
+            "theremin",
+            "mandolin",
+            "kalimba",
+            "celesta",
+            "recorder"
+          ],
+          "title": "Instrument",
+          "type": "string"
+        },
+        "gain": {
+          "default": 0.6,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gain",
+          "type": "number"
+        },
+        "pan": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Pan",
+          "type": "number"
+        },
+        "tone": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Tone"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "notes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Note"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "release_seconds": {
+          "default": 0,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Release Seconds",
+          "type": "number"
+        },
+        "automation": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Automation"
+          },
+          "maxItems": 2,
+          "title": "Automation",
+          "type": "array"
+        },
+        "effects": {
+          "default": [],
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "delay": "#/$defs/Delay",
+                "reverb": "#/$defs/Reverb"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Delay"
+              },
+              {
+                "$ref": "#/$defs/Reverb"
+              }
+            ]
+          },
+          "maxItems": 4,
+          "title": "Effects",
+          "type": "array"
+        },
+        "pedal": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PedalEvent"
+          },
+          "maxItems": 1024,
+          "title": "Pedal",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Track",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "default": "Untitled",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "bpm": {
+      "default": 120,
+      "maximum": 300,
+      "minimum": 20,
+      "title": "Bpm",
+      "type": "number"
+    },
+    "beats": {
+      "default": 16,
+      "exclusiveMinimum": 0,
+      "maximum": 65536,
+      "title": "Beats",
+      "type": "number"
+    },
+    "sample_rate": {
+      "default": 44100,
+      "enum": [
+        22050,
+        44100,
+        48000
+      ],
+      "title": "Sample Rate",
+      "type": "integer"
+    },
+    "seed": {
+      "default": 0,
+      "maximum": 4294967295,
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "master_gain": {
+      "default": 0.8,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Master Gain",
+      "type": "number"
+    },
+    "tracks": {
+      "items": {
+        "$ref": "#/$defs/Track"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Tracks",
+      "type": "array"
+    },
+    "tempo_map": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/TempoChange"
+      },
+      "maxItems": 1024,
+      "title": "Tempo Map",
+      "type": "array"
+    },
+    "automation": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Automation"
+      },
+      "maxItems": 1,
+      "title": "Automation",
+      "type": "array"
+    },
+    "effects": {
+      "default": [],
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "delay": "#/$defs/Delay",
+            "reverb": "#/$defs/Reverb"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/Delay"
+          },
+          {
+            "$ref": "#/$defs/Reverb"
+          }
+        ]
+      },
+      "maxItems": 4,
+      "title": "Effects",
+      "type": "array"
+    }
+  },
+  "required": [
+    "tracks"
+  ],
+  "title": "Song",
+  "type": "object"
+}

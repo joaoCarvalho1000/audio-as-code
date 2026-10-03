@@ -1,0 +1,12 @@
+{
+  "name": "audio-as-code-hosting",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test media-handler.test.js",
+    "wrangler": "wrangler"
+  },
+  "devDependencies": {
+    "wrangler": "4.147.0"
+  }
+}

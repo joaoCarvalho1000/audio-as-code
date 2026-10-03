@@ -1,0 +1,86 @@
+{
+  "schema_version": "1",
+  "title": "Agent sketch",
+  "bpm": 100,
+  "beats": 16,
+  "sample_rate": 44100,
+  "seed": 11,
+  "master_gain": 1.0,
+  "tracks": [
+    {
+      "name": "Chords",
+      "instrument": "electric_piano",
+      "gain": 0.9,
+      "pan": -0.25,
+      "tone": {"brightness": 0.4, "decay_seconds": 3},
+      "notes": [
+        {"pitch": "A3", "start": 0, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "C4", "start": 0, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "E4", "start": 0, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "F3", "start": 4, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "A3", "start": 4, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "C4", "start": 4, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "C3", "start": 8, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "E3", "start": 8, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "G3", "start": 8, "duration": 3.9, "velocity": 0.6},
+        {"pitch": "G3", "start": 12, "duration": 4, "velocity": 0.6},
+        {"pitch": "B3", "start": 12, "duration": 4, "velocity": 0.6},
+        {"pitch": "D4", "start": 12, "duration": 4, "velocity": 0.6}
+      ]
+    },
+    {
+      "name": "Bass",
+      "instrument": "bass_guitar",
+      "gain": 1.0,
+      "notes": [
+        {"pitch": "A1", "start": 0, "duration": 1.5, "velocity": 0.85},
+        {"pitch": "A2", "start": 2, "duration": 1.5, "velocity": 0.7},
+        {"pitch": "F1", "start": 4, "duration": 1.5, "velocity": 0.85},
+        {"pitch": "F2", "start": 6, "duration": 1.5, "velocity": 0.7},
+        {"pitch": "C2", "start": 8, "duration": 1.5, "velocity": 0.85},
+        {"pitch": "C3", "start": 10, "duration": 1.5, "velocity": 0.7},
+        {"pitch": "G1", "start": 12, "duration": 3.5, "velocity": 0.85}
+      ]
+    },
+    {
+      "name": "Lead",
+      "instrument": "vibraphone",
+      "gain": 0.9,
+      "pan": 0.3,
+      "tone": {"brightness": 0.55, "decay_seconds": 2.5},
+      "notes": [
+        {"pitch": "E5", "start": 0.5, "duration": 1, "velocity": 0.7},
+        {"pitch": "C5", "start": 1.5, "duration": 0.5, "velocity": 0.6},
+        {"pitch": "A4", "start": 2, "duration": 2, "velocity": 0.7},
+        {"pitch": "C5", "start": 4.5, "duration": 1, "velocity": 0.7},
+        {"pitch": "A4", "start": 5.5, "duration": 0.5, "velocity": 0.6},
+        {"pitch": "F4", "start": 6, "duration": 2, "velocity": 0.7},
+        {"pitch": "G4", "start": 8.5, "duration": 1, "velocity": 0.7},
+        {"pitch": "E4", "start": 9.5, "duration": 0.5, "velocity": 0.6},
+        {"pitch": "C5", "start": 10, "duration": 2, "velocity": 0.75},
+        {"pitch": "B4", "start": 12.5, "duration": 3.5, "velocity": 0.7}
+      ]
+    },
+    {
+      "name": "Kit",
+      "instrument": "drum_machine",
+      "gain": 0.9,
+      "notes": [
+        {"pitch": 36, "start": 0, "duration": 0.4},
+        {"pitch": 42, "start": 1, "duration": 0.2, "velocity": 0.5},
+        {"pitch": 38, "start": 2, "duration": 0.3, "velocity": 0.7},
+        {"pitch": 42, "start": 3, "duration": 0.2, "velocity": 0.5},
+        {"pitch": 36, "start": 4, "duration": 0.4},
+        {"pitch": 42, "start": 5, "duration": 0.2, "velocity": 0.5},
+        {"pitch": 38, "start": 6, "duration": 0.3, "velocity": 0.7},
+        {"pitch": 42, "start": 7, "duration": 0.2, "velocity": 0.5},
+        {"pitch": 36, "start": 8, "duration": 0.4},
+        {"pitch": 42, "start": 9, "duration": 0.2, "velocity": 0.5},
+        {"pitch": 38, "start": 10, "duration": 0.3, "velocity": 0.7},
+        {"pitch": 42, "start": 11, "duration": 0.2, "velocity": 0.5},
+        {"pitch": 36, "start": 12, "duration": 0.4},
+        {"pitch": 49, "start": 12, "duration": 3.5, "velocity": 0.5}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+Self-hosted font files (latin subsets downloaded from Google Fonts, unmodified):
+
+- anybody-latin.woff2: Anybody (variable width 50-150%, weight 100-900), Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody). SIL Open Font License 1.1, full text in Anybody-OFL.txt. Downloaded 2026-10-02.
+- archivo-latin.woff2: Archivo, Copyright The Archivo Project Authors. SIL Open Font License 1.1, full text in Archivo-OFL.txt. Downloaded 2026-10-02.
+- jetbrains-mono-latin.woff2: JetBrains Mono, Copyright The JetBrains Mono Project Authors. SIL Open Font License 1.1, full text in JetBrainsMono-OFL.txt. Downloaded 2026-10-02.

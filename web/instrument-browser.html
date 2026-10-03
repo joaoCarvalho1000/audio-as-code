@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Instrument library · Audio as Code</title>
+  <style>
+    :root {
+      --paper: #f6f4ef; --surface: #fffefa; --ink: #252d26; --muted: #62695d;
+      --line: #d9ddd1; --green: #315c35; --green-dark: #24472a; --wash: #e8eddf;
+      --warm: #806135; --error: #993d31; --radius: 12px;
+      font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--paper);
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-size: 15px; line-height: 1.5; }
+    button, input, select { font: inherit; }
+    button, select, input[type="range"] { cursor: pointer; }
+    button { color: inherit; }
+    button:disabled { cursor: not-allowed; opacity: .48; }
+    a { color: var(--green); text-underline-offset: 4px; }
+    button, a, input, select { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }
+    ::selection { color: var(--green-dark); background: #d5e1c8; }
+    input { caret-color: var(--green); }
+    input::placeholder { color: var(--muted); opacity: 1; }
+    * { scrollbar-color: #a7b29e var(--paper); scrollbar-width: thin; }
+    [hidden] { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .topbar { border-bottom: 1px solid var(--line); }
+    .topbar-inner { max-width: 1440px; padding: 24px 48px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 17px; font-weight: 650; letter-spacing: -.025em; }
+    .brand-mark { width: 28px; height: 28px; color: var(--green); }
+    .local-note { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .local-note .icon { width: 16px; height: 16px; }
+    main { max-width: 1440px; padding: 38px 48px 144px; margin: auto; }
+    .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 30px; }
+    h1 { font-size: clamp(32px, 3.2vw, 44px); line-height: 1.15; letter-spacing: -.035em; font-weight: 600; margin: 0 0 12px; text-wrap: balance; }
+    .intro p { margin: 0; color: var(--muted); max-width: 65ch; }
+    .catalog-note { text-align: right; color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .catalog-note strong { color: var(--ink); font-weight: 600; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 0 0 24px; border-bottom: 1px solid var(--line); }
+    .segments { display: flex; gap: 4px; background: #ebece4; border-radius: 8px; padding: 4px; }
+    .segment { border: 0; background: transparent; padding: 8px 14px; border-radius: 5px; font-size: 13px; font-weight: 600; display: flex; gap: 9px; align-items: center; white-space: nowrap; }
+    .segment[aria-pressed="true"] { background: var(--surface); color: var(--green-dark); box-shadow: 0 1px 3px #29302512; }
+    .segment:hover { color: var(--green); }
+    .segment .count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+    .search { position: relative; width: 300px; flex-shrink: 1; }
+    .search .icon { position: absolute; left: 12px; top: 12px; width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
+    .search input { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px 10px 38px; min-height: 44px; color: var(--ink); font-size: 14px; }
+    .workspace { display: grid; grid-template-columns: 174px minmax(0, 1fr) 294px; gap: 28px; align-items: start; padding-top: 24px; }
+    .sidebar { position: sticky; top: 24px; }
+    .sidebar h2 { font-size: 13px; font-weight: 600; margin: 0 0 12px 12px; color: var(--muted); }
+    .families { display: grid; gap: 3px; }
+    .family { border: 0; background: transparent; width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 7px; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 9px; font-size: 13px; }
+    .family:hover { background: #eceee5; }
+    .family[aria-pressed="true"] { color: var(--green-dark); background: var(--wash); font-weight: 650; }
+    .family span:last-child { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .sidebar-note { margin: 24px 12px 0; padding-top: 20px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.7; color: var(--muted); }
+    .mobile-family { display: none; }
+    .list-summary { margin: 0 0 12px; font-size: 13px; color: var(--muted); min-height: 24px; }
+    .instrument-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+    .instrument-row { display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); padding: 13px 12px; min-height: 80px; }
+    .instrument-row.selected { background: var(--wash); }
+    .instrument-select { display: block; flex: 1; min-width: 0; border: 0; background: transparent; text-align: left; padding: 3px 0; cursor: pointer; }
+    .instrument-name { display: block; font-weight: 600; font-size: 15px; line-height: 1.4; }
+    .instrument-meta { display: block; color: var(--muted); font-size: 12px; margin-top: 5px; }
+    .row-wave { width: 90px; height: 32px; color: #75856a; flex: none; }
+    .is-playing .row-wave { color: var(--green); }
+    .planned-state { font-size: 12px; color: var(--muted); padding: 3px 0; flex: none; }
+    .round-button { border: 1px solid #adbca3; background: transparent; color: var(--green); width: 38px; height: 38px; border-radius: 50%; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+    .round-button:hover { background: var(--green); color: var(--surface); border-color: var(--green); }
+    .round-button .icon { width: 17px; height: 17px; }
+    .instrument-row.planned .instrument-name { font-weight: 500; }
+    .detail { position: sticky; top: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; min-width: 0; }
+    .detail-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 650; border-radius: 4px; padding: 4px 7px; color: var(--green-dark); background: var(--wash); }
+    .status.planned { color: #715329; background: #f2eadb; }
+    .status-dot { width: 5px; height: 5px; background: currentColor; border-radius: 50%; }
+    .detail-id { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+    .detail h2 { margin: 0 0 7px; font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.025em; overflow-wrap: anywhere; }
+    .detail-family { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+    .detail-description { margin: 0; font-size: 13px; line-height: 1.7; }
+    .music-title { margin: 0 0 5px; font-size: 18px; line-height: 1.3; font-weight: 600; text-wrap: balance; }
+    .music-copy { font-size: 12px; color: var(--muted); margin: 0 0 8px; line-height: 1.6; }
+    .music-source { font-size: 11px; }
+    .wave-display { margin: 22px 0 12px; height: 70px; color: #b8c6ad; }
+    .wave-display svg { display: block; width: 100%; height: 70px; }
+    .wave-display .played-wave { color: var(--green); }
+    .preview-modes { display: flex; border: 1px solid var(--line); border-radius: 7px; padding: 3px; gap: 3px; }
+    .preview-mode { border: 0; flex: 1; padding: 8px; border-radius: 4px; font-size: 12px; background: transparent; min-height: 36px; }
+    .preview-mode[aria-pressed="true"] { background: var(--wash); color: var(--green-dark); font-weight: 600; }
+    .preview-facts { display: flex; justify-content: space-between; gap: 8px; margin: 10px 0 16px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .primary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 44px; border: 0; border-radius: 7px; color: #fffefa; background: var(--green); padding: 11px 15px; font-weight: 600; font-size: 13px; }
+    .primary:hover { background: var(--green-dark); }
+    .primary .icon { width: 16px; height: 16px; }
+    .detail-section { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 22px; }
+    .detail-section h3 { font-size: 12px; margin: 0 0 6px; font-weight: 650; }
+    .detail-section summary { font-size: 12px; font-weight: 600; cursor: pointer; color: var(--green); }
+    .detail-section[open] summary { margin-bottom: 12px; }
+    .detail-section .engine-name { margin-top: 12px; }
+    .engine-name { font-size: 13px; margin: 0; color: var(--muted); }
+    .tone-controls { margin: 12px 0 0; font-size: 12px; }
+    .tone-controls div { display: flex; justify-content: space-between; gap: 12px; margin-top: 7px; }
+    .tone-controls dt { color: var(--muted); }
+    .tone-controls dd { margin: 0; font-variant-numeric: tabular-nums; }
+    .control-note { font-size: 11px; color: var(--muted); margin: 12px 0 0; line-height: 1.6; }
+    .downloads { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 20px; font-size: 12px; }
+    .planned-notice { padding: 20px 0 2px; }
+    .planned-notice strong { font-size: 14px; display: block; margin-bottom: 7px; }
+    .planned-notice p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .empty { padding: 55px 20px; text-align: center; border-top: 1px solid var(--line); }
+    .empty h2 { font-size: 20px; margin: 0 0 8px; font-weight: 600; }
+    .empty p { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+    .text-button { border: 0; border-bottom: 1px solid var(--green); padding: 3px 0; color: var(--green); background: transparent; font-size: 13px; }
+    .library-footer { border-top: 1px solid var(--line); margin-top: 32px; padding-top: 18px; color: var(--muted); font-size: 12px; }
+    .player { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 5; }
+    .player-inner { max-width: 1440px; margin: auto; padding: 18px 48px; display: grid; grid-template-columns: 250px minmax(240px, 1fr) 180px; align-items: center; gap: 32px; min-height: 92px; }
+    .playing-label { min-width: 0; }
+    .playing-label strong { font-size: 14px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .playing-label span { color: var(--muted); font-size: 12px; }
+    .transport { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .transport-play { width: 40px; height: 40px; background: var(--green); border: 0; color: var(--surface); }
+    .transport-next { background: transparent; border: 0; padding: 8px; display: flex; align-items: center; justify-content: center; color: var(--green); }
+    .timeline { display: flex; align-items: center; min-width: 0; flex: 1; gap: 10px; }
+    .time { font-size: 11px; font-variant-numeric: tabular-nums; min-width: 26px; color: var(--muted); }
+    input[type="range"] { accent-color: var(--green); width: 100%; min-width: 0; height: 24px; margin: 0; }
+    .volume { display: flex; align-items: center; gap: 10px; }
+    .volume .icon { width: 18px; height: 18px; color: var(--muted); }
+    .volume input { width: 95px; }
+    .volume output { font-size: 11px; color: var(--muted); min-width: 30px; font-variant-numeric: tabular-nums; }
+    .player-error { color: var(--error); font-size: 12px; padding: 0 48px 12px; max-width: 1440px; margin: auto; }
+    noscript { display: block; padding: 24px; color: var(--error); }
+    @media (max-width: 1150px) {
+      .topbar-inner { padding-left: 28px; padding-right: 28px; }
+      main { padding-left: 28px; padding-right: 28px; }
+      .workspace { grid-template-columns: 150px minmax(0, 1fr) 265px; gap: 20px; }
+      .row-wave { width: 60px; }
+      .detail { padding: 18px; }
+      .player-inner { padding-left: 28px; padding-right: 28px; grid-template-columns: 180px minmax(200px, 1fr) 160px; gap: 18px; }
+    }
+    @media (max-width: 920px) {
+      .workspace { grid-template-columns: minmax(0, 1fr) 285px; }
+      .sidebar { display: none; }
+      .mobile-family { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+      .mobile-family label { color: var(--muted); font-size: 13px; }
+      .mobile-family select { flex: 1; max-width: 290px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px; color: var(--ink); min-height: 44px; }
+      .catalog-note { display: none; }
+      .row-wave { width: 60px; }
+      .player-inner { grid-template-columns: 160px minmax(180px, 1fr); }
+      .volume { display: none; }
+    }
+    @media (max-width: 650px) {
+      .topbar-inner { padding: 18px 20px; }
+      .brand { font-size: 15px; }
+      .local-note { font-size: 11px; }
+      .local-note .icon { display: none; }
+      main { padding: 28px 20px 155px; }
+      .intro { margin-bottom: 24px; }
+      .intro p { font-size: 14px; }
+      .toolbar { flex-direction: column-reverse; align-items: stretch; gap: 14px; padding-bottom: 18px; }
+      .search { width: 100%; }
+      .segments { justify-content: space-between; }
+      .segment { justify-content: center; flex: 1; padding: 9px 6px; font-size: 12px; gap: 6px; }
+      .workspace { display: flex; flex-direction: column; gap: 24px; padding-top: 20px; }
+      .detail { position: static; width: 100%; order: 0; padding: 20px; }
+      .catalog { order: 1; width: 100%; }
+      .detail h2 { font-size: 25px; }
+      .detail-description { font-size: 13px; }
+      .wave-display { margin-top: 16px; height: 48px; }
+      .wave-display svg { height: 48px; }
+      .detail-section { margin-top: 18px; padding-top: 14px; }
+      .downloads { margin-top: 16px; }
+      .tone-controls { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
+      .tone-controls div { display: block; }
+      .instrument-row { padding: 12px 8px; gap: 12px; }
+      .instrument-name { font-size: 14px; }
+      .instrument-meta { font-size: 11px; }
+      .row-wave { width: 64px; }
+      .player-inner { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 20px 14px; }
+      .playing-label { width: 100%; display: flex; gap: 10px; justify-content: space-between; align-items: baseline; }
+      .playing-label strong { font-size: 12px; }
+      .playing-label span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+      .transport { width: 100%; gap: 10px; }
+      .transport-play { width: 36px; height: 36px; }
+      .player-error { padding: 0 20px 12px; }
+      .mobile-family select { max-width: none; min-width: 0; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      button, .instrument-row { transition: background-color 140ms ease-out, color 140ms ease-out; }
+    }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="4"/></symbol>
+      <symbol id="i-next" viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Z" fill="currentColor" stroke="none"/><path d="M19 5v14"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4ZM15 8c3 2 3 6 0 8M18 5c5 4 5 10 0 14"/></symbol>
+      <symbol id="i-local" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+    </defs>
+  </svg>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><svg class="icon brand-mark" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 12v4M8.5 7v14M14 3v22M19.5 9v10M25 12v4" stroke-width="2.4"/></svg>audio as code</div>
+      <span class="local-note"><svg class="icon" aria-hidden="true"><use href="#i-local"/></svg>Local listening room</span>
+    </div>
+  </header>
+  <main>
+    <div class="intro">
+      <div><h1>Instrument library</h1><p>Famous melodies, played by code. Try a music demo, a phrase, or a single note.</p></div>
+      <div class="catalog-note"><strong id="available-note">Playable voices</strong><br><span id="planned-note">Solo and ensemble arrangements</span></div>
+    </div>
+    <div class="toolbar">
+      <div class="segments" role="group" aria-label="Instrument availability">
+        <button class="segment" type="button" data-status="available" aria-pressed="true">Playable <span class="count" id="available-count"></span></button>
+        <button class="segment" type="button" data-status="all" aria-pressed="false">All instruments <span class="count" id="all-count"></span></button>
+        <button class="segment" type="button" data-status="planned" aria-pressed="false">Planned <span class="count" id="planned-count"></span></button>
+      </div>
+      <div class="search"><label class="sr-only" for="search">Search instruments or music</label><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="search" type="search" placeholder="Search instruments or music…" autocomplete="off"></div>
+    </div>
+    <div class="mobile-family"><label for="family-select">Family</label><select id="family-select"></select></div>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Filter by family"><h2>Families</h2><nav class="families" id="families" aria-label="Instrument families"></nav><p class="sidebar-note">Every preview is generated from equations. No recorded instruments or sample libraries.</p></aside>
+      <section class="catalog" aria-label="Instruments">
+        <p class="list-summary" id="results-summary" role="status" aria-live="polite"></p>
+        <ul class="instrument-list" id="instrument-list"></ul>
+        <div class="empty" id="empty" hidden><h2>No instruments found</h2><p id="empty-copy"></p><button type="button" class="text-button" id="reset-filters">Reset filters</button></div>
+        <footer class="library-footer">Playable voices are early models. Planned instruments have no audio preview yet.</footer>
+      </section>
+      <aside class="detail" id="detail" aria-label="Selected instrument">
+        <div class="detail-top"><span class="status" id="detail-status"></span><span class="detail-id" id="detail-id"></span></div>
+        <h2 id="detail-title"></h2><p class="detail-family" id="detail-family"></p>
+        <div id="preview-section">
+          <div id="music-info"><h3 class="music-title" id="music-title"></h3><p class="music-copy" id="music-composer"></p><p class="music-copy" id="music-arrangement"></p><a class="music-source" id="music-source" target="_blank" rel="noopener noreferrer">Public-domain score &amp; credits</a></div>
+          <div class="wave-display" id="wave-display" aria-hidden="true"></div>
+          <div class="preview-modes" role="group" aria-label="Preview type"><button type="button" class="preview-mode" data-variant="music" aria-pressed="true">Music</button><button type="button" class="preview-mode" data-variant="phrase" aria-pressed="false">Phrase</button><button type="button" class="preview-mode" data-variant="note" aria-pressed="false">Single note</button></div>
+          <div class="preview-facts"><span id="preview-facts"></span><span id="preview-duration"></span></div>
+          <button type="button" class="primary" id="detail-play"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span>Play preview</span></button>
+        </div>
+        <div class="planned-notice" id="planned-notice" hidden><strong>Not playable yet</strong><p>This instrument is part of the catalog. Its synthesis model is still to be built.</p></div>
+        <details class="detail-section"><summary>About this sound</summary><p class="detail-description" id="detail-description"></p><p class="engine-name" id="engine-name"></p><dl class="tone-controls" id="tone-controls"></dl><p class="control-note" id="control-note"></p></details>
+        <div class="downloads" id="downloads"><a id="wav-link" download>WAV</a><a id="midi-link" download>MIDI</a><a id="score-link" download>JSON score</a></div>
+      </aside>
+    </div>
+    <noscript>Enable JavaScript to browse and play the instruments. Individual WAV files are in the audio folder beside this page.</noscript>
+  </main>
+  <section class="player" aria-label="Audio player">
+    <div class="player-inner">
+      <div class="playing-label"><strong id="player-title">Choose an instrument</strong><span id="player-subtitle">Ready to listen</span></div>
+      <div class="transport"><button type="button" class="round-button transport-play" id="player-play" aria-label="Play preview"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg></button><button type="button" class="transport-next" id="player-next" aria-label="Next playable instrument"><svg class="icon" aria-hidden="true"><use href="#i-next"/></svg></button><div class="timeline"><span class="time" id="elapsed" aria-hidden="true">0:00</span><label class="sr-only" for="seek">Playback position</label><input id="seek" type="range" min="0" max="1" step="0.01" value="0" aria-valuetext="0 seconds"><span class="time" id="duration" aria-hidden="true">0:00</span></div></div>
+      <div class="volume"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg><label class="sr-only" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.65"><output id="volume-value" for="volume">65%</output></div>
+    </div>
+    <p class="player-error" id="player-error" role="alert" hidden></p>
+  </section>
+  <p id="announcement" class="sr-only" aria-live="polite"></p>
+  <audio id="audio" preload="none"></audio>
+  <script id="catalog-data" type="application/json">__INSTRUMENT_DATA__</script>
+  <script>
+    "use strict";
+    const data = JSON.parse(document.getElementById("catalog-data").textContent);
+    const $ = id => document.getElementById(id);
+    const familyNames = Object.fromEntries(data.families.map(f => [f.id, f.name]));
+    const engineNames = Object.fromEntries(data.engines.map(e => [e.id, e.name]));
+    const priority = ["guitar", "marimba", "bell", "bass", "pad", "pluck", "sine", "triangle", "kick", "snare", "hat"];
+    const items = [...data.instruments].sort((a, b) => {
+      const ai = priority.indexOf(a.id), bi = priority.indexOf(b.id);
+      return (ai < 0 ? 100 : ai) - (bi < 0 ? 100 : bi);
+    });
+    const state = { status: "available", family: "all", query: "", selected: "guitar", variant: "music" };
+    const audio = $("audio");
+    let playToken = 0;
+    audio.volume = 0.65;
+    const escape = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+    const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+    const time = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+    const selected = () => items.find(item => item.id === state.selected);
+    const preview = () => data.previews[state.selected]?.[state.variant];
+    const previewLabel = () => state.variant === "music" ? preview()?.title : state.variant === "phrase" ? "Phrase preview" : selected()?.midi_note === null ? "Single-note preview" : "Single-hit preview";
+    const filtered = () => items.filter(item =>
+      (state.status === "all" || item.status === state.status) &&
+      (state.family === "all" || item.family === state.family) &&
+      `${item.name} ${item.id} ${familyNames[item.family]} ${engineNames[item.engine]} ${data.previews[item.id]?.music?.title || ""} ${data.previews[item.id]?.music?.arrangement || ""}`.toLowerCase().includes(state.query)
+    );
+    function wavePath(peaks, width, height) {
+      return peaks.map((peak, index) => {
+        const x = (index + .5) * width / peaks.length;
+        const h = Math.max(1, peak * (height - 4));
+        return `M${x.toFixed(2)},${((height - h) / 2).toFixed(2)}v${h.toFixed(2)}`;
+      }).join(" ");
+    }
+    function updateButtons() {
+      const playing = !audio.paused && !!preview();
+      const label = playing ? "Pause preview" : "Play preview";
+      $("player-play").innerHTML = icon(playing ? "pause" : "play");
+      $("player-play").setAttribute("aria-label", label);
+      $("detail-play").innerHTML = icon(playing ? "pause" : "play") + `<span>${label}</span>`;
+      document.querySelectorAll(".row-play").forEach(button => {
+        const active = button.dataset.id === state.selected && playing;
+        button.innerHTML = icon(active ? "pause" : "play");
+        const item = items.find(entry => entry.id === button.dataset.id);
+        button.setAttribute("aria-label", `${active ? "Pause" : "Play"} ${item.name}`);
+        button.closest("li").classList.toggle("is-playing", active);
+      });
+    }
+    function updateTimeline() {
+      const total = Number.isFinite(audio.duration) ? audio.duration : (preview()?.seconds || 0);
+      const current = audio.currentTime || 0;
+      $("elapsed").textContent = time(current);
+      $("duration").textContent = time(total);
+      $("seek").max = total || 1;
+      $("seek").value = current;
+      $("seek").setAttribute("aria-valuetext", `${current.toFixed(1)} of ${total.toFixed(1)} seconds`);
+      const mask = $("wave-progress");
+      if (mask) mask.setAttribute("width", total ? 288 * current / total : 0);
+    }
+    function setSource() {
+      playToken += 1;
+      audio.pause();
+      $("player-error").hidden = true;
+      // Selection updates the UI; only an explicit Play request loads audio.
+      audio.removeAttribute("src");
+      audio.load();
+      updateTimeline();
+    }
+    function renderDetail() {
+      const item = selected();
+      if (!item) {
+        $("detail").hidden = true;
+        $("player-title").textContent = "No instrument selected";
+        $("player-subtitle").textContent = "Change or reset the filters";
+        $("player-play").disabled = true;
+        $("player-next").disabled = true;
+        $("seek").disabled = true;
+        updateButtons(); updateTimeline();
+        return;
+      }
+      $("detail").hidden = false;
+      const playable = item.status === "available";
+      $("detail-status").className = `status${playable ? "" : " planned"}`;
+      $("detail-status").innerHTML = `<span class="status-dot"></span>${playable ? "Playable" : "Planned"}`;
+      $("detail-id").textContent = item.id;
+      $("detail-title").textContent = item.name;
+      $("detail-family").textContent = familyNames[item.family];
+      $("detail-description").textContent = item.description;
+      $("engine-name").textContent = engineNames[item.engine];
+      $("preview-section").hidden = !playable;
+      $("planned-notice").hidden = playable;
+      $("downloads").hidden = !playable;
+      $("player-title").textContent = item.name;
+      $("player-subtitle").textContent = playable ? previewLabel() : "Planned · no preview yet";
+      $("player-play").disabled = !playable;
+      $("seek").disabled = !playable;
+      $("player-next").disabled = filtered().filter(entry => entry.status === "available").length < 1;
+      const names = { brightness: "Brightness", decay_seconds: "Decay", pluck_position: "Pluck position", breath: "Breath", vibrato_depth_cents: "Vibrato depth", vibrato_rate_hz: "Vibrato rate", glide_semitones: "Glide", detune_cents: "Detune" };
+      const defaults = { brightness: 0.5, decay_seconds: item.default_decay_seconds, pluck_position: 0.22, ...Object.fromEntries(item.default_tone || []) };
+      const units = { decay_seconds: " s", vibrato_depth_cents: " cents", vibrato_rate_hz: " Hz", glide_semitones: " semitones", detune_cents: " cents" };
+      $("tone-controls").innerHTML = item.tone_controls.map(key => `<div><dt>${escape(names[key] || key)}</dt><dd>${escape(defaults[key] ?? "Default")}${units[key] || ""}</dd></div>`).join("");
+      $("control-note").textContent = item.tone_controls.length ? "Preview defaults. Tone controls are editable in the JSON score." : playable ? "Pitch, timing, velocity, gain, and pan are editable in the score." : "Synthesis details will be available when this instrument is implemented.";
+      if (playable) {
+        const clip = preview();
+        $("music-info").hidden = state.variant !== "music";
+        if (state.variant === "music") {
+          $("music-title").textContent = clip.title;
+          $("music-composer").textContent = `${clip.composer} · short excerpt`;
+          $("music-arrangement").textContent = `${clip.arrangement}. ${clip.performers}.`;
+          $("music-source").href = clip.source;
+          $("music-source").title = `Score edition: ${clip.credit}. ${clip.license}.`;
+        }
+        const path = wavePath(clip.waveform, 288, 70);
+        $("wave-display").innerHTML = `<svg viewBox="0 0 288 70" preserveAspectRatio="none"><defs><clipPath id="played-clip"><rect id="wave-progress" x="0" y="0" width="0" height="70"/></clipPath></defs><path d="${path}" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="played-wave" d="${path}" stroke="currentColor" stroke-width="2" stroke-linecap="round" clip-path="url(#played-clip)"/></svg>`;
+        $("preview-facts").textContent = `${clip.notes} ${state.variant === "music" || item.midi_note === null ? "note" : "hit"}${clip.notes === 1 ? "" : "s"} · ${clip.bpm} BPM`;
+        $("preview-duration").textContent = `${clip.seconds.toFixed(1)} seconds`;
+        $("wav-link").href = clip.audio;
+        $("midi-link").href = clip.midi;
+        $("score-link").href = clip.score;
+        document.querySelector('[data-variant="note"]').textContent = item.midi_note === null ? "Single note" : "Single hit";
+      }
+      document.querySelectorAll(".preview-mode").forEach(button => button.setAttribute("aria-pressed", button.dataset.variant === state.variant));
+      updateButtons();
+      updateTimeline();
+    }
+    function renderList() {
+      const focused = document.activeElement;
+      const focusId = focused.closest("#instrument-list") ? focused.dataset.id : null;
+      const focusClass = focused.classList.contains("row-play") ? "row-play" : "instrument-select";
+      const visible = filtered();
+      const family = state.family === "all" ? "all families" : familyNames[state.family].toLowerCase();
+      $("results-summary").textContent = `${visible.length} ${visible.length === 1 ? "instrument" : "instruments"} · ${family}`;
+      $("instrument-list").innerHTML = visible.map(item => {
+        const playable = item.status === "available";
+        const clip = data.previews[item.id]?.[state.variant];
+        const rowWave = playable ? `<svg class="row-wave" viewBox="0 0 144 36" aria-hidden="true"><path d="${wavePath(clip.waveform, 144, 36)}" stroke="currentColor" stroke-width="1.2"/></svg>` : '<span class="planned-state">Planned</span>';
+        const caption = state.variant === "music" && playable ? `${clip.title} · ${clip.arrangement}` : familyNames[item.family];
+        return `<li class="instrument-row${state.selected === item.id ? " selected" : ""}${playable ? "" : " planned"}" data-id="${escape(item.id)}"><button type="button" class="instrument-select" data-id="${escape(item.id)}" aria-pressed="${state.selected === item.id}"><span class="instrument-name">${escape(item.name)}</span><span class="instrument-meta">${escape(caption)}</span></button>${rowWave}${playable ? `<button type="button" class="round-button row-play" data-id="${escape(item.id)}" aria-label="Play ${escape(item.name)}">${icon("play")}</button>` : ""}</li>`;
+      }).join("");
+      $("empty").hidden = visible.length !== 0;
+      $("instrument-list").hidden = visible.length === 0;
+      $("empty-copy").textContent = state.family !== "all" && state.status === "available" && !state.query ? "This family has no playable voices yet. Choose All instruments to see what is planned." : "Try another name, family, or availability filter.";
+      if (visible.length && !visible.some(item => item.id === state.selected)) {
+        state.selected = visible[0].id;
+        setSource();
+        document.querySelectorAll(".instrument-row").forEach(row => row.classList.toggle("selected", row.dataset.id === state.selected));
+        document.querySelectorAll(".instrument-select").forEach(button => button.setAttribute("aria-pressed", button.dataset.id === state.selected));
+      }
+      if (!visible.length && state.selected !== null) { state.selected = null; setSource(); }
+      renderDetail();
+      if (focusId) document.querySelector(`.${focusClass}[data-id="${CSS.escape(focusId)}"]`)?.focus({preventScroll: true});
+    }
+    function applyFilters() {
+      document.querySelectorAll(".segment").forEach(button => button.setAttribute("aria-pressed", button.dataset.status === state.status));
+      document.querySelectorAll(".family").forEach(button => button.setAttribute("aria-pressed", button.dataset.family === state.family));
+      $("family-select").value = state.family;
+      renderList();
+    }
+    async function play() {
+      if (!preview()) return;
+      const token = ++playToken;
+      $("player-error").hidden = true;
+      try {
+        if (audio.getAttribute("src") !== preview().audio) audio.src = preview().audio;
+        if (audio.ended) audio.currentTime = 0;
+        await audio.play();
+        if (token === playToken) $("announcement").textContent = `Playing ${selected().name}.`;
+      } catch (error) {
+        if (token !== playToken || error.name === "AbortError") return;
+        $("player-error").textContent = "The preview could not be played. Keep the audio folder beside this HTML file and try Play again.";
+        $("player-error").hidden = false;
+      }
+      updateButtons();
+    }
+    function togglePlay() {
+      if (!audio.paused) { audio.pause(); $("announcement").textContent = "Playback paused."; }
+      else play();
+    }
+    function selectInstrument(id, shouldPlay = false) {
+      if (id !== state.selected) { state.selected = id; setSource(); }
+      renderList();
+      if (shouldPlay) togglePlay();
+      else if (matchMedia("(max-width: 650px)").matches) $("detail").scrollIntoView({block: "start"});
+    }
+    function init() {
+      $("available-count").textContent = data.counts.available;
+      $("planned-count").textContent = data.counts.planned;
+      $("all-count").textContent = items.length;
+      $("available-note").textContent = `${data.counts.available} playable voices`;
+      $("planned-note").textContent = data.counts.planned ? `${data.counts.planned} instruments planned` : "Solo and ensemble arrangements";
+      const families = [{id: "all", name: "All families"}, ...data.families];
+      $("families").innerHTML = families.map(family => `<button type="button" class="family" data-family="${family.id}" aria-pressed="${family.id === "all"}"><span>${escape(family.name)}</span><span>${family.id === "all" ? items.length : items.filter(item => item.family === family.id).length}</span></button>`).join("");
+      $("family-select").innerHTML = families.map(family => `<option value="${family.id}">${escape(family.name)}</option>`).join("");
+      $("families").addEventListener("click", event => { const button = event.target.closest(".family"); if (button) { state.family = button.dataset.family; applyFilters(); } });
+      $("family-select").addEventListener("change", event => { state.family = event.target.value; applyFilters(); });
+      document.querySelectorAll(".segment").forEach(button => button.addEventListener("click", () => { state.status = button.dataset.status; applyFilters(); }));
+      $("search").addEventListener("input", event => { state.query = event.target.value.trim().toLowerCase(); renderList(); });
+      $("reset-filters").addEventListener("click", () => { state.status = "all"; state.family = "all"; state.query = ""; $("search").value = ""; applyFilters(); });
+      $("instrument-list").addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (button?.dataset.id) selectInstrument(button.dataset.id, button.classList.contains("row-play"));
+      });
+      document.querySelectorAll(".preview-mode").forEach(button => button.addEventListener("click", () => {
+        if (state.variant === button.dataset.variant) return;
+        const resume = !audio.paused;
+        state.variant = button.dataset.variant;
+        setSource(); renderList();
+        if (resume) play();
+      }));
+      $("detail-play").addEventListener("click", togglePlay);
+      $("player-play").addEventListener("click", togglePlay);
+      $("player-next").addEventListener("click", () => {
+        const playable = filtered().filter(item => item.status === "available");
+        if (!playable.length) return;
+        const next = playable[(playable.findIndex(item => item.id === state.selected) + 1) % playable.length];
+        state.selected = next.id; setSource(); renderList(); play();
+      });
+      $("seek").addEventListener("input", event => { if (Number.isFinite(audio.duration)) { audio.currentTime = Number(event.target.value); updateTimeline(); } });
+      $("volume").addEventListener("input", event => { audio.volume = Number(event.target.value); $("volume-value").textContent = `${Math.round(audio.volume * 100)}%`; });
+      audio.addEventListener("play", updateButtons);
+      audio.addEventListener("pause", updateButtons);
+      audio.addEventListener("ended", () => { updateButtons(); $("announcement").textContent = "Preview finished."; });
+      audio.addEventListener("timeupdate", updateTimeline);
+      audio.addEventListener("loadedmetadata", updateTimeline);
+      audio.addEventListener("waiting", () => { $("player-subtitle").textContent = "Loading preview…"; });
+      audio.addEventListener("playing", () => { $("player-subtitle").textContent = previewLabel(); });
+      audio.addEventListener("error", () => {
+        if (!audio.getAttribute("src")) return;
+        $("player-error").textContent = "Audio file unavailable. Keep the audio folder beside this HTML file, then try again.";
+        $("player-error").hidden = false;
+        updateButtons();
+      });
+      setSource(); applyFilters();
+    }
+    init();
+  </script>
+</body>
+</html>

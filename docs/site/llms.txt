@@ -1,0 +1,60 @@
+# Audio as Code
+
+> An open-source Python framework (MIT) for AI agents and developers to compose editable music for videos, games and presentations, render it offline to WAV with instruments synthesized entirely from code, export MIDI, and read back signal measurements. Version 0.1.0, early prototype. Distribution `audio-as-code`, import `audio_as_code`, command `aac`.
+
+## Start here
+
+- [Portable composition skill](skills/audio-as-code/SKILL.md): read this first for setup, brief interpretation, original composition, validate/render/inspect/revise, and delivery of WAV, MIDI, editable score, composer source and report. Plain instructions for a shell-capable coding agent; no vendor integration assumed.
+- [Source download](source.html): actual source ZIP, size and SHA-256. Follow this page's download link or use [the GitHub repository](https://github.com/joaoCarvalho1000/audio-as-code). Website handoff prompts include the current site's exact source URL. No registry package is published.
+- A person describes the music and requests revisions in ordinary language. The agent makes artistic decisions and runs the tool locally. The human does not need to write Python; the agent needs a shell, writable project and Python 3.10+.
+
+Facts an agent should rely on:
+
+- Install from a local copy of the source folder: `uv sync --locked`, then prefix commands with `uv run`. Without uv, create `.venv` and use its Python to `-m pip install -e .` and `-m audio_as_code`; activation is optional. The package is not published to PyPI or any registry.
+- There is no hosted API, MCP server, in-browser renderer, bundled AI model or required provider API key. Audio on the website was pre-rendered locally by the Python synthesizers. To hear an edit, render locally.
+- Every `aac` command (except `--help`, which prints plain text) prints one JSON object: stdout and exit 0 on success, stderr and exit 2 on failure (`invalid_score` with `issues[].path`, or `operation_failed` with `message`).
+- Scores are JSON, `"schema_version": "1"`. Time is in quarter-note beats; without a tempo map, seconds = beats * 60 / bpm; optional `tempo_map` entries are ordered `{beat,bpm}` steps. Pitch is MIDI 0-127 or a name such as "C4" (= 60). Notes must end by `beats`. No extra fields.
+- 49 playable instruments, all code-generated approximations (no recorded samples, SoundFonts, or measured impulse responses). Tone controls are per track and only those listed in each instrument's `tone_controls` are accepted.
+- Optional expression: ordered step tempo changes; track gain/pan and song master_gain automation with linear/step points; note/track release_seconds; ordered track/song delay and generated reverb effects. Read the installed schema for parameters.
+- Limits: 1-64 tracks, 100,000 notes, 300-second WAV renders including automatic tails; no tempo ramps, sections or instrument articulation switches. Piano supports binary Track.pedal events. MIDI carries tempo changes and piano CC64 but omits tone controls, automation, effects and release tails (at most 15 melodic tracks; shared drum channel). Stems omit master effects.
+- Render reports (peak, RMS, clipping, silence, gain_applied, warnings) are signal checks, not a measure of musical quality or realism.
+- Rendering is deterministic for the same score, seed, software versions, and platform.
+
+## Docs
+
+- [Quickstart](docs/quickstart.md): give the framework to an agent; optional manual source install, demo, Python and JSON
+- [Agent guide](docs/agents.md): agent handoff and revision prompts, compose/validate/render/inspect/revise loop, exact commands, strict JSON score, errors and recovery
+- [Creative integrations](docs/integrations.md): Codex and Claude Code skill setup, a Hyperframes soundtrack handoff, game/presentation cues, and a runnable local CLI-to-artifact bridge
+- [Composition guide](docs/composition.md): beats and tempo, pitch, Pattern, chords, motifs, form, tracks, gain and pan, Tone controls, drums, MIDI caveats
+- [Reference](docs/reference.md): every CLI command, score field, Python function, report field, and MIDI rule
+
+## Machine-readable
+
+- Before synthesis, run `aac inspect score.json` (Python: `inspect_score(song)`) for track facts and static WAV/MIDI readiness. Inspection can exit 0 with blocked exports: check `readiness.render.ready`, `readiness.midi.ready` and structured `issues`. It does not measure audio quality or check output paths.
+
+- [Score JSON Schema, version 1](schemas/song-v1.schema.json): output of `aac schema`; runtime validation adds cross-field rules
+- [Instrument catalog](instruments.json): output of `aac instruments --all`; families, engines, instruments, tone_controls, defaults, MIDI mappings
+
+## Examples
+
+- [01_first_score.py](docs/examples/01_first_score.py): patterns, tracks, WAV, MIDI, report
+- [02_motif_and_progression.py](docs/examples/02_motif_and_progression.py): motif transposition, I-vi-IV-V voicings, bass line, accents
+- [03_song_form.py](docs/examples/03_song_form.py): sections table, dynamics, arrangement density, stems
+- [04_expressive_controls.py](docs/examples/04_expressive_controls.py): Tone controls, velocity, pan, drum_machine pitch map
+- [05_agent_loop.py](docs/examples/05_agent_loop.py): CLI-only validate, render, error recovery, measured revision, determinism check
+- [agent-score.json](docs/examples/agent-score.json): a complete valid score used by the agent loop
+
+## Classic and reimagined listening pairs
+
+- The website pairs five familiar public-domain scores with new arrangements by an AI agent. **The classic** follows the credited source score; **Reimagined** changes its musical treatment. Both versions are synthesized by Audio as Code and have editable scores. Neither is a sampled recording.
+- [Score credits](docs/classic-showcase.md): source editions, completeness and arrangement notes. A complete standalone arrangement of *Ode to Joy* is not the full symphonic movement; use the credited score's scope.
+- [classic_showcase.py](music/classic_showcase.py): inspectable generator; use the complete [source download](source.html) for its runnable project and supporting files.
+- Preserved classic IDs: `classic-fur-elise`, `classic-cello-prelude`, `classic-turkish-march`, `classic-greensleeves`, `classic-ode-to-joy`. Read the manifest for the paired variant IDs and actual instrumentation; do not infer filenames.
+- [Listening manifest](music/manifest.json): the published listening program, with duration, instruments and artifact paths. Attribute historical composition and agent-written arrangement separately.
+- Four additional original examples remain in `examples/full_compositions.py` inside the source project; they are separate from the website lineup. Run `python examples/full_compositions.py [output] [--scores-only]` from the source folder. Default output is `output/full-compositions/`.
+- Preserved original example IDs: `lanterns-on-the-water`, `copper-street`, `night-signal`, `clockwork-garden`.
+
+## Optional
+
+- License: MIT, in the `LICENSE` file of the source folder
+- Run the examples from the source folder root, for example `python docs/site/examples/01_first_score.py`; outputs go under `output/docs-examples/`

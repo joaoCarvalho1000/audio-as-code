@@ -1,0 +1,9 @@
+{
+  "projectKey": "phc_xNf9EdeZoqL2EFKCngCxqubrNddx8VpDXCNMGGn5RaAT",
+  "apiHost": "https://us.i.posthog.com",
+  "allowLocal": false,
+  "allowedHosts": [
+    "audioascode.com",
+    "www.audioascode.com"
+  ]
+}

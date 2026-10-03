@@ -1,0 +1,30 @@
+<!-- title: Download the source · Audio as Code | description: Download the Audio as Code source archive and install it locally as an editable Python package. -->
+<section class="stock stock-paper sheet source">
+  <h1>Get the source</h1>
+  <p class="section-lede">Your orchestra comes in a ZIP. Download the source, open it locally, and make your first piece. Python 3.10+ required; MIT licensed.</p>
+  <p class="agent-route">Prefer to direct? <a href="index.html#handoff">Give it to your agent</a>. The prompt includes this download and the composition <a href="skills/audio-as-code/SKILL.md">skill</a>, so your agent can handle setup and rendering.</p>
+  <div class="archive">
+    <a class="ticket ticket-big" href="{{ARCHIVE}}" download>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg>
+      <span>Download {{ARCHIVE_NAME}}</span>
+    </a>
+    <dl class="meters">
+      <div><dt>Size</dt><dd>{{ARCHIVE_KB}} KB</dd></div>
+      <div><dt>Files</dt><dd>{{ARCHIVE_FILES}}</dd></div>
+      <div class="wide"><dt>SHA-256</dt><dd class="hash">{{ARCHIVE_SHA}}</dd></div>
+    </dl>
+    <p class="fineprint">Includes the renderer, example scores, guides and agent skill. Also on <a href="https://github.com/joaoCarvalho1000/audio-as-code">GitHub</a>. Install from this folder; a registry package is not available yet.</p>
+  </div>
+  <div class="prose">
+    <h2 id="install">Install it locally</h2>
+    <p>Extract the ZIP, then open a terminal in the folder containing <code>pyproject.toml</code>. With <a href="https://docs.astral.sh/uv/">uv</a>:</p>
+    <figure class="code" data-lang="sh"><figcaption><span>shell</span><button type="button" class="copy" data-copy>Copy</button></figcaption><pre><code>cd audio-as-code
+uv sync --locked
+uv run aac demo -o output/song.json
+uv run aac render output/song.json -o output/song.wav --report output/report.json</code></pre></figure>
+    <p>Prefer pip? In the same source folder, install into your Python environment:</p>
+    <figure class="code" data-lang="sh"><figcaption><span>shell</span><button type="button" class="copy" data-copy>Copy</button></figcaption><pre><code>python -m pip install -e .
+aac instruments</code></pre></figure>
+    <p>Open <code>output/song.wav</code> to hear your first render. Then follow the <a href="docs/quickstart.html">quickstart</a> to write your own score.</p>
+  </div>
+</section>

@@ -1,0 +1,61 @@
+name: CI
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hosting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test web/cloudflare/media-handler.test.js
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.10', '3.13']
+        include:
+          - os: macos-latest
+            python: '3.13'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+          version: '0.12.15'
+      - run: uv sync --locked
+      - name: Schema stays in sync with the score model
+        run: uv run --locked python .github/scripts/check_schema.py
+      - run: uv run --locked pytest
+
+  distribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.13'
+          version: '0.12.15'
+      - run: uv sync --locked
+      - run: uv run --locked ruff check .
+      - run: uv run --locked ruff format --check .
+      - name: Build without local dependency source overrides
+        run: uv build --no-sources
+      - name: Inspect archive contents and metadata
+        run: uv run --locked python .github/scripts/check_distribution.py dist
+      - name: Install wheel and rebuilt sdist outside the checkout
+        run: uv run --locked python .github/scripts/smoke_distribution.py dist
