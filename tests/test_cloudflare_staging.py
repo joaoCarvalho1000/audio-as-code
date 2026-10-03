@@ -54,3 +54,46 @@ def test_preflight_rejects_overlap_and_invalid_target_before_writing(tmp_path):
     with pytest.raises(ValueError, match="account_id"):
         prepare(site, tmp_path / "new", account_id="invalid")
     assert not (tmp_path / "new").exists()
+
+
+def test_html_headers_cover_file_clean_and_directory_urls_only(tmp_path):
+    site = website(tmp_path)
+    (site / "instruments").mkdir()
+    (site / "instruments/index.html").write_text("instruments", encoding="utf-8")
+    (site / "source.html").write_text("source", encoding="utf-8")
+    (site / "app.js").write_text("// JavaScript", encoding="utf-8")
+    (site / "style.css").write_text("body {}", encoding="utf-8")
+    (site / "font.woff2").write_bytes(b"font")
+    output = tmp_path / "staged"
+    prepare(site, output, account_id=ACCOUNT)
+    lines = (output / "assets/_headers").read_text().splitlines()
+    routes = {line for line in lines if line.startswith("/")}
+    assert routes == {
+        "/",
+        "/index",
+        "/index.html",
+        "/instruments",
+        "/instruments/",
+        "/instruments/index",
+        "/instruments/index.html",
+        "/source",
+        "/source.html",
+    }
+    headers = [line for line in lines if line.startswith("  ")]
+    assert headers == ["  Cache-Control: public, max-age=0, must-revalidate, no-transform"] * len(
+        routes
+    )
+    assert not (site / "_headers").exists()
+    for name in ("index.html", "app.js", "style.css", "font.woff2", "music/song.wav"):
+        assert (output / "assets" / name).read_bytes() == (site / name).read_bytes()
+
+
+def test_existing_headers_are_rejected_before_any_staging_write(tmp_path):
+    site = website(tmp_path)
+    policy = "/*\n  X-Custom-Policy: preserve-me\n"
+    (site / "_headers").write_text(policy, encoding="utf-8")
+    output = tmp_path / "staged"
+    with pytest.raises(ValueError, match="already contains _headers"):
+        prepare(site, output, account_id=ACCOUNT)
+    assert not output.exists()
+    assert (site / "_headers").read_text() == policy

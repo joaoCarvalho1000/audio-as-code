@@ -41,6 +41,8 @@ def prepare(
     paths = sorted(site.rglob("*"))
     if any(path.is_symlink() for path in paths):
         raise ValueError("website must not contain symlinks")
+    if (site / "_headers").exists():
+        raise ValueError("website already contains _headers; merge its policy before staging")
     files = [path for path in paths if path.is_file()]
     media, uploads = {}, []
     for source in files:
@@ -59,6 +61,20 @@ def prepare(
         }
         media["/" + relative] = entry
         uploads.append({"site_path": relative, **entry})
+    html_routes = set()
+    for source in files:
+        relative = source.relative_to(site)
+        route = "/" + relative.as_posix()
+        if relative.suffix != ".html" or route in media:
+            continue
+        html_routes.update((route, route.removesuffix(".html")))
+        if relative.name == "index.html":
+            directory = route.removesuffix("index.html")
+            html_routes.update((directory, directory.rstrip("/") or "/"))
+    html_headers = "".join(
+        f"{route}\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n\n"
+        for route in sorted(html_routes)
+    )
     output.mkdir(parents=True)
     for source in files:
         relative = source.relative_to(site)
@@ -67,6 +83,7 @@ def prepare(
         target = output / "assets" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
+    (output / "assets/_headers").write_text(html_headers, encoding="utf-8")
     for filename in ("worker.js", "media-handler.js"):
         shutil.copy2(ROOT / "web/cloudflare" / filename, output / filename)
     config = {

@@ -38,6 +38,15 @@ logs and traces. `media-manifest.json` maps paths to content-addressed R2 keys,
 sizes, content types and SHA-256 hashes. `staging-report.json` lists uploads.
 A dry run checks bundling and configuration; it does not verify remote resources.
 
+Staging also generates `assets/_headers` with explicit rules for each HTML file,
+its extensionless URL, and directory aliases for `index.html`. Those responses use
+`Cache-Control: public, max-age=0, must-revalidate, no-transform`. Cloudflare
+[documents that `no-transform` prevents automatic Web Analytics beacon injection](https://developers.cloudflare.com/web-analytics/get-started/).
+This preserves the verified HTML bytes and prevents an independently injected
+beacon from bypassing the site's PostHog privacy choices. JavaScript, CSS, fonts,
+JSON and media receive no added rule. An existing source `_headers` causes staging
+to fail before writing anything; reconcile that policy explicitly before staging.
+
 Keep `output/site/` unchanged until uploads finish: the report refers to those
 files. Build and stage again after any source, audio or documentation change.
 Do not hand-edit the manifest or mix files from different releases.
@@ -127,3 +136,34 @@ stable URLs revalidate after a release. Missing objects return 404 and size
 mismatches return 503. Verify upload hashes before release: equal size alone
 does not establish content integrity. Ordinary files retain the static asset
 service's behavior.
+
+## Agent requests and zone security
+
+Zone security configuration is separate from the Worker and asset headers. During
+release verification, default `Python-urllib/3.10` requests received HTTP 403 with
+Cloudflare error 1010, while curl and the honest
+`AudioAsCode-release-check/1.0` user agent could fetch the site. The existing
+Wrangler OAuth session could not read the zone's Browser Integrity Check setting
+(HTTP 403); it therefore did not change that setting. Reading it requires Zone
+Settings Read or Write permission, and changing it requires Write permission.
+
+A maintainer can inspect **Security Settings > Browser Integrity Check** for this
+zone and disable that setting to allow default Python fetches, then retest. See
+[Cloudflare's error 1010 guidance](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/).
+The observed block is consistent with that feature; its configured value was
+not confirmed. An explicit, truthful client identifier currently works:
+
+```python
+from urllib.request import Request, urlopen
+
+request = Request(
+    "https://audioascode.com/llms.txt",
+    headers={"User-Agent": "AudioAsCode-release-check/1.0"},
+)
+with urlopen(request, timeout=30) as response:
+    guide = response.read().decode("utf-8")
+```
+
+The HTML `no-transform` policy does not change this zone access behavior. Workers
+observability logs and traces also remain enabled independently of client-side
+analytics.
