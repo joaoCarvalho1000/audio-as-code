@@ -6,10 +6,16 @@ from pathlib import Path
 
 import mido
 
+from ._export_rules import (
+    MAX_MELODIC_TRACKS,
+    MAX_MIDI_TICK,
+    TICKS_PER_BEAT,
+    midi_export_pitch,
+    midi_note_ticks,
+    midi_tick,
+)
 from .instruments import DRUM_NOTES, PROGRAMS
-from .model import Song, midi_pitch
-
-TICKS_PER_BEAT = 480
+from .model import Song
 
 
 def _export_warnings(song: Song) -> list[str]:
@@ -46,23 +52,24 @@ def _export_warnings(song: Song) -> list[str]:
 def export_midi(song: Song, path: str | Path) -> dict:
     song = Song.model_validate(song.model_dump())
     melodic = [track for track in song.tracks if track.instrument not in DRUM_NOTES]
-    if len(melodic) > 15:
+    if len(melodic) > MAX_MELODIC_TRACKS:
         raise ValueError(
-            "MIDI export supports at most 15 melodic tracks (channel 10 is percussion)"
+            f"MIDI export supports at most {MAX_MELODIC_TRACKS} melodic tracks "
+            "(channel 10 is percussion)"
         )
     drum_kinds = [track.instrument for track in song.tracks if track.instrument in DRUM_NOTES]
     if len(set(drum_kinds)) != len(drum_kinds):
         raise ValueError("MIDI export requires at most one track per drum instrument")
     midi = mido.MidiFile(type=1, ticks_per_beat=TICKS_PER_BEAT)
-    end_tick = round(song.beats * TICKS_PER_BEAT)
-    if end_tick < 1 or end_tick > 0x0FFFFFFF:
+    end_tick = midi_tick(song.beats)
+    if not 1 <= end_tick <= MAX_MIDI_TICK:
         raise ValueError("song duration cannot be represented on the MIDI tick grid")
     tempo = mido.MidiTrack()
     tempo.append(mido.MetaMessage("track_name", name="Tempo"))
     tempo.append(mido.MetaMessage("set_tempo", tempo=mido.bpm2tempo(song.bpm)))
     previous_tempo_tick = 0
     for change in song.tempo_map:
-        tick = round(change.beat * TICKS_PER_BEAT)
+        tick = midi_tick(change.beat)
         tempo.append(
             mido.MetaMessage(
                 "set_tempo", tempo=mido.bpm2tempo(change.bpm), time=tick - previous_tempo_tick
@@ -105,7 +112,7 @@ def export_midi(song: Song, path: str | Path) -> dict:
         for pedal in track.pedal:
             events.append(
                 (
-                    round(pedal.beat * TICKS_PER_BEAT),
+                    midi_tick(pedal.beat),
                     -1,
                     mido.Message(
                         "control_change",
@@ -121,13 +128,8 @@ def export_midi(song: Song, path: str | Path) -> dict:
             )
         note_ends: dict[int, int] = {}
         for note in sorted(track.notes, key=lambda note: note.start):
-            pitch = (
-                DRUM_NOTES[track.instrument]
-                if percussion and track.instrument != "drum_machine"
-                else midi_pitch(note.pitch)
-            )
-            start = round(note.start * TICKS_PER_BEAT)
-            end = min(end_tick, round((note.start + note.duration) * TICKS_PER_BEAT))
+            pitch = midi_export_pitch(track, note.pitch)
+            start, end = midi_note_ticks(note, end_tick)
             if end <= start:
                 raise ValueError(
                     f"track {track.name!r}: note at beat {note.start} is shorter than one MIDI tick"

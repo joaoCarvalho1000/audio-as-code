@@ -148,6 +148,10 @@ def wheel(tmp_path, *, extra=None, omit=None, version="0.1.0"):
             "pattern.py",
             "render.py",
             "extended.py",
+            "_audio.py",
+            "_voices.py",
+            "_export_rules.py",
+            "_orchestra_profiles.py",
             "py.typed",
         )
     }
@@ -182,6 +186,12 @@ def test_wheel_checker_requires_type_marker_and_rejects_nested_private_state(tmp
         CHECK.check_wheel(wheel(tmp_path, omit="audio_as_code/py.typed"), "0.1.0")
     with pytest.raises(ValueError, match="Unexpected wheel member"):
         CHECK.check_wheel(wheel(tmp_path, extra={"audio_as_code/.env": "test-secret"}), "0.1.0")
+
+
+@pytest.mark.parametrize("module", ["_audio", "_voices", "_export_rules", "_orchestra_profiles"])
+def test_wheel_requires_internal_modules_used_by_public_imports(tmp_path, module):
+    with pytest.raises(ValueError, match="Missing wheel files"):
+        CHECK.check_wheel(wheel(tmp_path, omit=f"audio_as_code/{module}.py"), "0.1.0")
 
 
 def test_wheel_checker_detects_version_and_entry_point_drift(tmp_path):

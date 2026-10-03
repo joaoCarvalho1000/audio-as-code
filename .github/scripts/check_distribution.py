@@ -94,6 +94,10 @@ REQUIRED_SOURCE = {
     "src/audio_as_code/__init__.py",
     "src/audio_as_code/py.typed",
     "src/audio_as_code/extended.py",
+    "src/audio_as_code/_audio.py",
+    "src/audio_as_code/_voices.py",
+    "src/audio_as_code/_export_rules.py",
+    "src/audio_as_code/_orchestra_profiles.py",
     "pyproject.toml",
     "uv.lock",
     "README.md",
@@ -198,6 +202,10 @@ def check_wheel(path: Path, expected_version: str) -> dict:
                 "pattern.py",
                 "render.py",
                 "extended.py",
+                "_audio.py",
+                "_voices.py",
+                "_export_rules.py",
+                "_orchestra_profiles.py",
                 "py.typed",
             )
         }

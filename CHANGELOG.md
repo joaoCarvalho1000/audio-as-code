@@ -37,6 +37,12 @@ are unreleased. Package versions and score schema versions are separate.
 
 ### Changed
 
+- Separated voice synthesis and PCM analysis from render orchestration. Shared
+  timing, MIDI pitch mapping and export limits keep inspection and exporters
+  aligned without changing public imports or seeded output.
+- Reuse fixed envelope/harmonic tables across notes, and avoid allocating unused
+  oscillator arrays when a physical or modal engine supplies the voice.
+
 - Orchestra coefficient tables and immutable profiles live in a separate private
   module; existing imports and seeded synthesis behavior are preserved.
 - Internal planning notes are excluded from Git, source distributions and the

@@ -26,7 +26,10 @@ flowchart TD
 | `pattern.py` | Explicit phrase length and composition transforms, including sequence, repeat, transpose, append, overlay, stretch, velocity scaling, and placement. |
 | `instruments.py` | Central family/engine catalog, playable versus planned status, tone capabilities, and MIDI mappings. |
 | `inspection.py` | Read-only facts and static WAV/MIDI readiness checks with structured issues; no synthesis or file writes. |
-| `render.py` | Sample scheduling, voice routing, note envelopes, seeded synthesis, mixing, WAV/stem writing, and audio measurements. |
+| `render.py` | Sample scheduling, stable note seeds, track mixing, normalization and render/stem orchestration. |
+| `_voices.py` | Instrument dispatch, electronic voices, drum-kit routing and note envelopes. |
+| `_audio.py` | PCM WAV encoding and signal measurements; independent of score objects and synthesis engines. |
+| `_export_rules.py` | Shared sample/tick rounding, percussion pitch mapping and export limits for rendering, MIDI and inspection. |
 | `physical.py` | Original generated string and modal instrument models. |
 | `orchestra.py` | Additional procedural instrument synthesis and source/filter approximations. |
 | `_orchestra_profiles.py` | Private immutable instrument parameters shared by the orchestra models; keep numerical processing in `orchestra.py`. |
@@ -90,6 +93,25 @@ timing and processing details.
   also carry examples, documentation, tests and build inputs. See [releasing](releasing.md).
 
 ## Adding capabilities
+
+Start with the layer that owns the behavior. Paths below are relative to
+`src/audio_as_code/`; underscore-prefixed modules are implementation details, not
+additional public APIs.
+
+| Change | Start here | Focused checks |
+| --- | --- | --- |
+| Add or change a composition transform | `pattern.py` | `tests/test_pattern_composition.py` |
+| Add a score field or validation rule | `model.py`, then its consumer | `tests/test_score.py`, schema check |
+| Adjust instrument coefficients | `_orchestra_profiles.py` or the relevant physical model | Family tests, tuning/control checks and a listening comparison |
+| Add a playable instrument | Its synthesis module, `instruments.py`, `_voices.py` when adding a new engine | Instrument and discovery tests, schema check and an audition |
+| Change note timing or MIDI mapping | `_export_rules.py`, with capabilities in `instruments.py` | `tests/test_score_inspection.py`, `tests/test_midi_cli.py`, `tests/test_expressive_engine.py` |
+| Change WAV handling or measurements | `_audio.py` | `tests/test_render.py`, `tests/test_core_export_regressions.py`, `tests/test_security_regressions.py` |
+| Add an agent command | `cli.py` and the library operation it exposes | `tests/test_cli_dx.py`, `tests/test_agent_readiness.py` |
+
+After focused checks, run the full [contributor checks](../CONTRIBUTING.md).
+Keep existing imports from `audio_as_code` and the renderer working when moving
+implementation code. Preserve sample arithmetic order and seeded results in
+refactors; equivalent formulas can still round differently.
 
 Keep musical policy in composition code and validation, shared scheduling in the
 renderer, and instrument capabilities in `instruments.py`. Follow [the instrument

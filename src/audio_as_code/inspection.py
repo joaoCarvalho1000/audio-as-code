@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from ._export_rules import (
+    MAX_MELODIC_TRACKS,
+    MAX_MIDI_TICK,
+    MAX_RENDER_SECONDS,
+    TICKS_PER_BEAT,
+    midi_note_ticks,
+    midi_tick,
+    note_frame,
+)
+from ._export_rules import midi_export_pitch as _export_pitch
 from .effects import effects_tail
 from .instruments import DRUM_NOTES, get_instrument
-from .midi import TICKS_PER_BEAT
-from .model import Song, Track, midi_pitch
-from .render import MAX_RENDER_SECONDS
+from .model import Song, midi_pitch
 
 
 def _issue(
@@ -36,25 +44,20 @@ def _range(values: list[int]) -> dict | None:
     return {"min": min(values), "max": max(values)} if values else None
 
 
-def _export_pitch(track: Track, pitch: int | str) -> int:
-    if track.instrument in DRUM_NOTES and track.instrument != "drum_machine":
-        return DRUM_NOTES[track.instrument]
-    return midi_pitch(pitch)
-
-
 def _midi_issues(song: Song, issues: list[dict]) -> int:
     melodic_count = sum(track.instrument not in DRUM_NOTES for track in song.tracks)
-    if melodic_count > 15:
+    if melodic_count > MAX_MELODIC_TRACKS:
         _issue(
             issues,
             "midi_melodic_channel_limit",
             "midi",
             ["tracks"],
-            "MIDI supports at most 15 melodic tracks; empty and muted tracks also count.",
+            f"MIDI supports at most {MAX_MELODIC_TRACKS} melodic tracks; "
+            "empty and muted tracks also count.",
             blocking=True,
         )
-    end_tick = round(song.beats * TICKS_PER_BEAT)
-    if not 1 <= end_tick <= 0x0FFFFFFF:
+    end_tick = midi_tick(song.beats)
+    if not 1 <= end_tick <= MAX_MIDI_TICK:
         _issue(
             issues,
             "midi_duration_out_of_range",
@@ -97,10 +100,7 @@ def _midi_issues(song: Song, issues: list[dict]) -> int:
                 "Binary piano pedal is exported as CC64; open pedal lifts at score end. "
                 "Damper tails and repeated-pitch behavior depend on the receiving synthesizer.",
             )
-            if any(
-                round(event.beat * TICKS_PER_BEAT) / TICKS_PER_BEAT != event.beat
-                for event in track.pedal
-            ):
+            if any(midi_tick(event.beat) / TICKS_PER_BEAT != event.beat for event in track.pedal):
                 _issue(
                     issues,
                     "midi_pedal_timing_quantized",
@@ -111,8 +111,7 @@ def _midi_issues(song: Song, issues: list[dict]) -> int:
         quantized = False
         for note_index, note in sorted(enumerate(track.notes), key=lambda item: item[1].start):
             pitch = _export_pitch(track, note.pitch)
-            start = round(note.start * TICKS_PER_BEAT)
-            end = min(end_tick, round((note.start + note.duration) * TICKS_PER_BEAT))
+            start, end = midi_note_ticks(note, end_tick)
             note_path = [*path, "notes", note_index]
             quantized |= (
                 start / TICKS_PER_BEAT != note.start
@@ -195,10 +194,7 @@ def _midi_issues(song: Song, issues: list[dict]) -> int:
                 [*path, "effects"],
                 "Procedural effects and their audio tails are not exported to MIDI.",
             )
-    if any(
-        round(change.beat * TICKS_PER_BEAT) / TICKS_PER_BEAT != change.beat
-        for change in song.tempo_map
-    ):
+    if any(midi_tick(change.beat) / TICKS_PER_BEAT != change.beat for change in song.tempo_map):
         _issue(
             issues,
             "midi_tempo_timing_quantized",
@@ -264,15 +260,8 @@ def inspect_score(song: Song) -> dict:
                 "Track contains no notes.",
             )
         for note_index, note in enumerate(track.notes):
-            if song.tempo_map:
-                start_frame = round(song.beat_to_seconds(note.start) * song.sample_rate)
-                end_frame = round(
-                    song.beat_to_seconds(song.note_gate_end(track, note)) * song.sample_rate
-                )
-            else:
-                samples_per_beat = song.sample_rate * 60 / song.bpm
-                start_frame = round(note.start * samples_per_beat)
-                end_frame = round(song.note_gate_end(track, note) * samples_per_beat)
+            start_frame = note_frame(song, note.start)
+            end_frame = note_frame(song, song.note_gate_end(track, note))
             if end_frame <= start_frame:
                 _issue(
                     issues,
@@ -341,7 +330,7 @@ def inspect_score(song: Song) -> dict:
                     i["target"] == "midi" and i["severity"] == "error" for i in issues
                 ),
                 "melodic_tracks": melodic_count,
-                "melodic_track_limit": 15,
+                "melodic_track_limit": MAX_MELODIC_TRACKS,
                 "ticks_per_beat": TICKS_PER_BEAT,
             },
         },
