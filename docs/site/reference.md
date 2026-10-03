@@ -1,6 +1,11 @@
 # Reference
 
-Audio as Code 0.1.0. Python distribution `audio-as-code`, import `audio_as_code`, command `aac`. The package installs from a local source folder only; it is not on a package registry. The 0.1 API may change; breaking score format changes will use a new `schema_version`. Expression fields are optional additions to version 1.
+Audio as Code 0.1.0. Python distribution `audio-as-code`, import `audio_as_code`,
+command `aac`. Install `audio-as-code==0.1.0` from PyPI for the engine and CLI;
+use the source workspace for the complete examples and portable skill. See the
+[quickstart](quickstart.md) for both routes. The 0.1 API may change; breaking score
+format changes will use a new `schema_version`. Expression fields are optional
+additions to version 1.
 
 Machine-readable versions of this page: the score schema at [`../schemas/song-v1.schema.json`](../schemas/song-v1.schema.json) (same as `aac schema`) and the instrument catalog at [`../instruments.json`](../instruments.json) (same as `aac instruments --all`).
 

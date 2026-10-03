@@ -29,6 +29,21 @@ arrangement code. Use the complete source download to run it. Attribute the
 historical composition separately from the new arrangement, and never describe
 either render as a sampled recording.
 
+## Add to your project
+
+In an existing uv project, install the released engine and discover its contract:
+
+```sh
+uv add "audio-as-code==0.1.0"
+uv run --locked aac instruments
+uv run --locked aac schema
+```
+
+Ask your agent to read [the portable skill](../skills/audio-as-code/SKILL.md), compose
+in this environment, and keep the composer and score beside the delivered WAV.
+The package contains the engine and CLI. The complete examples and skill file are
+in the source project; see the [quickstart](quickstart.md) for pip and Git alternatives.
+
 ## Already have the source?
 
 Paste this into your agent in the extracted source folder:
@@ -45,8 +60,8 @@ Tell me whether you were able to listen to the result.
 The skill is plain Markdown with portable instructions. An agent can read it
 directly; no vendor-specific plugin or automatic skill discovery is required.
 Initial installation needs network access or cached dependencies; rendering
-then runs offline. Install from the downloaded source folder. The package is
-not published to PyPI.
+then runs offline. Use the downloaded source folder for the bundled examples,
+or the versioned package for your own project.
 
 ## Describe the music, then revise it
 
@@ -78,7 +93,7 @@ could not audition the audio.
 
 ## The working loop
 
-1. Read the portable skill, locate or install the source, and discover playable
+1. Read the portable skill, locate or install the local package, and discover playable
    voices and score fields through `aac instruments` and `aac schema`.
 2. Interpret the brief and compose original material with a motif, development
    appropriate to its length, and an intentional ending or loop seam.
@@ -94,7 +109,7 @@ and a measured revision. For musical decisions and Python building blocks, see
 
 ## Tool calls, exactly
 
-Run from the source folder with the package installed (see the [quickstart](quickstart.md)). With uv, prefix each command with `uv run`. `python -m audio_as_code` works wherever `aac` is not on `PATH`.
+Run in the project where the package is installed (see the [quickstart](quickstart.md)). With uv, prefix each command with `uv run --locked`. The environment's `python -m audio_as_code` works wherever `aac` is not on `PATH`.
 
 | Step | Command | stdout on success |
 | --- | --- | --- |

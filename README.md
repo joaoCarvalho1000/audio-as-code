@@ -10,7 +10,7 @@ then carry the rendered WAV into your video, game or slides. See the
 [creative workflow integrations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/integrations.md) for Codex, Claude Code
 and Hyperframes recipes.
 
-**Status: working 0.1 prototype.** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+**Status: 0.1.0 alpha, [available on PyPI](https://pypi.org/project/audio-as-code/0.1.0/).** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
 
 A **score** is the editable recipe for a piece: instruments, notes, timing,
 volume and tempo. Write it in Python or JSON; rendering turns it into audio.
@@ -63,17 +63,27 @@ To browse and audition the catalog, run `uv run python examples/instrument_brows
 For a coding agent, start with: **“Read https://audioascode.com/llms.txt and add
 Audio as Code to this project. Then compose the music in my brief.”**
 
-To add it to an existing uv project with Git installed:
+To add version 0.1.0 to an existing uv project:
 
 ```sh
-uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git"
+uv add "audio-as-code==0.1.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
-Commit your project's `uv.lock` to preserve the resolved Git revision and
-dependency versions. See the [quickstart](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/quickstart.md) for a first
-composition and the standalone source-workspace route below.
+Commit your project's `uv.lock` to preserve the package and dependency versions.
+For a one-off CLI check, run `uvx --from audio-as-code==0.1.0 aac --help`.
+The package contains the Python library and CLI. Use a source checkout or the
+website's source ZIP for the complete examples, guides and portable skill.
+
+Without uv, create a local environment with `python -m venv .venv`. On Windows,
+run `.venv/Scripts/python.exe -m pip install audio-as-code==0.1.0`; on macOS/Linux,
+run `.venv/bin/python -m pip install audio-as-code==0.1.0`. Use that interpreter
+with `-m audio_as_code --help`; no activation or global installation is needed.
+
+The [quickstart](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/quickstart.md)
+also covers first compositions and installation from a pinned Git revision.
+The standalone source-workspace route follows below.
 
 For complete video, game-loop and presentation examples with exact durations and
 verified revisions, see [creative workflows](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/creative-workflows.md).

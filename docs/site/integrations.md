@@ -43,17 +43,20 @@ Use the website's **Copy agent prompt**, or download the full
 to read [the portable skill](../skills/audio-as-code/SKILL.md), then describe the
 music and where it will go. The agent needs a shell and Python 3.10+.
 
-If setting it up directly, run these in the folder containing `pyproject.toml`:
+To add the released engine to an existing uv project, run:
 
 ```sh
-uv sync --locked --no-dev
-uv run --no-dev aac instruments
-uv run --no-dev aac schema
+uv add "audio-as-code==0.1.0"
+uv run --locked aac instruments
+uv run --locked aac schema
 ```
 
-Use the [quickstart](quickstart.md) for the pip/virtual-environment alternative.
-Audio as Code is not published to a package registry. Its renderer needs no model
-or provider key; your chosen agent has its own account and runtime requirements.
+Keep that project's lockfile and compose in its environment. The installed package
+contains the library and CLI. For the full examples and skill folder, use the source
+project and run `uv sync --locked --no-dev` from its root. The
+[quickstart](quickstart.md) covers pip/virtual environments and pinned Git installs.
+The renderer needs no model or provider key; your agent has its own account and
+runtime requirements.
 
 ## Codex: keep the composer beside the project
 
@@ -65,7 +68,7 @@ CLI or the IDE extension, invoke it as `$audio-as-code`.
 [Official Codex skill instructions](https://learn.chatgpt.com/docs/build-skills).
 
 ```text
-Use the Audio as Code skill and the local source checkout. Compose an original
+Use the Audio as Code skill and this project's local environment. Compose an original
 12-second moon-cheese launch cue: curious marimba, bass enters at second 4,
 confident ending. Put v1 in output/moon-cheese/v1/. Deliver WAV, MIDI, score,
 composer source and report. Check the actual WAV duration including tails.

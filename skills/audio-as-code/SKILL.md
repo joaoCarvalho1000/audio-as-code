@@ -21,23 +21,31 @@ To add the library to an existing Python project managed by uv, run from that
 project's root:
 
 ```sh
-uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git"
+uv add "audio-as-code==0.1.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
-This installs from the public source repository; there is no PyPI release.
-Git must be installed. Keep the project's `pyproject.toml` and `uv.lock`: the lock
-records the resolved Git commit and dependency versions. An explicit source pin
-uses `git+https://github.com/joaoCarvalho1000/audio-as-code.git@FULL_COMMIT_SHA`
-in the same dependency string, replacing `FULL_COMMIT_SHA` with a verified commit.
-Use `uv run --locked` for composition and rendering in this project. Do not use
-the framework's `uv.lock` to replace an existing application's lockfile. Read this
-skill from the same source revision when you need version-specific instructions;
-the installed catalog, schema and CLI help describe that revision's capabilities.
+This installs version 0.1.0 from PyPI. Keep the project's `pyproject.toml` and
+`uv.lock` to record package and dependency versions. Use `uv run --locked` for
+composition and rendering. Do not replace an existing application's lockfile
+with the framework's lock. The wheel contains the engine and CLI; the portable
+skill and bundled example scripts are available separately in the source project.
 
-For a standalone project, download/extract the source instead. From its root:
+Without uv, create `.venv` with `python -m venv .venv`, then use
+`.venv/Scripts/python.exe -m pip install audio-as-code==0.1.0` on Windows or
+`.venv/bin/python -m pip install audio-as-code==0.1.0` on macOS/Linux. Invoke that
+interpreter with `-m audio_as_code` and use it for composer scripts. No activation
+is needed. Reuse an existing project environment rather than a global Python.
+
+When a specific source revision is needed, Git must be installed. Use
+`uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git@FULL_COMMIT_SHA"`,
+replacing the placeholder with a verified full commit. Read the skill from that
+revision; the installed catalog, schema and help describe its actual capabilities.
+
+For a standalone workspace with the complete examples, download and extract the
+source. From its root:
 
 ```sh
 uv sync --locked --no-dev
@@ -50,11 +58,11 @@ For the standalone route, use the source ZIP URL supplied with the user's websit
 prompt, or the website's **Download source** link. Download and extract into the
 working project, then run the commands above from the extracted folder containing
 `pyproject.toml`. Read the bundled `skills/audio-as-code/SKILL.md` for that version.
-Use only the public repository above or a source location supplied by the user;
-do not invent a registry release or another installation URL. If neither source
-route is accessible, ask for the source ZIP or local checkout path.
+Use the public repository above or a source location supplied by the user.
+If source examples are needed and neither source route is accessible, ask for the
+source ZIP or local checkout path.
 
-Without uv, create a local environment with `python -m venv .venv`, then run
+For an editable source installation without uv, create `.venv`, then run
 `.venv/Scripts/python.exe -m pip install -e .` on Windows or
 `.venv/bin/python -m pip install -e .` on macOS/Linux. Use that interpreter with
 `-m audio_as_code` in place of `uv run --no-dev aac`. No shell activation is necessary.

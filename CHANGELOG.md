@@ -1,10 +1,18 @@
 # Changelog
 
-This project is an unpublished prototype. `0.1.0` identifies the current development
-baseline; it is not a claim that a package or tagged release exists. Changes below
-are unreleased. Package versions and score schema versions are separate.
+Audio as Code is an early prototype. Package versions and score schema versions
+are separate.
 
 ## Unreleased
+
+### Changed
+
+- Documented versioned PyPI installation alongside the source workspace and pinned
+  Git routes. These onboarding updates follow the 0.1.0 package release.
+
+## 0.1.0 — 2026-10-03
+
+Initial release on [PyPI](https://pypi.org/project/audio-as-code/0.1.0/).
 
 ### Added
 

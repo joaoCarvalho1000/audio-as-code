@@ -32,26 +32,41 @@ then offline. The framework has no bundled AI model and needs no provider API ke
 Prefer to work directly? The rest of this page walks through the same local
 framework. Audio as Code synthesizes instruments entirely from code: no recorded
 samples or SoundFonts. The website plays pre-rendered examples; Python does not
-run in your browser. The package is not published to a registry. Add it from Git
-to an existing Python project, or use the [source download](../source.html) for a
-standalone composition workspace.
+run in your browser. Install version 0.1.0 from
+[PyPI](https://pypi.org/project/audio-as-code/0.1.0/) in your Python project, or use
+the [source download](../source.html) for a workspace with the complete examples.
 
 ## Add to an existing Python project
 
-From an existing project managed by uv, with Git installed:
+From an existing project managed by uv:
 
 ```sh
-uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git"
+uv add "audio-as-code==0.1.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
-Keep `pyproject.toml` and `uv.lock` with your project. The lock records the resolved
-Git commit and dependency versions; `uv run --locked` reuses that environment.
-To select a specific revision, append `@FULL_COMMIT_SHA` to the `.git` URL,
-replacing the placeholder with a verified full commit. This is a source install,
-not a registry package. It requires network access on first installation.
+Keep `pyproject.toml` and `uv.lock` with your project. The lock records the package
+and dependency versions; `uv run --locked` reuses that environment. To inspect the
+CLI without adding a project dependency, use
+`uvx --from audio-as-code==0.1.0 aac --help`.
+
+Without uv, create a local environment with `python -m venv .venv`. On Windows,
+run `.venv/Scripts/python.exe -m pip install audio-as-code==0.1.0`; on macOS/Linux,
+run `.venv/bin/python -m pip install audio-as-code==0.1.0`. No activation is needed.
+Use that interpreter with `-m audio_as_code` for the CLI, and to run composer
+scripts. For example, on Windows the version command is
+`.venv/Scripts/python.exe -m audio_as_code --version`.
+
+To use a specific source revision instead, install Git and run:
+
+```sh
+uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git@FULL_COMMIT_SHA"
+```
+
+Replace `FULL_COMMIT_SHA` with a verified full commit. Initial installation needs
+network access or cached dependencies; rendering afterward is offline.
 
 Give your agent this brief once installed:
 
@@ -65,13 +80,13 @@ actual duration and loop join. Tell me whether you could listen to it. Keep the
 seed, melody and duration fixed when I request a revision.
 ```
 
-Continue at step 2, using `uv run --locked` before the `aac` and Python commands.
-Save your composer in your own project. The
+Continue at step 2, using `uv run --locked` before the `aac` and Python commands,
+or the local interpreter described above for pip. Save your composer in your project. The
 [portable skill](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/skills/audio-as-code/SKILL.md)
 has the complete composition and delivery workflow. When using a pinned revision,
 read the skill at that same revision; the installed CLI and schema are authoritative.
-The Git dependency installs the Python library and CLI; use the source workspace
-below if you also want the bundled tutorial scripts and examples.
+The installed package contains the Python library and CLI. Use the source workspace
+below for bundled tutorial scripts, the portable skill and complete examples.
 
 ## 1. Install from the source folder
 
@@ -122,7 +137,8 @@ and level checks.
 
 ## 3. Write your first score in Python
 
-Save this as `first.py` in the source folder and run `python first.py`:
+Save this as `first.py` in your project and run it with the environment's Python
+(for example, `uv run --locked python first.py`):
 
 ```python
 from audio_as_code import Pattern, Song, Track, export_midi, render

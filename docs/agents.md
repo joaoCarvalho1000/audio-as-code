@@ -2,11 +2,21 @@
 
 Start with the [portable composition skill](../skills/audio-as-code/SKILL.md).
 It covers setup, interpreting a musical brief, composing, rendering, checking,
-delivering files, and revisions. Give your agent this checkout (or the website's
-source ZIP) and say:
+delivering files, and revisions. Add the released library to an existing uv project:
+
+```sh
+uv add "audio-as-code==0.1.0"
+uv run --locked aac instruments
+uv run --locked aac schema
+```
+
+Keep the project's lockfile. The package contains the engine and CLI; get the
+portable skill and complete examples from the source checkout or website's source
+ZIP. See the [quickstart](site/quickstart.md) for pip and pinned Git alternatives.
+Give your agent the skill and say:
 
 ```text
-Read skills/audio-as-code/SKILL.md in the Audio as Code source folder and use it
+Read the Audio as Code skill and use the installed dependency in this project
 to create an original 30-second hopeful instrumental for piano, marimba and bass.
 Build a memorable motif, vary the second phrase, and finish with a clear cadence.
 Set up locally, validate and render, then deliver WAV, MIDI, editable score,
@@ -52,11 +62,11 @@ The CLI is the initial agent integration. Call it through your existing shell to
 MIDI warnings describe features present in the score, such as tone controls,
 percussion or effects. The receiver determines instrument sound in every MIDI export.
 
-When running from the source checkout, first run `uv sync --locked`, then prefix
-commands with `uv run`. `uv run python -m audio_as_code` is an equivalent entry
-point. The package is not published to PyPI; use the local checkout. Commands
-need no network after installation. Run from the checkout root, or invoke the
-installed environment's Python by its absolute path.
+In a uv project, prefix commands with `uv run --locked`;
+`uv run --locked python -m audio_as_code` is an equivalent entry point. For a
+source checkout, run `uv sync --locked` first and work from its root. With pip,
+invoke the local environment's Python with `-m audio_as_code`. Commands need no
+network after installation.
 
 Output files are replaced if they already exist. Input score, output audio,
 report, and stem filenames must be distinct, including symlink and existing
