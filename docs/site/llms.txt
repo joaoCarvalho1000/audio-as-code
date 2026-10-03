@@ -4,6 +4,8 @@
 
 ## Start here
 
+- [Full agent documentation](llms-full.txt): this index plus the published guides in one text download. For smaller context windows, follow the individual links below.
+
 - [Portable composition skill](skills/audio-as-code/SKILL.md): read this first for setup, brief interpretation, original composition, validate/render/inspect/revise, and delivery of WAV, MIDI, editable score, composer source and report. Plain instructions for a shell-capable coding agent; no vendor integration assumed.
 - [Source download](source.html): actual source ZIP, size and SHA-256. Follow this page's download link or use [the GitHub repository](https://github.com/joaoCarvalho1000/audio-as-code). Website handoff prompts include the current site's exact source URL. No registry package is published.
 - A person describes the music and requests revisions in ordinary language. The agent makes artistic decisions and runs the tool locally. The human does not need to write Python; the agent needs a shell, writable project and Python 3.10+.
@@ -19,6 +21,24 @@ Facts an agent should rely on:
 - Limits: 1-64 tracks, 100,000 notes, 300-second WAV renders including automatic tails; no tempo ramps, sections or instrument articulation switches. Piano supports binary Track.pedal events. MIDI carries tempo changes and piano CC64 but omits tone controls, automation, effects and release tails (at most 15 melodic tracks; shared drum channel). Stems omit master effects.
 - Render reports (peak, RMS, clipping, silence, gain_applied, warnings) are signal checks, not a measure of musical quality or realism.
 - Rendering is deterministic for the same score, seed, software versions, and platform.
+
+## Add to a creative project
+
+A score is the editable recipe for music: instruments, notes, timing, dynamics and tempo. Python composition code builds the score; the renderer turns it into WAV audio. MIDI exports its musical events for another synthesizer.
+
+For an existing uv project with Python 3.10+ and Git installed:
+
+```sh
+uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git"
+uv run --locked aac instruments
+uv run --locked aac schema
+uv run --locked aac demo -o output/song.json
+uv run --locked aac inspect output/song.json
+uv run --locked aac render output/song.json -o output/song.wav --report output/report.json
+uv run --locked aac midi output/song.json -o output/song.mid
+```
+
+Keep the resolved Git commit and dependencies in the project's uv.lock. Read the skill from the same revision when pinning an older version; installed CLI discovery and schema take precedence. Download the source workspace instead when you need the bundled composition examples. For a video, game or presentation, deliver the WAV into that project's audio folder and retain the editable score and composer for revisions.
 
 ## Docs
 

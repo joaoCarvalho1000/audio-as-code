@@ -32,8 +32,46 @@ then offline. The framework has no bundled AI model and needs no provider API ke
 Prefer to work directly? The rest of this page walks through the same local
 framework. Audio as Code synthesizes instruments entirely from code: no recorded
 samples or SoundFonts. The website plays pre-rendered examples; Python does not
-run in your browser. The package is not published to a registry, so install from
-the [source download](../source.html), in the folder containing `pyproject.toml`.
+run in your browser. The package is not published to a registry. Add it from Git
+to an existing Python project, or use the [source download](../source.html) for a
+standalone composition workspace.
+
+## Add to an existing Python project
+
+From an existing project managed by uv, with Git installed:
+
+```sh
+uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git"
+uv run --locked aac --version
+uv run --locked aac instruments
+uv run --locked aac schema
+```
+
+Keep `pyproject.toml` and `uv.lock` with your project. The lock records the resolved
+Git commit and dependency versions; `uv run --locked` reuses that environment.
+To select a specific revision, append `@FULL_COMMIT_SHA` to the `.git` URL,
+replacing the placeholder with a verified full commit. This is a source install,
+not a registry package. It requires network access on first installation.
+
+Give your agent this brief once installed:
+
+```text
+Use the Audio as Code dependency in this project. Run uv run --locked aac
+instruments and schema to discover its current contract. Compose an original
+12-second exploration game loop with marimba, electric piano and bass. Save the
+composer and editable JSON score in a fresh output folder. Validate and inspect
+export readiness, then render WAV and export MIDI with their reports. Check the
+actual duration and loop join. Tell me whether you could listen to it. Keep the
+seed, melody and duration fixed when I request a revision.
+```
+
+Continue at step 2, using `uv run --locked` before the `aac` and Python commands.
+Save your composer in your own project. The
+[portable skill](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/skills/audio-as-code/SKILL.md)
+has the complete composition and delivery workflow. When using a pinned revision,
+read the skill at that same revision; the installed CLI and schema are authoritative.
+The Git dependency installs the Python library and CLI; use the source workspace
+below if you also want the bundled tutorial scripts and examples.
 
 ## 1. Install from the source folder
 

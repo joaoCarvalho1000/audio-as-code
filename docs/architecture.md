@@ -28,7 +28,8 @@ flowchart TD
 | `inspection.py` | Read-only facts and static WAV/MIDI readiness checks with structured issues; no synthesis or file writes. |
 | `render.py` | Sample scheduling, voice routing, note envelopes, seeded synthesis, mixing, WAV/stem writing, and audio measurements. |
 | `physical.py` | Original generated string and modal instrument models. |
-| `orchestra.py` | Additional procedural instrument profiles and source/filter approximations. |
+| `orchestra.py` | Additional procedural instrument synthesis and source/filter approximations. |
+| `_orchestra_profiles.py` | Private immutable instrument parameters shared by the orchestra models; keep numerical processing in `orchestra.py`. |
 | `extended.py` | Paired-string mandolin, kalimba lamellae, celesta bars, and recorder jet-spectrum models. |
 | `acoustics.py` | Shared generated excitations, modal/resonance utilities, and anti-alias helpers. |
 | `automation.py`, `effects.py` | Gain/pan lane evaluation, finite generated delay/reverb, and effect-tail accounting. |

@@ -8,6 +8,9 @@ are unreleased. Package versions and score schema versions are separate.
 
 ### Added
 
+- Website sitemap, canonical page URLs, structured project metadata, social
+  previews, and full plain-text agent documentation alongside `llms.txt`.
+
 - Piano `PedalEvent`/`Track.pedal` controls, tempo-aware damper gates, tail-aware
   inspection and MIDI CC64 export, with a reproducible dry/pedal comparison.
 - Original exact-duration video, game-loop and presentation workflows with
@@ -34,6 +37,11 @@ are unreleased. Package versions and score schema versions are separate.
 
 ### Changed
 
+- Orchestra coefficient tables and immutable profiles live in a separate private
+  module; existing imports and seeded synthesis behavior are preserved.
+- Internal planning notes are excluded from Git, source distributions and the
+  website source download while public contributor and agent guides remain.
+
 - Synthesis calculations reuse temporary buffers and repeated envelope terms
   without changing the measured seeded float32 output. See the reproducible
   rendering benchmark for workload-specific timings.
@@ -48,6 +56,9 @@ are unreleased. Package versions and score schema versions are separate.
   numerical checks do not establish perceptual realism.
 
 ### Fixed
+
+- WAV analysis bounds each PCM read to 256 KiB, preventing untrusted channel
+  counts from triggering multi-gigabyte temporary allocations.
 
 - Regenerating only classical reimagination scores invalidates an earlier
   listening manifest, preventing fresh scores from being paired with stale audio.

@@ -71,12 +71,11 @@ npm exec --prefix web/cloudflare -- wrangler dev --config $releaseConfig --local
 Open `http://127.0.0.1:8789/` and the uploaded entry's `site_path`. Stop with
 Ctrl+C. An entry not uploaded to local R2 returns 404.
 
-The release review tested a 27,599,292-byte WAV through this local runtime. Full
-GET matched its manifest SHA-256; HEAD returned its size without a body; explicit
-and suffix ranges returned the correct bytes with 206; conditional GET returned
-304; an out-of-bounds range returned 416. Static JSON, unknown paths, absent R2
-objects and unsupported methods returned the expected 200/404/404/405. These are
-local runtime checks, not verification of remote deployment or audio quality.
+Verify a full GET against the manifest SHA-256 and HEAD against its byte count.
+Explicit and suffix ranges should return the requested bytes with 206; a matching
+`If-None-Match` should return 304, and an out-of-bounds range 416. Check static
+JSON, unknown paths, absent R2 objects and unsupported methods too. Local serving
+does not establish remote deployment behavior or audio quality.
 
 ## Upload and deploy
 
@@ -139,26 +138,20 @@ service's behavior.
 
 ## Agent requests and zone security
 
-Zone security configuration is separate from the Worker and asset headers. During
-release verification, default `Python-urllib/3.10` requests received HTTP 403 with
-Cloudflare error 1010, while curl and the honest
-`AudioAsCode-release-check/1.0` user agent could fetch the site. The existing
-Wrangler OAuth session could not read the zone's Browser Integrity Check setting
-(HTTP 403); it therefore did not change that setting. Reading it requires Zone
-Settings Read or Write permission, and changing it requires Write permission.
-
-A maintainer can inspect **Security Settings > Browser Integrity Check** for this
-zone and disable that setting to allow default Python fetches, then retest. See
+Zone security is separate from the Worker and asset headers. If a legitimate
+agent receives HTTP 403 with Cloudflare error 1010, inspect
+**Security Settings > Browser Integrity Check** for the affected zone and retest
+after adjusting it. Reading this setting through the API requires Zone Settings
+Read or Write permission; changing it requires Write permission. See
 [Cloudflare's error 1010 guidance](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/).
-The observed block is consistent with that feature; its configured value was
-not confirmed. An explicit, truthful client identifier currently works:
+Agents should identify their HTTP client truthfully, for example:
 
 ```python
 from urllib.request import Request, urlopen
 
 request = Request(
     "https://audioascode.com/llms.txt",
-    headers={"User-Agent": "AudioAsCode-release-check/1.0"},
+    headers={"User-Agent": "MyMusicAgent/1.0"},
 )
 with urlopen(request, timeout=30) as response:
     guide = response.read().decode("utf-8")

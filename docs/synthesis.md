@@ -40,6 +40,53 @@ The output sums several modes with different frequencies and lifetimes. Marimba'
 
 Marimba drives each damped mode with a finite raised-cosine force, `F(t) = (1 - cos(2*pi*t/T))/T` for `0 <= t <= T`, zero otherwise. The response is the analytic convolution of this unit-area force with the damped sinusoid above. Longer, softer contact suppresses upper resonances and changes their phase; shorter, harder contact admits more high-frequency energy. Contact ends completely, after which each mode rings freely. Integration happens before sampling, preserving even sub-sample strikes. Contact is capped at 0.65 fundamental periods to retain the treble fundamental. Bell retains its exponential onset ramp. Neither model solves nonlinear mallet/bar feedback.
 
+## Piano and bowed strings
+
+### Piano unisons
+
+At and above 65 Hz, each piano partial uses a small complex linear system for
+its two or three detuned strings. The diagonal contains angular frequency and
+intrinsic loss; a shared rank-one damping term represents a resistive bridge.
+Intrinsic loss is 28% of the designed damping and common bridge loss is 72%.
+These are design coefficients, not measurements of a piano. The Hermitian part
+is negative definite, so free string energy cannot grow.
+
+The eigenmodes are evaluated analytically. A finite raised-cosine hammer pulse
+excites the coupled system from rest; complex modal residues retain both response
+quadratures. Common motion loses energy faster than differential motion, while
+slight mistuning connects them. See Julius O. Smith's
+[coupled strings discussion](https://www.dsprelated.com/freebooks/pasp/Coupled_Strings.html)
+and [bridge coupling analysis](https://www.dsprelated.com/freebooks/pasp/Two_Coupled_Strings.html).
+
+Unison spread is ±0.6 cents for two strings and −0.9/0/+0.9 cents for three.
+The voice also models partial stiffness, hammer contact/position filtering,
+brightness and velocity response, generated contact noise and a designed
+soundboard response. Below 65 Hz the single-string register uses a prescribed
+two-component decay. `decay_seconds` sets a nominal decay scale, not an exact
+silence time or measured whole-instrument T60.
+
+This is a narrow-band approximation. It does not solve nonlinear hammer/string
+contact, reactive bridge tuning, cross-note sympathetic resonance, longitudinal
+waves or coupling between vibration planes. Piano's [binary sustain pedal](piano-sustain.md)
+extends independent note gates; it does not add those physical interactions.
+
+### Bowed excitation and body response
+
+Violin, viola, cello and double bass use instrument-specific harmonic sources,
+noise, onset envelopes and designed body bands. The excitation rolloff follows
+absolute frequency with a corner bandwidth of `900 + 6500 * brightness²` Hz;
+brightness includes the velocity contribution. This approximates a rounded
+bridge-force waveform, without solving nonlinear bow stick/slip. See Jim
+Woodhouse's [bowed-string overview](https://euphonics.org/11-3-0-summary-of-bowed-string-behaviour/)
+and the [Woodhouse/Galluzzo physics review](https://euphonics.org/wp-content/uploads/2022/03/BowedStringReview.pdf).
+
+Each body band is a damped bandpass resonance with a center frequency,
+half-power bandwidth and peak gain. Its complex response colors both magnitude
+and phase at each nominal harmonic. This is a steady-state response with a
+prescribed onset, not a coupled body transient or measured admittance. Bow
+position, force-dependent friction, wolf notes, articulation switches and
+ensembles are outside the model.
+
 ## Score controls
 
 ```json
@@ -74,6 +121,16 @@ The new voices extend the version-1 preset vocabulary and `tone` is optional. Ex
 Run `uv run python examples/physical_instruments.py`, then open `output/physical-instruments/index.html`. The first two clips use the same score through the original `pluck` voice and the new `guitar` voice. The next clips demonstrate marimba and bell. Each includes JSON, MIDI, WAV, and a render report.
 
 Tests check string tuning across E2, A3, and E5 at 22050/44100/48000 Hz (less than five cents error), stability, endpoints, repeatability, decay behavior, brightness, velocity-dependent timbre, score validation, and MIDI mapping. These checks establish numerical behavior, not perceptual realism. Auditioning and comparison with real acoustic behavior remain necessary.
+
+For piano and bowed-string changes, also run:
+
+```sh
+uv run pytest tests/test_instrument_refinement.py tests/test_finite_strikes.py tests/test_orchestra.py
+```
+
+These checks cover coupled-string integration, passive damping, tuning across
+registers, brightness and velocity behavior, seeded equivalence and long/short
+notes. Listen to attacks, decays and register balance before making realism claims.
 
 ## References
 

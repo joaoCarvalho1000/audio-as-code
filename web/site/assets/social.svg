@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <style>
+    @font-face { font-family: Anybody; src: url('fonts/anybody-latin.woff2'); font-weight: 100 900; }
+    text { font-family: Anybody, Arial, sans-serif; fill: #141413; }
+  </style>
+  <rect width="1200" height="630" fill="#f9fbfd"/>
+  <path d="M0 90H1200M0 530H1200" stroke="#141413" stroke-width="2"/>
+  <text x="54" y="57" font-size="25" font-weight="750" letter-spacing="2">AUDIOASCODE.COM</text>
+  <text x="1146" y="57" text-anchor="end" font-size="22" font-weight="650">OPEN SOURCE · MIT</text>
+  <circle cx="980" cy="310" r="177" fill="#ff48b0"/>
+  <path d="M867 159H1135V435H867Z" fill="#0078bf" transform="rotate(9 1001 297)" style="mix-blend-mode:multiply"/>
+  <path d="M789 320H843L865 262L900 365L934 228L974 391L1012 280L1038 320H1164" fill="none" stroke="#f9fbfd" stroke-width="9" stroke-linejoin="round"/>
+  <text x="47" y="209" font-size="108" font-weight="850" letter-spacing="-6">Audio as Code</text>
+  <text x="53" y="316" font-size="55" font-weight="680">Your agent brings</text>
+  <text x="53" y="387" font-size="66" font-weight="780">the music.</text>
+  <text x="56" y="471" font-size="24">Code-generated instruments. Every note editable.</text>
+  <text x="55" y="590" font-size="28" font-weight="650">VIDEO SOUNDTRACKS / GAME MUSIC / CREATIVE AGENTS</text>
+</svg>

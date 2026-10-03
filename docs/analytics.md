@@ -118,11 +118,10 @@ contract test still runs. Checks cover DNT/GPC, durable opt-out, invalid config,
 local/foreign-host blocking, sensitive text exclusion, safe events, queue opt-out,
 single-event verification mode, and zero audio requests before Play.
 
-One authorized verification used the real SDK and received HTTP 200 from the US
-ingestion endpoint. This establishes accepted network delivery, not dashboard
-visibility, country enrichment, deployed-site capture, or completeness of counts.
-The operator should find `analytics_verification` in PostHog's live events, check
-GeoIP/project settings, and then verify a visit from the deployed allowed domain.
+After an installation check, find `analytics_verification` in PostHog's live
+events, check GeoIP/project settings, and verify a visit from the deployed allowed
+domain. An HTTP 200 from ingestion proves delivery was accepted; it does not prove
+dashboard visibility, country enrichment or completeness of counts.
 
 ## Direct agent traffic requires the hosting layer
 

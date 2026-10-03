@@ -7,10 +7,13 @@ An open-source music framework for creative agents. Compose a soundtrack for a v
 Give your project a soundtrack: a video reveal, a tiny dragon's boss fight,
 or a presentation with an unexpectedly dramatic entrance. Keep the score and code,
 then carry the rendered WAV into your video, game or slides. See the
-[creative workflow integrations](docs/site/integrations.md) for Codex, Claude Code
+[creative workflow integrations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/integrations.md) for Codex, Claude Code
 and Hyperframes recipes.
 
-**Status: working 0.1 prototype.** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required. This repository has not been published to a package registry.
+**Status: working 0.1 prototype.** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+
+A **score** is the editable recipe for a piece: instruments, notes, timing,
+volume and tempo. Write it in Python or JSON; rendering turns it into audio.
 
 ```text
 Agent / Python program / JSON editor
@@ -25,7 +28,7 @@ Signal measurements → agent revises the score
 
 The agent makes the musical decisions. This library supplies musical building blocks, synthesis, export, and measurable feedback. It does not call an LLM or generate songs from a text prompt by itself.
 
-The [instrument foundation](docs/instrument-foundation.md) organizes the framework around eight musical families and five shared synthesis-engine groups. Instruments are generated from code. Agents can discover what is playable today and inspect the planned catalog:
+The [instrument foundation](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/instrument-foundation.md) organizes the framework around eight musical families and five shared synthesis-engine groups. Instruments are generated from code. Agents can discover what is playable today and inspect the planned catalog:
 
 ```sh
 uv run aac instruments
@@ -36,31 +39,46 @@ uv run aac instruments --family plucked_strings
 The catalog distinguishes available prototypes from planned instruments. It also reports each voice's synthesis engine, supported tone controls, and MIDI mapping.
 
 The catalog now includes **mandolin, kalimba, celesta and recorder**. See their
-[models, controls and useful registers](docs/extended-instruments.md) before
+[models, controls and useful registers](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/extended-instruments.md) before
 composing. Every voice is synthesized from code.
 
-The [piano and bowed-string models](docs/instrument-refinement.md) also have
-revised coupling, excitation and body-response behavior. Numerical checks and
-exported comparison clips support evaluation; perceptual realism still needs
-listening review.
+The [piano and bowed-string models](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/synthesis.md#piano-and-bowed-strings) use
+coupled unison damping and designed excitation/body responses. Their documentation
+explains the algorithms and limits; numerical checks do not establish perceptual
+realism.
 
 The website pairs five familiar public-domain works with new arrangements by an
 AI agent: *Für Elise*, Bach's Cello Suite No. 1 Prelude, Mozart's *Turkish March*,
 *Greensleeves* and *Ode to Joy*. **The classic** follows the credited source score;
 **Reimagined** changes its musical treatment. Both versions are synthesized from
-code and retain editable scores. See the [score credits](docs/classic-showcase.md)
-and [generator](examples/classic_showcase.py) for the source and arrangement scope.
-The four [original full compositions](examples/full_compositions.py) remain in
+code and retain editable scores. See the [score credits](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/classic-showcase.md)
+and [generator](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/examples/classic_showcase.py) for the source and arrangement scope.
+The four [original full compositions](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/examples/full_compositions.py) remain in
 the repository as separate examples of form and development.
 
-To browse and audition the catalog, run `uv run python examples/instrument_browser.py`, then open `output/instruments/index.html` directly in your browser. All **49 playable entries** have a famous-music demo, a phrase, and a note/hit preview: **147 clips at 44.1 kHz**, with WAV/MIDI/JSON downloads. [The repertoire](docs/music-demos.md) includes Beethoven, Bach, Mozart, and Greensleeves, arranged as solos, small ensembles, and percussion features. Search by instrument, piece, or arrangement, or filter by family. Keep the generated folders beside the HTML file; playback and regeneration need no server or internet connection. The editable page template is `web/instrument-browser.html`. These are procedural prototypes; [model descriptions and limitations](docs/orchestra.md) distinguish modal models from spectral approximations.
+To browse and audition the catalog, run `uv run python examples/instrument_browser.py`, then open `output/instruments/index.html` directly in your browser. All **49 playable entries** have a famous-music demo, a phrase, and a note/hit preview: **147 clips at 44.1 kHz**, with WAV/MIDI/JSON downloads. [The repertoire](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/music-demos.md) includes Beethoven, Bach, Mozart, and Greensleeves, arranged as solos, small ensembles, and percussion features. Search by instrument, piece, or arrangement, or filter by family. Keep the generated folders beside the HTML file; playback and regeneration need no server or internet connection. The editable page template is `web/instrument-browser.html`. These are procedural prototypes; [model descriptions and limitations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/orchestra.md) distinguish modal models from spectral approximations.
 
 ## Try it
 
+For a coding agent, start with: **“Read https://audioascode.com/llms.txt and add
+Audio as Code to this project. Then compose the music in my brief.”**
+
+To add it to an existing uv project with Git installed:
+
+```sh
+uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git"
+uv run --locked aac instruments
+uv run --locked aac schema
+```
+
+Commit your project's `uv.lock` to preserve the resolved Git revision and
+dependency versions. See the [quickstart](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/quickstart.md) for a first
+composition and the standalone source-workspace route below.
+
 For complete video, game-loop and presentation examples with exact durations and
-verified revisions, see [creative workflows](docs/creative-workflows.md).
-Piano phrases can use a [sustain pedal](docs/piano-sustain.md), including MIDI CC64.
-See [render performance](docs/render-performance.md) for reproducible benchmarks.
+verified revisions, see [creative workflows](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/creative-workflows.md).
+Piano phrases can use a [sustain pedal](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/piano-sustain.md), including MIDI CC64.
+See [render performance](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/render-performance.md) for reproducible benchmarks.
 
 Give the framework to your coding agent, then describe the music. You do not need
 to learn Python first; the agent needs local shell access and Python 3.10+.
@@ -78,8 +96,8 @@ whether you were able to listen to the result.
 
 Then ask for a revision: “Keep the melody, make the drums softer, and leave more
 space in the second half.” The agent edits the composition and renders a new
-version. The [portable skill](skills/audio-as-code/SKILL.md) carries the workflow;
-the [agent guide](docs/agents.md) explains the command contract. Reading this
+version. The [portable skill](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/skills/audio-as-code/SKILL.md) carries the workflow;
+the [agent guide](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/agents.md) explains the command contract. Reading this
 instruction file works with a shell-capable agent; no vendor plugin integration
 is assumed. The renderer does not bundle an AI model or require a provider key.
 
@@ -121,8 +139,7 @@ On Windows PowerShell, run `.venv/Scripts/python.exe -m pip install -e .`, then
 `.venv/Scripts/python.exe -m audio_as_code --help`. On macOS/Linux, use
 `.venv/bin/python -m pip install -e .` and `.venv/bin/python -m audio_as_code --help`.
 These paths avoid shell activation and Windows execution-policy changes. This is
-a local installation; the package has not been published to PyPI. The project
-domain is **audioascode.com**; domain ownership does not imply deployment.
+a local installation. Explore the listening examples at [audioascode.com](https://audioascode.com).
 
 ## Compose in Python
 
@@ -153,8 +170,8 @@ print(report["wav"])
 
 Layer a countermelody with `.overlay(other, offset=2)`, expand a motif with
 `.stretch(2)`, or soften it with `.scale_velocity(0.7)`. Each returns a new
-pattern and preserves the original. See the [composition tools](docs/composition-tools.md)
-and [runnable example](examples/composition_tools.py) for combining these into a piece.
+pattern and preserves the original. See the [composition tools](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/composition-tools.md)
+and [runnable example](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/examples/composition_tools.py) for combining these into a piece.
 
 For finer control, construct `Note(pitch="C4", start=0, duration=1, velocity=0.8)` directly. Scores and patterns are immutable; create a revised score from its JSON data when editing.
 
@@ -201,9 +218,9 @@ Generate the JSON Schema with `uv run aac schema -o schemas/song-v1.schema.json`
 
 Basic voices: `sine`, `triangle`, `pluck`, `bass`, `pad`, `kick`, `snare`, and `hat`. Drum voices ignore pitch for WAV playback and map to General MIDI notes 36, 38, and 42 on export.
 
-The `guitar`, `marimba`, and `bell` voices add physical/modal approximations. Guitar uses a tuned, damped string loop; marimba and bell use independently decaying resonances. They are simplified instrument models, not calibrated replicas. See [synthesis details](docs/synthesis.md).
+The `guitar`, `marimba`, and `bell` voices add physical/modal approximations. Guitar uses a tuned, damped string loop; marimba and bell use independently decaying resonances. They are simplified instrument models, not calibrated replicas. See [synthesis details](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/synthesis.md).
 
-The rest of the [catalog](docs/instrument-foundation.md) is also playable: plucked/bowed strings, four keyboards, woodwinds, brass, drums, tuned percussion, and electronic instruments. New string and percussion voices use modal models. Bowed strings and winds use instrument-specific harmonic source/filter approximations, without nonlinear bow, reed, or bore solvers. See the [orchestra guide](docs/orchestra.md) for expression controls and the generated drum kit.
+The rest of the [catalog](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/instrument-foundation.md) is also playable: plucked/bowed strings, four keyboards, woodwinds, brass, drums, tuned percussion, and electronic instruments. New string and percussion voices use modal models. Bowed strings and winds use instrument-specific harmonic source/filter approximations, without nonlinear bow, reed, or bore solvers. See the [orchestra guide](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/orchestra.md) for expression controls and the generated drum kit.
 
 ```python
 from audio_as_code import Note, Song, Tone, Track, render
@@ -223,7 +240,7 @@ song = Song(
 render(song, "output/string.wav")
 ```
 
-Brightness and decay work on the modeled decaying voices. Pluck position is available on plucked-string models and harpsichord. Held voices expose selected breath/vibrato controls; `aac instruments` reports each voice's supported settings and defaults. Velocity changes loudness and model brightness. By default notes fade within their score duration. Optional note/track `release_seconds` lets a sound ring after note-off. Ordered `tempo_map` steps, gain/pan automation, and procedural delay/reverb chains add expression; see the [composition guide](docs/site/composition.md).
+Brightness and decay work on the modeled decaying voices. Pluck position is available on plucked-string models and harpsichord. Held voices expose selected breath/vibrato controls; `aac instruments` reports each voice's supported settings and defaults. Velocity changes loudness and model brightness. By default notes fade within their score duration. Optional note/track `release_seconds` lets a sound ring after note-off. Ordered `tempo_map` steps, gain/pan automation, and procedural delay/reverb chains add expression; see the [composition guide](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/composition.md).
 
 ## An agent's working loop
 
@@ -238,7 +255,7 @@ Every successful CLI operation emits JSON to stdout, including `--version`.
 Errors emit JSON to stderr and exit with status 2, with a recovery `hint`.
 Help uses normal CLI text. Score inputs are UTF-8 JSON (an optional UTF-8 BOM is
 accepted) and are parsed as data; the CLI never executes Python or JavaScript
-from a score. See [the agent guide](docs/agents.md) for the command contract,
+from a score. See [the agent guide](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/agents.md) for the command contract,
 subprocess integration, and limitations.
 
 Reports include a score hash, engine and NumPy versions, duration, peak, RMS, clipping and silence checks, and warnings. **These measurements cannot judge musical quality.** A listening agent or human should audition the rendered audio.
@@ -246,7 +263,7 @@ Reports include a score hash, engine and NumPy versions, duration, peak, RMS, cl
 `aac inspect score.json` and Python's `inspect_score(song)` inspect the score
 without synthesizing audio or writing files. They report export constraints and
 structured issues so an agent can revise before paying the render cost. See the
-[inspection contract](docs/score-inspection.md); a successful inspection command
+[inspection contract](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/score-inspection.md); a successful inspection command
 can report an export blocker, so check its readiness fields.
 
 ## Rendering and export
@@ -285,10 +302,10 @@ uv run ruff format --check .
 uv build
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), the [architecture guide](docs/architecture.md),
-[release process](docs/releasing.md), [change log](CHANGELOG.md), and
-[website build and preview guide](docs/website.md). For vulnerability handling,
-read [SECURITY.md](SECURITY.md). Licensed under [MIT](LICENSE).
+See [CONTRIBUTING.md](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/CONTRIBUTING.md), the [architecture guide](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/architecture.md),
+[release process](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/releasing.md), [change log](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/CHANGELOG.md), and
+[website build and preview guide](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/website.md). For vulnerability handling,
+read [SECURITY.md](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/SECURITY.md). Licensed under [MIT](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/LICENSE).
 
 ## Support
 

@@ -42,10 +42,18 @@ dev = ["pytest>=8,<10", "ruff>=0.11,<1", "jsonschema>=4.23,<5"]
 exclude = [
     "**/.env*", "**/.agents/**", "**/.codex/**", "**/.impeccable/**", "**/.wrangler/**",
     "**/.git/**", "**/.venv/**", "**/node_modules/**", "**/%SystemDrive%/**",
+    "**/.claude/**", "**/.orca/**", "**/.cursor/**", "**/.idea/**", "**/.vscode/**",
+    "**/.internal/**", "/docs/internal/**", "**/.dev.vars*",
     "**/__pycache__/**", "**/.pytest_cache/**", "**/.ruff_cache/**",
+    "**/.mypy_cache/**", "**/.hypothesis/**", "**/.tox/**", "**/.nox/**",
+    "**/playwright-report/**", "**/test-results/**", "**/htmlcov/**", "**/.coverage*",
     "**/output/**", "**/dist/**", "**/build/**", "**/*.egg-info/**",
     "**/*.py[cod]", "**/*.log", "**/*.key", "**/*.pem", "**/credentials*",
     "**/*.wav", "**/*.mp3", "**/*.mid", "**/*.midi",
+    "**/*.p12", "**/*.pfx", "**/*.prof",
+    "**/DESIGN.md", "**/PRODUCT.md", "**/PLAN.md", "**/HANDOFF.md", "**/SESSION.md",
+    "**/NOTES.md", "**/PROGRESS.md", "**/CHECKPOINT.md", "**/TASKS.md",
+    "/docs/instrument-browser-brief.md", "/docs/instrument-refinement.md",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -55,8 +63,8 @@ packages = ["src/audio_as_code"]
 # Ship the portable project, never workstation state or generated output.
 only-include = [
     "src", "tests", "examples", "docs", "schemas", "skills", "web", ".github",
-    "README.md", "LICENSE", "CONTRIBUTING.md", "AGENTS.md", "DESIGN.md",
-    "PRODUCT.md", "CHANGELOG.md", "SECURITY.md", ".gitignore", "pyproject.toml", "uv.lock",
+    "README.md", "LICENSE", "CONTRIBUTING.md", "AGENTS.md",
+    "CHANGELOG.md", "SECURITY.md", ".gitignore", "pyproject.toml", "uv.lock",
 ]
 
 [tool.pytest.ini_options]

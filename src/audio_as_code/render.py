@@ -423,7 +423,11 @@ def analyze_wav(path: str | Path) -> dict:
         channels, rate, frames = stream.getnchannels(), stream.getframerate(), stream.getnframes()
         if rate <= 0:
             raise ValueError("WAV sample rate must be positive")
-        while data := stream.readframes(65536):
+        # A frame contains one sample per channel, and the channel count comes
+        # from the file. Bound bytes as well as frames before allocating float64
+        # analysis buffers; retain the existing mono/stereo block sizes.
+        block_frames = min(65536, max(1, 131072 // channels))
+        while data := stream.readframes(block_frames):
             if len(data) % (2 * channels):
                 raise ValueError("WAV is truncated or malformed: incomplete PCM frame")
             pcm = np.frombuffer(data, dtype="<i2").astype(np.float64)

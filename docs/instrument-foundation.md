@@ -70,7 +70,7 @@ Metadata records are immutable. Catalog dictionaries are independent JSON-serial
 
 ## Implementation boundary
 
-`instruments.py` owns discovery, capabilities, defaults, and MIDI mapping. `physical.py` implements the original guitar/bar/bell algorithms. `orchestra.py` implements the additional modal and source/filter profiles, including the [refined piano and bowed strings](instrument-refinement.md). `extended.py` implements mandolin, kalimba, celesta and recorder. `render.py` owns note gates, velocity/gain/pan, mixing, and the generated kit's routing. `model.py` validates instrument-specific controls and kit pitches.
+`instruments.py` owns discovery, capabilities, defaults, and MIDI mapping. `physical.py` implements the original guitar/bar/bell algorithms. `orchestra.py` implements the additional modal and source/filter profiles, including the [piano and bowed strings](synthesis.md#piano-and-bowed-strings). `extended.py` implements mandolin, kalimba, celesta and recorder. `render.py` owns note gates, velocity/gain/pan, mixing, and the generated kit's routing. `model.py` validates instrument-specific controls and kit pitches.
 
 For a new entry: implement its synthesis, describe the algorithm and limitations, register only controls that affect it, add the typed ID and MIDI mapping, regenerate the schema, test numerical behavior, and regenerate the instrument browser. Listen before making claims about realism. Planned/available distinction remains part of the API for future additions.
 

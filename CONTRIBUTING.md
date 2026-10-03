@@ -107,6 +107,14 @@ ignored `output/`. Do not commit environment files, credentials, logs, build out
 or agent/workstation state. Only contribute code and assets you have the right to
 distribute; retain source-score credits and licenses.
 
+Keep private planning, design briefs and session handoffs under `.internal/` or
+`docs/internal/`. These directories and local planning filenames are excluded from
+Git, source distributions and website downloads. Public documentation should explain
+the API, musical models, examples or contributor workflows; omit session transcripts,
+machine-specific results and links to local-only review artifacts. Keep `AGENTS.md`
+and `skills/audio-as-code/SKILL.md` public so contributors and composing agents can
+use them.
+
 A PR should explain the problem, resulting behavior, compatibility impact and
 validation. Keep unrelated cleanup separate. The project has no automatic release
 or deployment workflow; publishing is a separate maintainer action.

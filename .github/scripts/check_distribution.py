@@ -20,17 +20,56 @@ PRIVATE_PARTS = {
     ".codex",
     ".impeccable",
     ".wrangler",
+    ".claude",
+    ".orca",
+    ".cursor",
+    ".idea",
+    ".vscode",
+    ".internal",
     ".venv",
     "node_modules",
     "__pycache__",
     ".pytest_cache",
     ".ruff_cache",
+    ".mypy_cache",
+    ".hypothesis",
+    ".tox",
+    ".nox",
+    "playwright-report",
+    "test-results",
+    "htmlcov",
     "%systemdrive%",
     "output",
     "dist",
     "build",
 }
-PRIVATE_SUFFIXES = {".pyc", ".pyo", ".log", ".key", ".pem", ".wav", ".mp3", ".mid", ".midi"}
+PRIVATE_SUFFIXES = {
+    ".pyc",
+    ".pyo",
+    ".log",
+    ".key",
+    ".pem",
+    ".p12",
+    ".pfx",
+    ".prof",
+    ".wav",
+    ".mp3",
+    ".mid",
+    ".midi",
+}
+INTERNAL_DOCS = {
+    "design.md",
+    "product.md",
+    "plan.md",
+    "handoff.md",
+    "session.md",
+    "notes.md",
+    "progress.md",
+    "checkpoint.md",
+    "tasks.md",
+    "instrument-browser-brief.md",
+    "instrument-refinement.md",
+}
 SDIST_ROOTS = {
     "src",
     "tests",
@@ -44,8 +83,6 @@ SDIST_ROOTS = {
     "LICENSE",
     "CONTRIBUTING.md",
     "AGENTS.md",
-    "DESIGN.md",
-    "PRODUCT.md",
     "CHANGELOG.md",
     "SECURITY.md",
     ".gitignore",
@@ -66,7 +103,7 @@ REQUIRED_SOURCE = {
     "SECURITY.md",
     "docs/architecture.md",
     "docs/extended-instruments.md",
-    "docs/instrument-refinement.md",
+    "docs/synthesis.md",
     "docs/piano-sustain.md",
     "docs/creative-workflows.md",
     "docs/render-performance.md",
@@ -97,9 +134,13 @@ def private_path(name: str) -> bool:
     parts = normalized.split("/")
     if normalized.startswith("/") or ".." in parts or any(":" in part for part in parts):
         return True
+    if normalized.lower().startswith("docs/internal/"):
+        return True
     for part in parts:
         lower = part.lower()
-        if lower in PRIVATE_PARTS or lower.startswith((".env", "credentials")):
+        if lower in PRIVATE_PARTS or lower in INTERNAL_DOCS:
+            return True
+        if lower.startswith((".env", ".dev.vars", ".coverage", "credentials")):
             return True
         if lower.endswith(".egg-info") or PurePosixPath(lower).suffix in PRIVATE_SUFFIXES:
             return True

@@ -34,6 +34,11 @@ import numpy as np
 
 from audio_as_code import __version__, analyze_wav, instrument_catalog
 
+if __name__ == "__main__":
+    from _site_discovery import canonical_url, metadata, write_discovery
+else:
+    from examples._site_discovery import canonical_url, metadata, write_discovery
+
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web" / "site"
 COMPOSITIONS = ROOT / "output" / "full-compositions"
@@ -91,6 +96,29 @@ GUIDES = [
     ("reference", "reference.md", "Reference"),
 ]
 
+GUIDE_DESCRIPTIONS = {
+    "quickstart": (
+        "Create your first soundtrack with Audio as Code. Give the instructions to your AI agent, "
+        "install the Python toolkit, and render editable music to WAV and MIDI."
+    ),
+    "composition": (
+        "Compose music in Python with notes, chords, motifs, song forms and instrument controls. "
+        "Build an editable arrangement and render it offline with Audio as Code."
+    ),
+    "agents": (
+        "Give a coding agent the tools to compose, validate, render and revise music. Discover "
+        "instruments, inspect export readiness, and deliver WAV, MIDI and editable scores."
+    ),
+    "integrations": (
+        "Add music to creative agent workflows with Codex, Claude Code and Hyperframes. "
+        "Create soundtracks for video timelines, game audio folders and presentations."
+    ),
+    "reference": (
+        "Audio as Code API and CLI reference: Python composition, JSON score fields, procedural "
+        "instruments, tempo, automation, effects, WAV rendering and MIDI export."
+    ),
+}
+
 # Only these repository paths enter the downloadable source archive.
 SOURCE_ALLOW = [
     "src/audio_as_code",
@@ -109,14 +137,19 @@ SOURCE_ALLOW = [
     "uv.lock",
     ".gitignore",
     "AGENTS.md",
-    "DESIGN.md",
-    "PRODUCT.md",
     ".github",
 ]
 SOURCE_DENY = re.compile(
+    r"(^|/)(\.claude|\.orca|\.cursor|\.idea|\.vscode|\.internal|\.mypy_cache|\.hypothesis|\.tox|\.nox|playwright-report|test-results|htmlcov|build|dist)(/|$)|"
+    r"^docs/internal/|"
+    r"(^|/)(DESIGN|PRODUCT|PLAN|HANDOFF|SESSION|NOTES|PROGRESS|CHECKPOINT|TASKS)\.md$|"
+    r"(^|/)(instrument-browser-brief|instrument-refinement)\.md$|"
+    r"(^|/)(\.dev\.vars[^/]*|\.coverage[^/]*|[^/]*\.egg-info|%SystemDrive%)(/|$)|"
+    r"\.(wav|mp3|mid|midi|prof|p12|pfx)$|"
     r"(^|/)\.wrangler(/|$)|"
     r"(^|/)(\.git|\.env[^/]*|__pycache__|\.venv|output|node_modules|\.pytest_cache|\.ruff_cache|\.impeccable|\.agents|\.codex)(/|$)"
-    r"|\.py[cod]$|(^|/)(.*\.log|.*\.key|.*\.pem|credentials[^/]*)$"
+    r"|\.py[cod]$|(^|/)(.*\.log|.*\.key|.*\.pem|credentials[^/]*)$",
+    re.IGNORECASE,
 )
 
 
@@ -701,14 +734,15 @@ class Site:
     ) -> None:
         depth = relative.count("/")
         prefix = "../" * depth if root is None else root
-        canonical = (
-            IDENTITY["canonical_origin"].rstrip("/") + "/" + relative.replace("index.html", "")
-        )
+        canonical = canonical_url(IDENTITY["canonical_origin"], relative)
         text = self.layout
         for key, value in {
             "TITLE": html.escape(title),
             "DESCRIPTION": html.escape(description),
             "CANONICAL": html.escape(canonical),
+            "METADATA": metadata(
+                IDENTITY["canonical_origin"], relative, title, description, __version__
+            ),
             "ROOT": prefix,
             "NAV": nav,
             "BODY": body.replace("{{ROOT}}", prefix),
@@ -957,7 +991,7 @@ class Site:
             self.page(
                 f"docs/{slug}.html",
                 title=f"{title} · {IDENTITY['name']}",
-                description=f"{label} guide for {IDENTITY['name']}.",
+                description=GUIDE_DESCRIPTIONS[slug],
                 body=content,
                 nav="docs",
             )
@@ -1082,10 +1116,32 @@ class Site:
                 relative = "instruments/" + source.relative_to(INSTRUMENTS).as_posix()
                 self.copy(source, relative)
                 count += source.suffix == ".wav"
-                if source.suffix == ".html" and self.analytics:
+                if source.suffix == ".html":
                     depth = relative.count("/")
                     text = (self.out / relative).read_text(encoding="utf-8")
                     block = analytics_html(self.analytics, "../" * depth)
+                    title = "Listen to 49 code-generated instruments | Audio as Code"
+                    description = (
+                        "Compare piano, strings, brass, woodwinds and percussion synthesized "
+                        "entirely from code. Listen to musical examples and download editable "
+                        "scores, WAV and MIDI."
+                    )
+                    canonical = canonical_url(IDENTITY["canonical_origin"], relative)
+                    text = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", text, count=1)
+                    block += (
+                        f'\n<meta name="description" content="{description}">'
+                        f'\n<link rel="canonical" href="{canonical}">'
+                        f'\n<meta property="og:title" content="{title}">'
+                        f'\n<meta property="og:description" content="{description}">'
+                        f'\n<meta property="og:url" content="{canonical}">'
+                    )
+                    block += "\n" + metadata(
+                        IDENTITY["canonical_origin"], relative, title, description, __version__
+                    )
+                    block += (
+                        '\n<link rel="alternate" type="text/plain" '
+                        'href="../llms.txt" title="Agent instructions">'
+                    )
                     if "</head>" in text:
                         self.write(relative, text.replace("</head>", block + "\n</head>", 1))
         return count
@@ -1332,6 +1388,9 @@ def build(
     )
     if (WEB / "404.html").exists():
         site.templated("404.html", "404.html", root="/")
+    write_discovery(
+        out, IDENTITY["canonical_origin"], [f"docs/{source_name(slug)}" for slug, *_ in guide_pages]
+    )
     problems = check_links(out)
     summary = {
         "output": str(out),

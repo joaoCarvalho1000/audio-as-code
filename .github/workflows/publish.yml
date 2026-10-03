@@ -1,0 +1,141 @@
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact package version to publish from main
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: publish-pypi
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'joaoCarvalho1000/audio-as-code' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          python-version: '3.13'
+          version: '0.12.15'
+      - run: uv sync --locked
+      - name: Check the requested version against both source declarations
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          uv run --locked python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+          from audio_as_code import __version__
+
+          project = tomllib.loads(Path("pyproject.toml").read_text())["project"]
+          assert project["name"] == "audio-as-code"
+          assert os.environ["RELEASE_VERSION"] == project["version"] == __version__
+          PY
+      - run: uv run --locked pytest
+      - run: uv run --locked ruff check .
+      - run: uv run --locked ruff format --check .
+      - run: uv run --locked python .github/scripts/check_schema.py
+      - run: uv build --no-sources
+      - run: uv run --locked python .github/scripts/check_distribution.py dist
+      - run: uv run --locked python .github/scripts/smoke_distribution.py dist
+      - name: Check PyPI metadata and README rendering
+        run: uvx --from twine==7.0.0 twine check --strict dist/*
+      - name: Record the exact release artifacts
+        run: sha256sum dist/*.whl dist/*.tar.gz | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pypi-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/audio-as-code/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: pypi-distributions
+          path: dist
+      - name: Publish the checked artifacts to real PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          print-hash: true
+
+  verify:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          python-version: '3.13'
+          version: '0.12.15'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: pypi-distributions
+          path: dist
+      - name: Compare published hashes and install from PyPI outside the checkout
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          uv run --no-project python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import tempfile
+          import time
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          version = os.environ["RELEASE_VERSION"]
+          endpoint = f"https://pypi.org/pypi/audio-as-code/{version}/json"
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(endpoint, timeout=30) as response:
+                      published = json.load(response)
+                  break
+              except urllib.error.HTTPError as error:
+                  if error.code != 404 or attempt == 11:
+                      raise
+                  time.sleep(5)
+          remote = {item["filename"]: item["digests"]["sha256"] for item in published["urls"]}
+          for artifact in Path("dist").iterdir():
+              assert remote[artifact.name] == hashlib.sha256(artifact.read_bytes()).hexdigest()
+          script = Path(".github/scripts/smoke_installed.py").resolve()
+          with tempfile.TemporaryDirectory(prefix="aac-pypi-") as temporary:
+              subprocess.run([
+                  "uv", "run", "--isolated", "--no-project", "--no-config", "--no-cache",
+                  "--default-index", "https://pypi.org/simple/",
+                  "--with", f"audio-as-code=={version}", "python", "-I", str(script),
+              ], check=True, cwd=temporary)
+          print(f"Verified audio-as-code {version} hashes and installation from PyPI")
+          PY

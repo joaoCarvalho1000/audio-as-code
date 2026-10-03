@@ -15,7 +15,29 @@ the renderer. This is a portable instruction file, not a hosted API or MCP serve
 
 Look for an existing Audio as Code checkout (`pyproject.toml` and
 `src/audio_as_code/`) or an installed `aac --version` / `python -m audio_as_code
---version`. Reuse the project's environment. From a source checkout root:
+--version`. Reuse the project's environment.
+
+To add the library to an existing Python project managed by uv, run from that
+project's root:
+
+```sh
+uv add "audio-as-code @ git+https://github.com/joaoCarvalho1000/audio-as-code.git"
+uv run --locked aac --version
+uv run --locked aac instruments
+uv run --locked aac schema
+```
+
+This installs from the public source repository; there is no PyPI release.
+Git must be installed. Keep the project's `pyproject.toml` and `uv.lock`: the lock
+records the resolved Git commit and dependency versions. An explicit source pin
+uses `git+https://github.com/joaoCarvalho1000/audio-as-code.git@FULL_COMMIT_SHA`
+in the same dependency string, replacing `FULL_COMMIT_SHA` with a verified commit.
+Use `uv run --locked` for composition and rendering in this project. Do not use
+the framework's `uv.lock` to replace an existing application's lockfile. Read this
+skill from the same source revision when you need version-specific instructions;
+the installed catalog, schema and CLI help describe that revision's capabilities.
+
+For a standalone project, download/extract the source instead. From its root:
 
 ```sh
 uv sync --locked --no-dev
@@ -24,12 +46,13 @@ uv run --no-dev aac instruments
 uv run --no-dev aac schema
 ```
 
-If source is missing, use the source ZIP URL supplied with the user's website
+For the standalone route, use the source ZIP URL supplied with the user's website
 prompt, or the website's **Download source** link. Download and extract into the
 working project, then run the commands above from the extracted folder containing
 `pyproject.toml`. Read the bundled `skills/audio-as-code/SKILL.md` for that version.
-Do not invent a registry package, GitHub repository, or installation URL. If no
-source location is available, ask for the source ZIP or local checkout path.
+Use only the public repository above or a source location supplied by the user;
+do not invent a registry release or another installation URL. If neither source
+route is accessible, ask for the source ZIP or local checkout path.
 
 Without uv, create a local environment with `python -m venv .venv`, then run
 `.venv/Scripts/python.exe -m pip install -e .` on Windows or
