@@ -24,6 +24,7 @@ import html
 import json
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import wave
@@ -141,7 +142,7 @@ SOURCE_ALLOW = [
 ]
 SOURCE_DENY = re.compile(
     r"(^|/)(\.claude|\.orca|\.cursor|\.idea|\.vscode|\.internal|\.mypy_cache|\.hypothesis|\.tox|\.nox|playwright-report|test-results|htmlcov|build|dist)(/|$)|"
-    r"^docs/internal/|"
+    r"^docs/internal(/|$)|"
     r"(^|/)(DESIGN|PRODUCT|PLAN|HANDOFF|SESSION|NOTES|PROGRESS|CHECKPOINT|TASKS)\.md$|"
     r"(^|/)(instrument-browser-brief|instrument-refinement)\.md$|"
     r"(^|/)(\.dev\.vars[^/]*|\.coverage[^/]*|[^/]*\.egg-info|%SystemDrive%)(/|$)|"
@@ -151,6 +152,33 @@ SOURCE_DENY = re.compile(
     r"|\.py[cod]$|(^|/)(.*\.log|.*\.key|.*\.pem|credentials[^/]*)$",
     re.IGNORECASE,
 )
+
+
+def _source_files() -> list[Path]:
+    """Collect portable regular files without following links or Windows junctions."""
+    files = []
+    for entry in SOURCE_ALLOW:
+        pending = [ROOT / entry]
+        while pending:
+            path = pending.pop()
+            relative = path.relative_to(ROOT).as_posix()
+            if SOURCE_DENY.search(relative):
+                continue
+            try:
+                attributes = path.lstat()
+            except FileNotFoundError:
+                continue
+            linked = stat.S_ISLNK(attributes.st_mode) or (
+                getattr(attributes, "st_file_attributes", 0)
+                & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+            )
+            if linked or path.resolve() != path.absolute():
+                raise ValueError(f"source downloads cannot include linked paths: {relative}")
+            if stat.S_ISDIR(attributes.st_mode):
+                pending.extend(sorted(path.iterdir(), reverse=True))
+            elif stat.S_ISREG(attributes.st_mode):
+                files.append(path)
+    return files
 
 
 # ----------------------------------------------------------------------------- Markdown
@@ -1147,25 +1175,17 @@ class Site:
         return count
 
     def source_archive(self) -> dict:
+        files = _source_files()
         target = self.out / "download" / f"audio-as-code-{__version__}-source.zip"
         target.parent.mkdir(parents=True, exist_ok=True)
         names = []
         with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-            for entry in SOURCE_ALLOW:
-                path = ROOT / entry
-                if not path.exists():
-                    continue
-                files = (
-                    [path] if path.is_file() else sorted(p for p in path.rglob("*") if p.is_file())
-                )
-                for file in files:
-                    rel = file.relative_to(ROOT).as_posix()
-                    if SOURCE_DENY.search(rel):
-                        continue
-                    names.append(rel)
-                    info = zipfile.ZipInfo(f"audio-as-code/{rel}", date_time=(2026, 1, 1, 0, 0, 0))
-                    info.compress_type = zipfile.ZIP_DEFLATED
-                    archive.writestr(info, file.read_bytes())
+            for file in files:
+                rel = file.relative_to(ROOT).as_posix()
+                names.append(rel)
+                info = zipfile.ZipInfo(f"audio-as-code/{rel}", date_time=(2026, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                archive.writestr(info, file.read_bytes())
         digest = hashlib.sha256(target.read_bytes()).hexdigest()
         return {
             "file": f"download/{target.name}",

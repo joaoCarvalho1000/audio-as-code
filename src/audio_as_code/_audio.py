@@ -45,7 +45,13 @@ def analyze_wav(path: str | Path) -> dict:
     squares = 0.0
     count = 0
     clipped = 0
-    with wave.open(str(path), "rb") as stream:
+    try:
+        stream = wave.open(str(path), "rb")
+    except RuntimeError as error:
+        # The stdlib RIFF parser can raise RuntimeError when an ancillary
+        # chunk declares a seek beyond its enclosing chunk.
+        raise wave.Error("WAV is malformed: invalid RIFF chunk layout") from error
+    with stream:
         if stream.getsampwidth() != 2 or stream.getcomptype() != "NONE":
             raise ValueError("analysis supports uncompressed 16-bit PCM WAV files")
         channels, rate, frames = stream.getnchannels(), stream.getframerate(), stream.getnframes()

@@ -1,6 +1,7 @@
 """Regressions for private-file leaks and broken installed distribution metadata."""
 
 import importlib.util
+import os
 import shutil
 import subprocess
 import zipfile
@@ -135,6 +136,56 @@ def test_source_zip_excludes_internal_files_that_still_exist_locally(tmp_path, m
     with zipfile.ZipFile(site.out / report["file"]) as archive:
         assert archive.testzip() is None
         assert {name.removeprefix("audio-as-code/") for name in archive.namelist()} == set(public)
+
+
+@pytest.mark.parametrize("target_kind", ["outside", "private", "public"])
+def test_source_zip_rejects_directory_links_before_replacing_archive(
+    tmp_path, monkeypatch, target_kind
+):
+    spec = importlib.util.spec_from_file_location("site_archive", ROOT / "examples/build_site.py")
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    checkout = tmp_path / "checkout"
+    (checkout / "docs").mkdir(parents=True)
+    target = {
+        "outside": tmp_path / "outside",
+        "private": checkout / "docs/internal",
+        "public": checkout / "docs/public",
+    }[target_kind]
+    target.mkdir()
+    fixture = target / "fixture.txt"
+    fixture.write_text("synthetic file; never account data", encoding="utf-8")
+    link = checkout / "docs/linked"
+    if os.name == "nt":
+        # Junctions do not require Windows' symbolic-link privilege. Keep both
+        # sides inside pytest's temporary directory and never traverse for removal.
+        result = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "New-Item -ItemType Junction -Path $env:AAC_TEST_LINK "
+                "-Value $env:AAC_TEST_TARGET -ErrorAction Stop | Out-Null",
+            ],
+            env={**os.environ, "AAC_TEST_LINK": str(link), "AAC_TEST_TARGET": str(target)},
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert result.returncode == 0, result.stderr
+    else:
+        link.symlink_to(target, target_is_directory=True)
+    monkeypatch.setattr(builder, "ROOT", checkout)
+    site = builder.Site(tmp_path / "published")
+    archive = site.out / "download" / f"audio-as-code-{builder.__version__}-source.zip"
+    archive.parent.mkdir(parents=True)
+    sentinel = b"previous source archive"
+    archive.write_bytes(sentinel)
+    with pytest.raises(ValueError, match="linked paths: docs/linked"):
+        site.source_archive()
+    assert archive.read_bytes() == sentinel
+    assert fixture.read_text(encoding="utf-8") == "synthetic file; never account data"
 
 
 def wheel(tmp_path, *, extra=None, omit=None, version="0.1.0"):

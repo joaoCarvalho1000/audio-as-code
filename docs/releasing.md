@@ -114,6 +114,8 @@ Once the publisher is configured and the reviewed commit is on `main`, use
 Actions → **Publish to PyPI** → **Run workflow**, choose `main`, and enter the exact
 version in `pyproject.toml`, such as `0.1.0`. This dispatch authorizes a real PyPI
 upload. Confirm the workflow run's commit matches the reviewed commit.
+Confirm that the full CI matrix also passes on that exact commit; the publishing
+workflow runs its own checks on Linux with Python 3.13.
 
 The build job checks the version against both source declarations, runs tests,
 lint, formatting and schema checks, then builds and inspects both distributions.
@@ -124,6 +126,20 @@ it downloads those same artifacts and uploads them with the official PyPA action
 It neither checks out nor executes the project's build code with that permission.
 The separate verification job compares the PyPI file hashes and installs the
 exact version from PyPI outside the checkout, running the installed smoke checks.
+
+After publication and verification succeed, record the publishing run's full commit
+SHA and create an annotated version tag at that exact commit. For example, replace
+`REVIEWED_COMMIT_SHA` below with the verified run's SHA before running the command:
+
+```sh
+git tag -a v0.1.0 REVIEWED_COMMIT_SHA -m "Audio as Code 0.1.0"
+git push origin refs/tags/v0.1.0
+```
+
+Use the actual release version for future tags. Create the GitHub Release from that
+tag, with the PyPI link, release notes and artifact hashes from the workflow summary.
+The tag must identify the published source even if `main` has advanced. Update the
+changelog and publication status once the release exists.
 
 Do not rebuild or overwrite files for an already published version. If an upload
 partly succeeds, inspect the registry's files and hashes before attempting recovery;

@@ -21,9 +21,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-out = Path(sys.argv[1] if len(sys.argv) > 1 else "output/docs-examples/05-agent-loop")
-source = Path(__file__).with_name("agent-score.json")
-
 
 def aac(*args: str) -> tuple[int, dict]:
     """Run one CLI command. Success: JSON on stdout, exit 0. Failure: JSON on stderr, exit 2."""
@@ -39,7 +36,7 @@ def write(path: Path, data: dict) -> Path:
     return path
 
 
-def candidate(name: str, score: dict) -> dict:
+def candidate(out: Path, name: str, score: dict) -> dict:
     """Validate, render, export MIDI, and measure one score in a fresh directory."""
     folder = out / name
     score_path = write(folder / "score.json", score)
@@ -57,52 +54,64 @@ def candidate(name: str, score: dict) -> dict:
     if status != 0:
         return {"ok": False, "error": report}
     status, midi = aac("midi", str(score_path), "-o", str(folder / "song.mid"))
+    if status != 0:
+        return {"ok": False, "error": midi}
     status, wav = aac("analyze", str(folder / "song.wav"))
+    if status != 0:
+        return {"ok": False, "error": wav}
     return {"ok": True, "report": report, "midi": midi, "wav": wav}
 
 
-# 1. Observe: what can be played, and what shape must the score have?
-_, catalog = aac("instruments")
-playable = {item["id"]: item for item in catalog["instruments"]}
-aac("schema", "-o", str(out / "song-v1.schema.json"))
-print(f"{catalog['counts']['available']} playable voices; policy {catalog['synthesis_policy']}")
+def main() -> None:
+    out = Path(sys.argv[1] if len(sys.argv) > 1 else "output/docs-examples/05-agent-loop")
+    source = Path(__file__).with_name("agent-score.json")
 
-# 2. Compose: the score is plain data. Check every instrument and tone field against the catalog.
-score = json.loads(source.read_text(encoding="utf-8"))
-for track in score["tracks"]:
-    allowed = playable[track["instrument"]]["tone_controls"]
-    assert set(track.get("tone") or {}) <= set(allowed), (track["name"], allowed)
+    # 1. Observe: what can be played, and what shape must the score have?
+    _, catalog = aac("instruments")
+    playable = {item["id"]: item for item in catalog["instruments"]}
+    aac("schema", "-o", str(out / "song-v1.schema.json"))
+    print(f"{catalog['counts']['available']} playable voices; policy {catalog['synthesis_policy']}")
 
-# 3. Validate, render, and inspect the first draft.
-draft = candidate("v1", score)
-report = draft["report"]
-print("v1 gain_applied:", round(report["gain_applied"], 3), "warnings:", report["warnings"])
+    # 2. Compose plain score data; check every instrument and tone field against the catalog.
+    score = json.loads(source.read_text(encoding="utf-8"))
+    for track in score["tracks"]:
+        allowed = playable[track["instrument"]]["tone_controls"]
+        assert set(track.get("tone") or {}) <= set(allowed), (track["name"], allowed)
 
-# 4. A bad edit, and recovery from the error's path. This one extends the lead past the end.
-broken = copy.deepcopy(score)
-broken["tracks"][2]["notes"][-1]["duration"] = 8
-failure = candidate("v2-broken", broken)
-issue = failure["error"]["issues"][0]
-print("invalid_score:", issue["message"])
-fixed = copy.deepcopy(broken)
-note = fixed["tracks"][2]["notes"][-1]
-note["duration"] = fixed["beats"] - note["start"]  # end exactly at the song's last beat
+    # 3. Validate, render, and inspect the first draft.
+    draft = candidate(out, "v1", score)
+    report = draft["report"]
+    print("v1 gain_applied:", round(report["gain_applied"], 3), "warnings:", report["warnings"])
 
-# 5. Revise from the measurements. The draft mix exceeded the 0.95 peak ceiling and was
-#    turned down by the renderer, so lower the master gain by the same amount instead.
-if report["gain_applied"] < 1:
-    fixed["master_gain"] = round(fixed["master_gain"] * report["gain_applied"] * 0.9, 3)
-revision = candidate("v2", fixed)
-report2 = revision["report"]
-print("v2 master_gain:", fixed["master_gain"], "gain_applied:", report2["gain_applied"])
-print("v2 warnings:", report2["warnings"] or "none")
-print(f"v2 WAV peak {revision['wav']['peak']:.3f}, rms {revision['wav']['rms']:.4f}")
+    # 4. A bad edit, and recovery from the error's path. This one extends the lead past the end.
+    broken = copy.deepcopy(score)
+    broken["tracks"][2]["notes"][-1]["duration"] = 8
+    failure = candidate(out, "v2-broken", broken)
+    issue = failure["error"]["issues"][0]
+    print("invalid_score:", issue["message"])
+    fixed = copy.deepcopy(broken)
+    note = fixed["tracks"][2]["notes"][-1]
+    note["duration"] = fixed["beats"] - note["start"]  # end exactly at the song's last beat
 
-# 6. Reproduce: the same score in the same environment renders the same bytes.
-again = candidate("v2-repeat", fixed)
-digests = {
-    hashlib.sha256((out / d / "song.wav").read_bytes()).hexdigest() for d in ["v2", "v2-repeat"]
-}
-same = len(digests) == 1
-print("repeat render identical:", same, "| score_sha256", again["report"]["score_sha256"][:16])
-# Measurements are signal checks. Listen to v2/song.wav before calling it finished.
+    # 5. Revise from the measurements. The draft mix exceeded the 0.95 peak ceiling and was
+    #    turned down by the renderer, so lower the master gain by the same amount instead.
+    if report["gain_applied"] < 1:
+        fixed["master_gain"] = round(fixed["master_gain"] * report["gain_applied"] * 0.9, 3)
+    revision = candidate(out, "v2", fixed)
+    report2 = revision["report"]
+    print("v2 master_gain:", fixed["master_gain"], "gain_applied:", report2["gain_applied"])
+    print("v2 warnings:", report2["warnings"] or "none")
+    print(f"v2 WAV peak {revision['wav']['peak']:.3f}, rms {revision['wav']['rms']:.4f}")
+
+    # 6. Reproduce: the same score in the same environment renders the same bytes.
+    again = candidate(out, "v2-repeat", fixed)
+    digests = {
+        hashlib.sha256((out / d / "song.wav").read_bytes()).hexdigest() for d in ["v2", "v2-repeat"]
+    }
+    same = len(digests) == 1
+    print("repeat render identical:", same, "| score_sha256", again["report"]["score_sha256"][:16])
+    # Measurements are signal checks. Listen to v2/song.wav before calling it finished.
+
+
+if __name__ == "__main__":
+    main()

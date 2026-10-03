@@ -15,6 +15,11 @@ Suspected vulnerabilities follow [SECURITY.md](SECURITY.md).
 
 ## Set up a checkout
 
+Fork [the repository](https://github.com/joaoCarvalho1000/audio-as-code) on GitHub,
+clone your fork with Git, and create a topic branch with `git switch -c your-change`.
+Push your changes to that branch and open a pull request against this repository's
+`main` branch when they are ready for review.
+
 Install Python 3.10+ and [uv](https://docs.astral.sh/uv/), then run these commands
 from the directory containing `pyproject.toml`:
 
@@ -54,6 +59,16 @@ CLI entry points, including the normal error path. These checks do not publish.
 CI runs the tests and schema check on Python 3.10 and 3.13 on Linux/Windows, and
 3.13 on macOS. A separate job checks lint, formatting, and installed artifacts.
 Report checks you could not run; do not label an unrun audition or CI job as passed.
+
+For website hosting changes, install Node.js 24 and run the hosting checks from
+the repository root. These install the locked tools and check Wrangler without
+deploying:
+
+```sh
+npm ci --prefix web/cloudflare
+npm exec --prefix web/cloudflare --no -- wrangler --version
+node --test web/cloudflare/media-handler.test.js
+```
 
 For CLI changes, exercise both help entry points and the [README first run](README.md#try-it),
 including an invalid score and paths containing spaces. Keep successful output
@@ -116,5 +131,5 @@ and `skills/audio-as-code/SKILL.md` public so contributors and composing agents 
 use them.
 
 A PR should explain the problem, resulting behavior, compatibility impact and
-validation. Keep unrelated cleanup separate. The project has no automatic release
-or deployment workflow; publishing is a separate maintainer action.
+validation. Keep unrelated cleanup separate. CI validates changes; publishing is a
+separate, manually dispatched maintainer action described in [releasing](docs/releasing.md).

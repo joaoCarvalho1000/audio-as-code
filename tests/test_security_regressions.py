@@ -1,5 +1,6 @@
 """Regression coverage for confirmed local file-processing security boundaries."""
 
+import json
 import math
 import struct
 import wave
@@ -7,6 +8,24 @@ import wave
 import pytest
 
 from audio_as_code import analyze_wav
+from audio_as_code.cli import main
+
+
+@pytest.mark.parametrize("chunk", [b"JUNK", b"LIST"])
+def test_malformed_riff_chunk_returns_structured_error(tmp_path, capsys, chunk):
+    path = tmp_path / "malformed.wav"
+    payload = b"RIFF" + struct.pack("<I", 20) + b"WAVE" + chunk + struct.pack("<I", 0xFFFFFFFF)
+    path.write_bytes(payload)
+    with pytest.raises(wave.Error, match="invalid RIFF chunk"):
+        analyze_wav(path)
+    assert main(["analyze", str(path)]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    diagnostic = json.loads(captured.err)
+    assert diagnostic["error"] == "operation_failed"
+    assert "WAV" in diagnostic["message"]
+    assert "16-bit PCM WAV" in diagnostic["hint"]
+    assert path.read_bytes() == payload
 
 
 @pytest.mark.parametrize("channels", [1, 2, 8, 32767])

@@ -211,10 +211,31 @@ def test_gallery_playback_state_and_optout_control(browser):
         page.evaluate("__events.find(e=>e.event==='demo_play_started').properties.player")
         == "instrument"
     )
-    page.evaluate("""() => {
-      const b=document.createElement('button');b.dataset.analyticsOptout='';
-      document.body.append(b);b.click();
-    }""")
+    assert page.locator('a[href$="analytics.md"]').count() >= 1
+    page.locator("[data-analytics-optout]").click()
     assert page.evaluate("aacAnalytics.status()") == "opted-out"
     assert page.locator("[data-analytics-optout]").last.text_content() == "Analytics off"
+    context.close()
+
+
+def test_gallery_pause_is_not_counted_as_another_play_request(browser):
+    context, page, _ = page_for(browser, path="instruments/index.html")
+    page.wait_for_function("window.__events?.length === 1")
+    page.evaluate("""() => {
+      const audio = document.getElementById('audio');
+      let paused = true;
+      Object.defineProperty(audio, 'paused', {get: () => paused});
+      audio.play = async () => { paused = false; audio.dispatchEvent(new Event('play')); };
+      audio.pause = () => { paused = true; audio.dispatchEvent(new Event('pause')); };
+    }""")
+    button = page.locator(".row-play").first
+    button.click()
+    assert page.evaluate("__events.filter(e => e.event === 'demo_play_requested').length") == 1
+    page.wait_for_function("document.querySelector('.instrument-row.is-playing') !== null")
+    button.click()
+    assert page.evaluate("__events.filter(e => e.event === 'demo_play_requested').length") == 1
+    # Choosing a different row while something is playing is a new request.
+    button.click()
+    page.locator(".row-play").nth(1).click()
+    assert page.evaluate("__events.filter(e => e.event === 'demo_play_requested').length") == 3
     context.close()

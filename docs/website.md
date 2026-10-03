@@ -53,6 +53,10 @@ uv run python examples/instrument_browser.py --instruments mandolin kalimba cele
 uv run python examples/instrument_browser.py --resume
 ```
 
+After editing the gallery template, use
+`uv run python examples/instrument_browser.py --html-only` to rewrite the page from
+its existing `catalog.json` without changing or rerendering any audio.
+
 Resume reuses a clip only when its source, score, runtime fingerprint and all
 output hashes match. A subset build can leave missing previews; finish the full
 batch before building the website. A synthesis change invalidates cached clips.

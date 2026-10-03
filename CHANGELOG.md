@@ -37,6 +37,14 @@ are unreleased. Package versions and score schema versions are separate.
 
 ### Changed
 
+- The instrument library shares the website's visual style, includes per-voice
+  agent handoff snippets and privacy controls, and uses a smaller page payload.
+  `instrument_browser.py --html-only` refreshes its page without rerendering audio.
+- Automation converts ordered control points in one tempo sweep, avoiding repeated
+  scans of dense tempo maps while retaining the same sample values.
+- CI actions are pinned; dependency update PRs are scheduled monthly. Hosting
+  checks exercise the locked Wrangler installation as well as download behavior.
+
 - Separated voice synthesis and PCM analysis from render orchestration. Shared
   timing, MIDI pitch mapping and export limits keep inspection and exporters
   aligned without changing public imports or seeded output.
@@ -62,6 +70,12 @@ are unreleased. Package versions and score schema versions are separate.
   numerical checks do not establish perceptual realism.
 
 ### Fixed
+
+- Malformed ancillary WAV chunks return the normal structured CLI diagnostic.
+- Source downloads reject symlinks and Windows junctions before replacing an
+  archive, preventing linked files outside the portable source tree from leaking.
+- The agent-loop tutorial reports failed MIDI exports and WAV analysis as failures.
+- Instrument-row Pause clicks no longer count as new analytics play requests.
 
 - WAV analysis bounds each PCM read to 256 KiB, preventing untrusted channel
   counts from triggering multi-gigabyte temporary allocations.

@@ -1,12 +1,13 @@
 name: Bug report
 description: Report a reproducible score, rendering, export, or CLI problem.
+labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
         This is an early procedural-audio prototype. Please use a minimal original
         or public-domain score. Do not include credentials or private project files.
-        For a suspected vulnerability, read SECURITY.md before sharing details.
+        For a suspected vulnerability, read [SECURITY.md](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/SECURITY.md) before sharing details.
   - type: textarea
     id: expected
     attributes:

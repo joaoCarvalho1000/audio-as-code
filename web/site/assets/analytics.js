@@ -98,7 +98,9 @@
       if (!button) return;
       if (button.matches("[data-selector] [data-id]")) capture("demo_selected", { piece_id: slug(button.dataset.id) });
       if (button.matches(".instrument-select[data-id]")) capture("demo_selected", { instrument_id: slug(button.dataset.id) });
-      const galleryPause = button.matches("#player-play,#detail-play") && document.getElementById("audio")?.paused === false;
+      const galleryPause = document.getElementById("audio")?.paused === false &&
+        (button.matches("#player-play,#detail-play") ||
+          (button.matches(".row-play") && button.closest(".instrument-row")?.classList.contains("is-playing")));
       if (button.matches("[data-play],[data-mini-play],.row-play,#player-play,#detail-play") && !button.classList.contains("is-playing") && !galleryPause) capture("demo_play_requested", playerProperties(button));
       if (button.matches("[data-handoff-copy]")) capture("agent_handoff_copy_clicked");
       if (button.matches("[data-kofi]")) capture("support_clicked", { placement: ["nav", "footer"].includes(button.dataset.kofi) ? button.dataset.kofi : "other" }, true);

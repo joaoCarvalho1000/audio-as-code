@@ -1,5 +1,6 @@
 name: Feature request
 description: Describe a composition workflow or API capability you need.
+labels: [enhancement]
 body:
   - type: textarea
     id: task

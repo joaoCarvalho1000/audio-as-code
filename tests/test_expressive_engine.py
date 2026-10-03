@@ -45,6 +45,31 @@ def lane(parameter, *points, interpolation="linear"):
     )
 
 
+@pytest.mark.parametrize("interpolation", ["linear", "step"])
+@pytest.mark.parametrize("start", [0, 65536])
+def test_dense_tempo_automation_preserves_exact_reference(interpolation, start):
+    song = score(
+        beats=8,
+        tempo_map=[{"beat": i / 128, "bpm": 60 + i % 241} for i in range(1024)],
+    )
+    automation = lane("pan", (0.125, -0.75), (2.25, 0.8), (7.75, -0.2), interpolation=interpolation)
+    beats = np.array([point.beat for point in automation.points])
+    values = np.array([point.value for point in automation.points])
+    times = np.arange(start, start + 65536, dtype=np.float64) / song.sample_rate
+    if interpolation == "step":
+        point_times = [song.beat_to_seconds(beat) for beat in beats]
+        indices = np.searchsorted(point_times, times, side="right") - 1
+        expected = values[np.maximum(indices, 0)]
+    else:
+        knots = np.unique(np.concatenate((beats, [change.beat for change in song.tempo_map])))
+        expected = np.interp(
+            times, [song.beat_to_seconds(beat) for beat in knots], np.interp(knots, beats, values)
+        )
+    np.testing.assert_array_equal(
+        automation_values(song, automation, start, start + 65536), expected
+    )
+
+
 def test_legacy_audio_and_score_hash_are_unchanged():
     song = demo_song()
     result = render_audio(song)

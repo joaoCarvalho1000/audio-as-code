@@ -61,6 +61,11 @@ compared to ordinary benchmark timings.
 
 ## Implemented allocation and computation reductions
 
+Automation converts ordered control points and tempo boundaries in one forward
+sweep through the tempo map. The previous evaluation restarted integration from
+beat zero for every knot on every audio block. This removes quadratic work for
+dense maps while retaining the same cumulative arithmetic and sample values.
+
 Piano modal tails reuse their complex output buffer for the pole product,
 exponential, released amplitude and contact normalization. Applying the complex
 residue reuses that buffer as well. Operand order is preserved: even exchanging

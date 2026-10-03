@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/joaoCarvalho1000/audio-as-code/security/advisories/new
+    about: Use the private reporting route instead of sharing exploit details in a public issue.

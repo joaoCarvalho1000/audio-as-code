@@ -7,6 +7,7 @@ import hashlib
 import json
 import platform
 import wave
+from html import escape
 from importlib.metadata import version
 from pathlib import Path
 
@@ -168,6 +169,65 @@ def _write_json(path: Path, data: dict) -> None:
     temporary.replace(path)
 
 
+# Fields the page needs; catalog.json beside it keeps the full reports and waveforms.
+PAGE_CLIP_FIELDS = (
+    "audio",
+    "score",
+    "midi",
+    "seconds",
+    "bpm",
+    "notes",
+    "title",
+    "composer",
+    "arrangement",
+    "performers",
+    "source",
+    "credit",
+    "license",
+)
+
+
+def _page_payload(data: dict) -> dict:
+    previews = {}
+    for instrument_id, clips in data.get("previews", {}).items():
+        previews[instrument_id] = {}
+        for variant, clip in clips.items():
+            slim = {key: clip[key] for key in PAGE_CLIP_FIELDS if key in clip}
+            # One base-36 digit per bar: ~72 bytes instead of ~500 per waveform.
+            slim["wave"] = "".join(
+                np.base_repr(round(min(max(float(peak), 0.0), 1.0) * 35), 36).lower()
+                for peak in clip.get("waveform", [])
+            )
+            previews[instrument_id][variant] = slim
+    return {**data, "previews": previews}
+
+
+def _static_list(data: dict) -> str:
+    """Names and WAV links in the HTML itself, for readers without JavaScript."""
+    rows = []
+    for item in data["instruments"]:
+        clip = data.get("previews", {}).get(item["id"], {}).get("music")
+        link = f' <a href="{escape(clip["audio"])}">WAV</a>' if clip else ""
+        rows.append(f"<li>{escape(item['name'])} <code>{escape(item['id'])}</code>{link}</li>")
+    return '<noscript><ul class="static-list">' + "".join(rows) + "</ul></noscript>"
+
+
+def write_gallery_html(output: Path, data: dict) -> Path:
+    """Write only index.html from catalog data: no rendering, no cache or catalog changes."""
+    payload = json.dumps(_page_payload(data), ensure_ascii=True, separators=(",", ":"))
+    payload = payload.replace("<", "\\u003c")
+    template = (ROOT / "web" / "instrument-browser.html").read_text(encoding="utf-8")
+    for placeholder in ("__INSTRUMENT_DATA__", "__STATIC_LIST__"):
+        if template.count(placeholder) != 1:
+            raise RuntimeError(f"The HTML template must have exactly one {placeholder}")
+    html = template.replace("__STATIC_LIST__", _static_list(data))
+    html = html.replace("__INSTRUMENT_DATA__", payload)
+    output.mkdir(parents=True, exist_ok=True)
+    page = output / "index.html"
+    page.write_text(html, encoding="utf-8")
+    return page
+
+
 def main(
     output: Path | None = None, *, instruments: list[str] | None = None, resume: bool = False
 ) -> dict:
@@ -257,13 +317,7 @@ def main(
         "missing_previews": missing,
     }
     data = {**catalog, "previews": previews, "build": build}
-    payload = json.dumps(data, ensure_ascii=True).replace("<", "\\u003c")
-    template = (ROOT / "web" / "instrument-browser.html").read_text(encoding="utf-8")
-    if template.count("__INSTRUMENT_DATA__") != 1:
-        raise RuntimeError("The HTML template must have exactly one data placeholder")
-    (output / "index.html").write_text(
-        template.replace("__INSTRUMENT_DATA__", payload), encoding="utf-8"
-    )
+    write_gallery_html(output, data)
     _write_json(output / "catalog.json", data)
     _write_json(cache_path, {"version": 1, "engine_fingerprint": engine, "clips": entries})
     print(f"Rendered {rendered}, reused {reused}, missing {len(missing)} clips", flush=True)
@@ -280,5 +334,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--resume", action="store_true", help="Reuse only exact verified render inputs"
     )
+    parser.add_argument(
+        "--html-only",
+        action="store_true",
+        help="Rewrite index.html from the existing catalog.json without rendering audio",
+    )
     args = parser.parse_args()
-    main(args.output, instruments=args.instruments, resume=args.resume)
+    if args.html_only:
+        catalog_data = json.loads((args.output / "catalog.json").read_text(encoding="utf-8"))
+        print(f"Open: {write_gallery_html(args.output, catalog_data)}")
+    else:
+        main(args.output, instruments=args.instruments, resume=args.resume)
