@@ -72,7 +72,7 @@ def prepare(
             directory = route.removesuffix("index.html")
             html_routes.update((directory, directory.rstrip("/") or "/"))
     html_headers = "".join(
-        f"{route}\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n\n"
+        f"{route}\n  Cache-Control: public, max-age=0, must-revalidate\n\n"
         for route in sorted(html_routes)
     )
     output.mkdir(parents=True)

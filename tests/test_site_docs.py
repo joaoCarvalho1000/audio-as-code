@@ -56,7 +56,7 @@ def test_repository_guides_publish_existing_pedal_targets_without_source_changes
     linked_guides = 0
     for slug, filename, _ in builder.GUIDES:
         source = (builder.DOCS / filename).read_text(encoding="utf-8")
-        targets = re.findall(r"\]\(\.\./(piano-sustain\.md|creative-workflows\.md)\)", source)
+        targets = re.findall(r"\]\((?:\.\./)?(piano-sustain\.md|creative-workflows\.md)\)", source)
         copied = (site.out / "docs" / filename).read_text(encoding="utf-8")
         html = (site.out / "docs" / f"{slug}.html").read_text(encoding="utf-8")
         for target in targets:

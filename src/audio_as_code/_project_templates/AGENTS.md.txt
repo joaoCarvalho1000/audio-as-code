@@ -1,0 +1,21 @@
+# Composition instructions
+
+- Read README.md and inspect compose.py and score.json before composing.
+- Use the current project environment. Run `python -m audio_as_code doctor`, or
+  `uv run aac doctor` when using uv; install only into this project's environment.
+- Start from the original sketch in compose.py. Confirm whether the requested
+  revision uses the Python composer or JSON score as its source of truth, and keep
+  edits in that source. The composer saves its revised score to output/score.json.
+- Discover playable voices with `python -m audio_as_code instruments`. Never label
+  a planned instrument as supported or replace it silently with a generic voice.
+- Build instrument sounds through code. Do not introduce recorded samples,
+  SoundFonts, sample libraries or measured impulse responses as instrument sources.
+- Write generated audio, MIDI and reports under output/. Preserve editable sources,
+  project instructions and the project's dependency lock.
+- Validate JSON scores, inspect export readiness, then render and read the report.
+  Listen when possible; signal measurements do not establish musical quality or realism.
+- Preserve deterministic seeds unless a requested change calls for a new seed.
+- Explain MIDI export warnings and the local 300-second rendering limit. Dense
+  scores can require substantial resources; the renderer is not a resource sandbox.
+- Python composers are executable code. Inspect downloaded code before running it;
+  JSON score validation does not make arbitrary Python safe.

@@ -203,6 +203,17 @@ def wheel(tmp_path, *, extra=None, omit=None, version="0.1.0"):
             "_voices.py",
             "_export_rules.py",
             "_orchestra_profiles.py",
+            "arrangement.py",
+            "project_setup.py",
+            "loudness.py",
+            "_render_control.py",
+            "_cli_progress.py",
+            "_project_templates/compose.py.txt",
+            "_project_templates/score.json",
+            "_project_templates/README.md.txt",
+            "_project_templates/AGENTS.md.txt",
+            "_project_templates/pyproject.toml.txt",
+            "_project_templates/gitignore.txt",
             "py.typed",
         )
     }
@@ -214,6 +225,8 @@ def wheel(tmp_path, *, extra=None, omit=None, version="0.1.0"):
                 "Requires-Python: >=3.10\nLicense-Expression: MIT\n"
                 "Requires-Dist: numpy<3,>=1.24\nRequires-Dist: pydantic<3,>=2.7\n"
                 "Requires-Dist: mido<2,>=1.3\n"
+                "Provides-Extra: loudness\n"
+                "Requires-Dist: pyloudnorm<0.3,>=0.2; extra == 'loudness'\n"
             ),
             f"{info}/WHEEL": "Wheel-Version: 1.0\n",
             f"{info}/entry_points.txt": "[console_scripts]\naac = audio_as_code.cli:main\n",

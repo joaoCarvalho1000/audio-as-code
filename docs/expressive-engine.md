@@ -97,6 +97,12 @@ under the fade. Bow/reed transitions, acoustic room calibration,
 and sympathetic-string coupling are not modeled. MIDI keeps written note-offs and leaves
 release behavior to the receiving synthesizer.
 
+For supported bowed strings and winds, optional [soft and accented
+articulations](articulations.md) additionally change the source's harmonic buildup
+and excitation noise. During a positive release, their upper harmonics and noise
+decay independently of the fundamental under the same renderer fade. These are
+designed source/filter gestures, not a nonlinear bow or bore simulation.
+
 Piano also supports a [binary sustain pedal](piano-sustain.md) through
 `Track.pedal`. It extends the gates of keys released while down and exports
 MIDI CC64; its damper release can extend the rendered duration. This is separate

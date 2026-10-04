@@ -32,16 +32,35 @@ then offline. The framework has no bundled AI model and needs no provider API ke
 Prefer to work directly? The rest of this page walks through the same local
 framework. Audio as Code synthesizes instruments entirely from code: no recorded
 samples or SoundFonts. The website plays pre-rendered examples; Python does not
-run in your browser. Install version 0.1.0 from
-[PyPI](https://pypi.org/project/audio-as-code/0.1.0/) in your Python project, or use
+run in your browser. Install version 0.2.0 from
+[PyPI](https://pypi.org/project/audio-as-code/0.2.0/) in your Python project, or use
 the [source download](../source.html) for a workspace with the complete examples.
+
+## Start a new music project
+
+With uv, run the installed CLI once to scaffold a separate composition project,
+then install its pinned dependency:
+
+```sh
+uvx --from audio-as-code==0.2.0 aac init "my music"
+cd "my music"
+uv sync
+uv run --locked aac doctor
+uv run --locked python compose.py
+```
+
+The scaffold includes an editable starter score and composer. `init`
+only accepts a new or empty directory, does not install packages, and never
+replaces a nonempty project. `doctor` checks the imported runtime and a short
+in-memory synthesis; it does not check whether you can hear the result. Its
+generated README also explains a venv/pip route. See [project setup](project-setup.md).
 
 ## Add to an existing Python project
 
 From an existing project managed by uv:
 
 ```sh
-uv add "audio-as-code==0.1.0"
+uv add "audio-as-code==0.2.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
@@ -50,11 +69,11 @@ uv run --locked aac schema
 Keep `pyproject.toml` and `uv.lock` with your project. The lock records the package
 and dependency versions; `uv run --locked` reuses that environment. To inspect the
 CLI without adding a project dependency, use
-`uvx --from audio-as-code==0.1.0 aac --help`.
+`uvx --from audio-as-code==0.2.0 aac --help`.
 
 Without uv, create a local environment with `python -m venv .venv`. On Windows,
-run `.venv/Scripts/python.exe -m pip install audio-as-code==0.1.0`; on macOS/Linux,
-run `.venv/bin/python -m pip install audio-as-code==0.1.0`. No activation is needed.
+run `.venv/Scripts/python.exe -m pip install audio-as-code==0.2.0`; on macOS/Linux,
+run `.venv/bin/python -m pip install audio-as-code==0.2.0`. No activation is needed.
 Use that interpreter with `-m audio_as_code` for the CLI, and to run composer
 scripts. For example, on Windows the version command is
 `.venv/Scripts/python.exe -m audio_as_code --version`.
@@ -133,7 +152,12 @@ aac midi output/song.json -o output/song.mid
 Open `output/song.wav` in an audio player: it is an eight-bar arrangement with
 chords, bass, melody and drums. `output/song.mid` takes the notes into a DAW;
 `output/song.json` keeps the score editable. The render report records duration
-and level checks.
+and level checks. For a production file, `aac render` also accepts
+`--format pcm24` or `--format float32`. Optional `--target-lufs -18` requires the
+`audio-as-code[loudness]` extra, and `--progress-file progress.jsonl` writes live
+JSON Lines while stdout stays one final JSON result. An `aac preview` excerpt
+keeps the original mix context but still costs a full render. See
+[production output](production-output.md).
 
 ## 3. Write your first score in Python
 
@@ -203,6 +227,8 @@ aac render output/phrase.json -o output/phrase.wav
 If validation fails, its message identifies the score problem to fix before
 rendering. The [agent guide](agents.md#errors-and-recovery) explains the full
 error format for automated workflows.
+Save JSON as UTF-8. Windows PowerShell 5.1 `>` redirection can produce UTF-16;
+use `Song.save()`, a CLI output option, or an explicit UTF-8 writer.
 
 ## 5. Run the tutorial examples
 
@@ -228,6 +254,10 @@ Rendering is offline and CPU-bound. On the machine used to write these pages, th
 - [Composition guide](composition.md): time, pitch, patterns, harmony, form, controls, and mixing.
 - [Agent guide](agents.md): a copyable prompt and the exact tool-call loop for AI agents.
 - [Reference](reference.md): every CLI command, Python function, score field, and report field.
+- [Arrangement](arrangement.md): timestamp cues, named-section revisions and repeated loop previews.
+- [Articulations](articulations.md): soft and accented gestures on 13 bowed-string and wind voices.
+- [Production output](production-output.md): WAV formats, optional LUFS, exact excerpts and progress.
+- [Project setup](project-setup.md): installed `init` scaffold and `doctor` checks.
 - [`llms.txt`](../llms.txt): a machine-readable index of these resources.
 
 The project is MIT licensed; see the `LICENSE` file in the source folder.

@@ -24,6 +24,7 @@ Number = Annotated[float, Field(strict=True, allow_inf_nan=False)]
 MidiPitch = Annotated[StrictInt, Field(ge=0, le=127)]
 NoteName = Annotated[str, Field(strict=True, pattern=r"^[A-Ga-g](?:#|b)?-?[0-9]$")]
 Pitch = MidiPitch | NoteName
+Articulation = Literal["soft", "accented"]
 
 
 def midi_pitch(value: int | str) -> int:
@@ -115,6 +116,7 @@ class Note(ScoreModel):
     duration: Annotated[Number, Field(gt=0)] = 1
     velocity: Annotated[Number, Field(gt=0, le=1)] = 0.8
     release_seconds: Annotated[Number, Field(ge=0, le=10)] | None = None
+    articulation: Articulation | None = None
 
     @field_validator("pitch")
     @classmethod
@@ -144,6 +146,7 @@ class Track(ScoreModel):
     tone: Tone | None = None
     notes: tuple[Note, ...] = ()
     release_seconds: Annotated[Number, Field(ge=0, le=10)] = 0
+    articulation: Articulation | None = None
     automation: Annotated[tuple[Automation, ...], Field(max_length=2)] = ()
     effects: Annotated[tuple[Effect, ...], Field(max_length=4)] = ()
 
@@ -159,6 +162,17 @@ class Track(ScoreModel):
     @model_validator(mode="after")
     def validate_tone(self) -> Track:
         _validate_lanes(self.automation, {"gain", "pan"})
+        articulations = get_instrument(self.instrument).articulations
+        if self.articulation is not None and self.articulation not in articulations:
+            raise ValueError(
+                f"articulation {self.articulation!r} is not supported by {self.instrument}"
+            )
+        for index, note in enumerate(self.notes):
+            if note.articulation is not None and note.articulation not in articulations:
+                raise ValueError(
+                    f"note {index}: articulation {note.articulation!r} "
+                    f"is not supported by {self.instrument}"
+                )
         if self.pedal:
             if self.instrument != "piano":
                 raise ValueError("pedal events are supported only by piano")

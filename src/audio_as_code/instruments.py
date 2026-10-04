@@ -103,6 +103,7 @@ class InstrumentInfo:
     midi_note: int | None = None
     preview_pitch: int = 60
     default_tone: tuple[tuple[str, float], ...] = ()
+    articulations: tuple[str, ...] = ()
 
 
 FAMILIES = (
@@ -255,6 +256,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=69,
         default_tone=(("vibrato_depth_cents", 14), ("vibrato_rate_hz", 5.5)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "viola",
@@ -270,6 +272,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=60,
         default_tone=(("vibrato_depth_cents", 12), ("vibrato_rate_hz", 5.1)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "cello",
@@ -285,6 +288,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=48,
         default_tone=(("vibrato_depth_cents", 13), ("vibrato_rate_hz", 4.7)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "double_bass",
@@ -300,6 +304,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=36,
         default_tone=(("vibrato_depth_cents", 8), ("vibrato_rate_hz", 4.2)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "piano",
@@ -375,6 +380,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=72,
         default_tone=(("breath", 0.45), ("vibrato_depth_cents", 10), ("vibrato_rate_hz", 5)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "clarinet",
@@ -390,6 +396,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=60,
         default_tone=(("breath", 0.12), ("vibrato_depth_cents", 0), ("vibrato_rate_hz", 5)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "saxophone",
@@ -405,6 +412,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=57,
         default_tone=(("breath", 0.3), ("vibrato_depth_cents", 12), ("vibrato_rate_hz", 5.2)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "oboe",
@@ -420,6 +428,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=67,
         default_tone=(("breath", 0.16), ("vibrato_depth_cents", 9), ("vibrato_rate_hz", 5.6)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "bassoon",
@@ -435,6 +444,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=48,
         default_tone=(("breath", 0.16), ("vibrato_depth_cents", 7), ("vibrato_rate_hz", 4.8)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "trumpet",
@@ -450,6 +460,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=67,
         default_tone=(("breath", 0.08), ("vibrato_depth_cents", 5), ("vibrato_rate_hz", 5.3)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "trombone",
@@ -465,6 +476,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=48,
         default_tone=(("breath", 0.1), ("vibrato_depth_cents", 4), ("vibrato_rate_hz", 4.8)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "french_horn",
@@ -479,6 +491,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=53,
         default_tone=(("breath", 0.08), ("vibrato_depth_cents", 3), ("vibrato_rate_hz", 4.8)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "tuba",
@@ -494,6 +507,7 @@ INSTRUMENTS = (
         midi_note=None,
         preview_pitch=36,
         default_tone=(("breath", 0.12), ("vibrato_depth_cents", 3), ("vibrato_rate_hz", 4)),
+        articulations=("soft", "accented"),
     ),
     InstrumentInfo(
         "kick",

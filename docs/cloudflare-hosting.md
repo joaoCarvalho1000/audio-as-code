@@ -40,10 +40,14 @@ A dry run checks bundling and configuration; it does not verify remote resources
 
 Staging also generates `assets/_headers` with explicit rules for each HTML file,
 its extensionless URL, and directory aliases for `index.html`. Those responses use
-`Cache-Control: public, max-age=0, must-revalidate, no-transform`. Cloudflare
-[documents that `no-transform` prevents automatic Web Analytics beacon injection](https://developers.cloudflare.com/web-analytics/get-started/).
-This preserves the verified HTML bytes and prevents an independently injected
-beacon from bypassing the site's PostHog privacy choices. JavaScript, CSS, fonts,
+`Cache-Control: public, max-age=0, must-revalidate`, so browsers revalidate HTML
+and Cloudflare may compress it normally. The site's only analytics is PostHog, with
+its privacy controls. Cloudflare Real User Measurements must stay disabled for the
+zone (Speed > Real user monitoring > Disable completely); otherwise Cloudflare can
+[inject its own Web Analytics beacon](https://developers.cloudflare.com/web-analytics/get-started/)
+into HTML. After each deploy, confirm the served HTML contains no
+`cloudflareinsights` reference. Adding `no-transform` would also block injection,
+but it disables HTML compression. JavaScript, CSS, fonts,
 JSON and media receive no added rule. An existing source `_headers` causes staging
 to fail before writing anything; reconcile that policy explicitly before staging.
 
@@ -157,6 +161,6 @@ with urlopen(request, timeout=30) as response:
     guide = response.read().decode("utf-8")
 ```
 
-The HTML `no-transform` policy does not change this zone access behavior. Workers
+The HTML cache policy does not change this zone access behavior. Workers
 observability logs and traces also remain enabled independently of client-side
 analytics.

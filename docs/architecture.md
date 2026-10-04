@@ -24,11 +24,15 @@ flowchart TD
 | `__init__.py`, `__main__.py` | Public Python exports/version and `python -m audio_as_code` entry point. |
 | `model.py` | Immutable Pydantic score objects, strict validation, pitch conversion, piecewise tempo integration, and release/effect-tail duration. |
 | `pattern.py` | Explicit phrase length and composition transforms, including sequence, repeat, transpose, append, overlay, stretch, velocity scaling, and placement. |
+| `arrangement.py` | Timestamp placement, named section edits and measured loop previews; section metadata stays outside score JSON. |
+| `project_setup.py`, `_project_templates/` | Installed project scaffolds and local runtime diagnostics. |
 | `instruments.py` | Central family/engine catalog, playable versus planned status, tone capabilities, and MIDI mappings. |
 | `inspection.py` | Read-only facts and static WAV/MIDI readiness checks with structured issues; no synthesis or file writes. |
 | `render.py` | Sample scheduling, stable note seeds, track mixing, normalization and render/stem orchestration. |
 | `_voices.py` | Instrument dispatch, electronic voices, drum-kit routing and note envelopes. |
 | `_audio.py` | PCM WAV encoding and signal measurements; independent of score objects and synthesis engines. |
+| `loudness.py` | Optional integrated metering and constant-gain targeting; imports its backend only when requested. |
+| `_render_control.py`, `_cli_progress.py` | Cooperative cancellation, staged audio publication and separate JSON Lines progress. |
 | `_export_rules.py` | Shared sample/tick rounding, percussion pitch mapping and export limits for rendering, MIDI and inspection. |
 | `physical.py` | Original generated string and modal instrument models. |
 | `orchestra.py` | Additional procedural instrument synthesis and source/filter approximations. |
@@ -59,11 +63,14 @@ half-pedaling and sympathetic resonance are not modeled. See [piano sustain](pia
 `schemas/song-v1.schema.json` is generated from `Song.model_json_schema()`. Runtime
 checks additionally enforce unique track names, note bounds, supported controls,
 and cross-field relationships. Schema version `"1"` is independent of package
-version `0.1.0`. Breaking the score contract requires explicit version/migration
+version `0.2.0`. Breaking the score contract requires explicit version/migration
 work; adding a Python helper does not automatically change the score schema.
 
 Rendering revalidates scores and is limited to 300 seconds including tails. It
-produces stereo float32 audio internally and 16-bit PCM WAV on export. Seeds are
+produces stereo float32 audio internally and defaults to 16-bit PCM WAV on export;
+24-bit PCM and 32-bit float WAV are optional. Context-preserving previews crop a
+complete render. See [production output](production-output.md) for encodings,
+progress, cancellation, and publication behavior. Seeds are
 derived deterministically from score/track/note context. Reproducibility is scoped
 to a fixed environment; changing algorithms or numeric dependencies can change
 samples. Reports include a score hash, engine/NumPy versions, duration, peak/RMS,

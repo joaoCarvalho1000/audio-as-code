@@ -34,7 +34,7 @@ either render as a sampled recording.
 In an existing uv project, install the released engine and discover its contract:
 
 ```sh
-uv add "audio-as-code==0.1.0"
+uv add "audio-as-code==0.2.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
@@ -43,6 +43,11 @@ Ask your agent to read [the portable skill](../skills/audio-as-code/SKILL.md), c
 in this environment, and keep the composer and score beside the delivered WAV.
 The package contains the engine and CLI. The complete examples and skill file are
 in the source project; see the [quickstart](quickstart.md) for pip and Git alternatives.
+To start a separate music project with the installed package, run
+`aac init "my music"`, enter that folder, set up its environment, and run
+`aac doctor`. The scaffold has a composer, starter score and setup instructions;
+init does not install dependencies or replace a nonempty folder. See
+[project setup](project-setup.md).
 
 ## Already have the source?
 
@@ -93,8 +98,8 @@ could not audition the audio.
 
 ## The working loop
 
-1. Read the portable skill, locate or install the local package, and discover playable
-   voices and score fields through `aac instruments` and `aac schema`.
+1. Read the portable skill, locate or install the local package, optionally
+   `aac init` a new project, then run `aac doctor`, `aac instruments` and `aac schema`.
 2. Interpret the brief and compose original material with a motif, development
    appropriate to its length, and an intentional ending or loop seam.
 3. Save the score and any composer source; validate and correct reported errors.
@@ -113,7 +118,9 @@ Run in the project where the package is installed (see the [quickstart](quicksta
 
 | Step | Command | stdout on success |
 | --- | --- | --- |
-| Installed version | `aac --version` | `{"version": "0.1.0"}` |
+| Installed version | `aac --version` | `{"version": "0.2.0"}` |
+| New project | `aac init "my music"` | Output directory, created filenames and next steps |
+| Runtime check | `aac doctor` | `ok`, individual checks and recovery hints |
 | Playable voices | `aac instruments` | `catalog_version`, `synthesis_policy`, `families`, `engines`, `instruments`, `counts` |
 | One family | `aac instruments --family woodwinds` | Same, filtered |
 | One engine | `aac instruments --engine modal` | Same, filtered |
@@ -123,12 +130,20 @@ Run in the project where the package is installed (see the [quickstart](quicksta
 | Validate | `aac validate score.json` | `valid`, `schema_version`, `title`, `bpm`, `beats`, `duration_seconds`, `render_duration_seconds`, `tracks`, `notes` |
 | Inspect the score | `aac inspect score.json` | Track timing, pitch ranges, polyphony, `readiness` and structured `issues`; no synthesis or file writes |
 | Render | `aac render score.json -o song.wav --report report.json` | The render report |
+| Exact excerpt | `aac preview score.json -o excerpt.wav --start 12 --duration 8` | Excerpt and full-render context; synthesis still costs a full render |
 | Render + stems | `aac render score.json -o song.wav --stems stems` | Report with a `stems` list |
+| 24-bit or float WAV | `aac render score.json -o song.wav --format pcm24` | Use `--format float32` for floating-point WAV |
+| Loudness target | `aac render score.json -o song.wav --target-lufs -18` | Requires optional `audio-as-code[loudness]` extra |
+| Progress file | `aac render score.json -o song.wav --progress-file progress.jsonl` | UTF-8 JSON Lines updates, final JSON result on stdout |
 | Unnormalized | `aac render score.json -o song.wav --no-normalize` | Report; clipped samples are flagged |
 | MIDI | `aac midi score.json -o song.mid` | `output`, `tracks`, `ticks_per_beat` (480), `duration_seconds`, `warnings` |
 | Measure a WAV | `aac analyze song.wav` | `sample_rate`, `channels`, `frames`, `duration_seconds`, `peak`, `rms`, `peak_dbfs`, `rms_dbfs`, `full_scale_samples`, `silent` |
 
-Output files are overwritten. The score, WAV, report, and stem paths in one command must all be different. Stale files in a reused directory are not removed, so use a fresh directory per candidate.
+Output files are overwritten. The score, WAV, report, progress file, and stem
+paths in one command must all be different. Stale files in a reused directory
+are not removed, so use a fresh directory per candidate. Scores must be UTF-8;
+Windows PowerShell 5.1 `>` may produce UTF-16, so use `Song.save()`, CLI output
+options, or an explicit UTF-8 writer for scores and machine-readable reports.
 
 A typical session:
 
@@ -200,12 +215,12 @@ Rules the JSON Schema cannot express, enforced by `aac validate`: unique track n
 | Field | What to do with it |
 | --- | --- |
 | `warnings` | Act on each. Possible messages: silent render, mix attenuated, mix exceeds full scale (with `--no-normalize`), notes too short for the sample grid, a clipped stem |
-| `gain_applied` | 1 means untouched. Below 1, the mix peaked above 0.95 and was turned down; multiply your `master_gain` by about this value |
+| `gain_applied` | 1 means untouched. With default peak attenuation it is at most 1; LUFS targeting can boost it above 1 |
 | `score_duration_seconds`, `tail_seconds` | Score duration and reserved release/effect tail; their total must fit the 300-second render limit |
-| `before_gain` | Float mix measurements before that attenuation |
-| `audio` | Float measurements after attenuation: `peak`, `rms`, `peak_dbfs`, `rms_dbfs`, `clipped_samples`, `silent`, `duration_seconds` |
-| `wav` | The same measurements read back from the saved 16-bit file, with `full_scale_samples` |
-| `stems` | One entry per track: `track`, `path`, `audio` measurements. A near-zero stem RMS means that part is inaudible |
+| `before_gain` | Float mix measurements before the selected gain |
+| `audio` | Float measurements after gain: `peak`, `rms`, `peak_dbfs`, `rms_dbfs`, `clipped_samples`, `silent`, `duration_seconds` |
+| `wav` | Measurements read back from the saved WAV, normally 16-bit PCM, with `full_scale_samples` |
+| `stems` | One entry per track: `track`, `path`, `audio` measurements. Compare part levels, then audition the balance |
 | `score_sha256`, `seed`, `engine_version`, `numpy_version` | Keep these to reproduce the render |
 
 `peak_dbfs` and `rms_dbfs` are `null` for digital silence. A low RMS or a high peak is not a musical error by itself. None of these numbers measure realism, taste, or whether the piece works. If your environment cannot play audio, say so in your result instead of implying you listened.
@@ -231,9 +246,10 @@ Things worth knowing when you parse issues:
 
 ## Limits to plan around
 
-- Tempo changes are ordered steps; there are no continuous tempo ramps, meter/swing fields, sections, clips or instrument articulation switches. Piano supports binary `Track.pedal` events; see the [pedal rules](../piano-sustain.md) before targeting an exact duration.
-- Track gain/pan and song master gain support linear/step automation. Delay and generated reverb can run on tracks or the master; optional note releases extend past note-off. MIDI exports tempo changes but omits these audio controls. Stems omit master effects.
-- Tone controls are per track. Use another track for another articulation.
+- Tempo changes are ordered steps, with no continuous tempo ramps or meter/swing fields. `beat_at_seconds`, named `Section` revisions and repeated `LoopRegion` previews are Python helpers; section names do not become score JSON fields. See [arrangement](arrangement.md). Piano supports binary `Track.pedal` events; see the [pedal rules](piano-sustain.md) before targeting an exact duration.
+- Track gain/pan and song master gain support linear/step automation with **absolute** point values. Delay and generated reverb can run on tracks or the master; optional note releases extend past note-off. MIDI exports tempo changes but omits these audio controls. Stems omit master effects.
+- Thirteen bowed-string and wind voices accept `soft` and `accented` track or note articulations; other voices reject them. MIDI omits these gestures. See [articulations](articulations.md).
+- Default WAV is 16-bit PCM; `pcm24` and `float32`, optional LUFS targeting, JSONL progress and cooperative cancellation are available. An exact excerpt preview still renders the whole song. See [production output](production-output.md).
 - 1–64 tracks, up to 100,000 notes, `beats` up to 65,536, WAV renders up to 300 seconds including tails. Long renders use hundreds of MB of RAM; keep iteration renders short.
 - Rendering is offline and takes real CPU time; orchestral voices are slower than the electronic ones.
 - Instruments are code-generated approximations. Do not describe them as recordings or as indistinguishable from acoustic instruments.

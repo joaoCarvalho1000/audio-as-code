@@ -1,0 +1,49 @@
+"""An original eight-beat sketch. Edit build_song(), then run python compose.py."""
+
+import json
+from pathlib import Path
+
+from audio_as_code import Pattern, Song, Track, export_midi, render
+
+
+def build_song() -> Song:
+    melody = Pattern.sequence(
+        ["D5", "A4", "F5", None, "E5", "C5", "A4", "D5"],
+        gate=0.7,
+        velocity=0.72,
+    )
+    bass = Pattern.sequence(["D3", "Bb2", "F3", "C3"], step=2, gate=0.8, velocity=0.65)
+    chords = Pattern.sequence(
+        [["D4", "F4", "A4"], ["Bb3", "D4", "F4"], ["F4", "A4", "C5"], ["C4", "E4", "G4"]],
+        step=2,
+        gate=0.9,
+        velocity=0.4,
+    )
+    return Song(
+        title="Small beginnings",
+        bpm=112,
+        beats=8,
+        seed=17,
+        tracks=[
+            Track(name="Melody", instrument="pluck", gain=0.55, pan=0.15, notes=melody.notes),
+            Track(name="Bass", instrument="bass", gain=0.5, notes=bass.notes),
+            Track(name="Chords", instrument="pad", gain=0.3, pan=-0.2, notes=chords.notes),
+        ],
+    )
+
+
+def main() -> None:
+    # Anchor artifacts to this project even when invoked from a different directory.
+    output = Path(__file__).resolve().parent / "output"
+    song = build_song()
+    song.save(output / "score.json")
+    report = render(song, output / "song.wav")
+    midi = export_midi(song, output / "song.mid")
+    (output / "report.json").write_text(
+        json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8"
+    )
+    print(json.dumps({"render": report, "midi": midi}, indent=2, allow_nan=False))
+
+
+if __name__ == "__main__":
+    main()

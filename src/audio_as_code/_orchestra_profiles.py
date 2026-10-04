@@ -134,6 +134,36 @@ HELD = MappingProxyType(
 
 
 @dataclass(frozen=True)
+class ReleaseProfile:
+    """Designed source loss after note-off, in seconds; not measured body decay."""
+
+    fundamental: float
+    upper_loss: float
+    noise: float
+
+
+# Used only by the opt-in source articulations. Upper harmonics lose energy
+# faster than the fundamental; turbulent/bow noise has its own cessation time.
+HELD_RELEASE = MappingProxyType(
+    {
+        "violin": ReleaseProfile(0.065, 0.22, 0.012),
+        "viola": ReleaseProfile(0.080, 0.22, 0.015),
+        "cello": ReleaseProfile(0.100, 0.24, 0.018),
+        "double_bass": ReleaseProfile(0.130, 0.26, 0.022),
+        "flute": ReleaseProfile(0.055, 0.32, 0.032),
+        "clarinet": ReleaseProfile(0.040, 0.24, 0.018),
+        "saxophone": ReleaseProfile(0.055, 0.28, 0.023),
+        "oboe": ReleaseProfile(0.045, 0.25, 0.018),
+        "bassoon": ReleaseProfile(0.065, 0.28, 0.025),
+        "trumpet": ReleaseProfile(0.045, 0.38, 0.016),
+        "trombone": ReleaseProfile(0.060, 0.36, 0.022),
+        "french_horn": ReleaseProfile(0.080, 0.32, 0.025),
+        "tuba": ReleaseProfile(0.105, 0.34, 0.030),
+    }
+)
+
+
+@dataclass(frozen=True)
 class ResonatorProfile:
     ratios: tuple[float, ...]
     amplitudes: tuple[float, ...]

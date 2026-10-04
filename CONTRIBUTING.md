@@ -58,6 +58,8 @@ CLI entry points, including the normal error path. These checks do not publish.
 
 CI runs the tests and schema check on Python 3.10 and 3.13 on Linux/Windows, and
 3.13 on macOS. A separate job checks lint, formatting, and installed artifacts.
+The Linux Python 3.13 job also tests the optional loudness backend. For changes
+to that path, run `uv run --extra loudness pytest tests/test_loudness.py -W error`.
 Report checks you could not run; do not label an unrun audition or CI job as passed.
 
 For website hosting changes, install Node.js 24 and run the hosting checks from

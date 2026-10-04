@@ -125,9 +125,13 @@ A motif is a short `Pattern` you reuse with changes. Useful operations, all plai
 
 Patterns transpose chromatically by semitones. Keeping a motif inside a key (diatonic transposition) is up to your code.
 
-## Form: sections are your own table
+## Form: named sections and explicit notes
 
-The score has no section, clip, or marker objects. Keep a list of sections and compute absolute beats from it:
+Section names stay outside the version 1 score. Use `Section` and `Arrangement`
+for validated named ranges and same-length revisions; `beat_at_seconds` and
+`place_at_seconds` align cues to a media timeline across tempo changes. See
+[arrangement helpers](arrangement.md), including measured loop previews.
+A simple section table also works:
 
 ```python
 FORM = [("intro", 4), ("verse", 8), ("chorus", 8), ("bridge", 4), ("chorus", 8), ("ending", 2)]
@@ -206,8 +210,10 @@ Track(
 Piano supports binary sustain through `Track.pedal`, an ordered list of
 `PedalEvent(beat=..., down=True/False)` values. The pedal extends notes released
 while it is down; its final release can extend the WAV. See the
-[complete timing and MIDI rules](../piano-sustain.md). Instrument articulation
-switches and half-pedaling are not implemented. For two tone configurations of
+[complete timing and MIDI rules](../piano-sustain.md). Half-pedaling is not implemented.
+Thirteen bowed-string and wind voices support `articulation="soft"` or
+`"accented"` on a track or note; discover support in the catalog and read
+[articulations](articulations.md) for inheritance and synthesis limits. For two tone configurations of
 one instrument, use two tracks with different `Tone` values. Gain/pan automation,
 tempo changes, releases and effects are described below.
 [`04_expressive_controls.py`](examples/04_expressive_controls.py) compares pluck
@@ -350,10 +356,14 @@ report = render(song, "output/song.wav", stems_dir="output/stems")
 export_midi(song, "output/song.mid")
 ```
 
-- WAV: 16-bit stereo PCM at the song's `sample_rate` (22050, 44100, or 48000 Hz; default 44100). Stems are named `01.wav`, `02.wav`, … in track order.
+- WAV: stereo PCM16 by default, optionally PCM24 or float32, at the song's `sample_rate` (22050, 44100, or 48000 Hz; default 44100). Stems are named `01.wav`, `02.wav`, … in track order.
 - MIDI is a score approximation for a DAW or hardware synth: notes, tempo, programs, volume, and pan. It carries step tempo changes but not these synthesizers, `Tone` settings, automation, effects, releases, audio tails or normalization. Drums share channel 10 with no per-track pan; their events are grouped in the first percussion track. Export rejects more than 15 melodic tracks, more than one track per drum ID, and overlapping same-pitch notes on one channel.
 - The report's measurements (peak, RMS, clipping, silence) are signal checks. They say nothing about whether the music is good. Listen to the result.
 
 ## Reproducibility
 
 The same score, seed, software versions, and platform produce byte-identical WAV files. Different NumPy versions, platforms, or library releases may change the bytes. Keep the JSON score, the lock file, and the render report (which records `score_sha256`, `engine_version`, `numpy_version`, and `seed`) beside any audio you need to reproduce.
+
+For excerpt exports, optional LUFS targeting, progress and cancellation, see
+[production output](production-output.md). Excerpts retain full-song context and
+cost a full render. Higher bit depth does not improve the synthesis model.

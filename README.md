@@ -10,7 +10,7 @@ then carry the rendered WAV into your video, game or slides. See the
 [creative workflow integrations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/integrations.md) for Codex, Claude Code
 and Hyperframes recipes.
 
-**Status: 0.1.0 alpha, [available on PyPI](https://pypi.org/project/audio-as-code/0.1.0/).** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+**Status: 0.2.0 alpha, [available on PyPI](https://pypi.org/project/audio-as-code/0.2.0/).** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
 
 A **score** is the editable recipe for a piece: instruments, notes, timing,
 volume and tempo. Write it in Python or JSON; rendering turns it into audio.
@@ -63,22 +63,26 @@ To browse and audition the catalog, run `uv run python examples/instrument_brows
 For a coding agent, start with: **“Read https://audioascode.com/llms.txt and add
 Audio as Code to this project. Then compose the music in my brief.”**
 
-To add version 0.1.0 to an existing uv project:
+To add version 0.2.0 to an existing uv project:
 
 ```sh
-uv add "audio-as-code==0.1.0"
+uv add "audio-as-code==0.2.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
 Commit your project's `uv.lock` to preserve the package and dependency versions.
-For a one-off CLI check, run `uvx --from audio-as-code==0.1.0 aac --help`.
+For a new composition project, run `uvx --from audio-as-code==0.2.0 aac init my-soundtrack`,
+then `cd my-soundtrack`, `uv sync`, `uv run aac doctor` and `uv run python compose.py`.
+The starter includes an editable composer, JSON score and agent instructions.
+
+For a one-off CLI check, run `uvx --from audio-as-code==0.2.0 aac --help`.
 The package contains the Python library and CLI. Use a source checkout or the
 website's source ZIP for the complete examples, guides and portable skill.
 
 Without uv, create a local environment with `python -m venv .venv`. On Windows,
-run `.venv/Scripts/python.exe -m pip install audio-as-code==0.1.0`; on macOS/Linux,
-run `.venv/bin/python -m pip install audio-as-code==0.1.0`. Use that interpreter
+run `.venv/Scripts/python.exe -m pip install audio-as-code==0.2.0`; on macOS/Linux,
+run `.venv/bin/python -m pip install audio-as-code==0.2.0`. Use that interpreter
 with `-m audio_as_code --help`; no activation or global installation is needed.
 
 The [quickstart](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/quickstart.md)
@@ -252,6 +256,18 @@ render(song, "output/string.wav")
 
 Brightness and decay work on the modeled decaying voices. Pluck position is available on plucked-string models and harpsichord. Held voices expose selected breath/vibrato controls; `aac instruments` reports each voice's supported settings and defaults. Velocity changes loudness and model brightness. By default notes fade within their score duration. Optional note/track `release_seconds` lets a sound ring after note-off. Ordered `tempo_map` steps, gain/pan automation, and procedural delay/reverb chains add expression; see the [composition guide](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/composition.md).
 
+Use [arrangement helpers](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/arrangement.md)
+to place cues by seconds across tempo changes, replace named sections and measure
+repeated loop previews. Section names remain outside the version 1 score JSON.
+Thirteen bowed-string and wind voices support optional `soft` and `accented`
+[articulations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/articulations.md).
+Existing scores keep their sound and score identity when these controls are omitted.
+
+[Production output](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/production-output.md)
+adds higher-resolution WAV, exact-context excerpts, progress callbacks and
+cooperative cancellation. Install `audio-as-code[loudness]` for optional integrated
+LUFS targeting with a sample-peak ceiling. There is no true-peak limiter.
+
 ## An agent's working loop
 
 1. Read the schema, discover available voices with `aac instruments`, and choose tempo, harmony, rhythm, and arrangement.
@@ -278,7 +294,7 @@ can report an export blocker, so check its readiness fields.
 
 ## Rendering and export
 
-- WAV: 16-bit stereo PCM, synthesized offline in memory. The prototype limits each render, including release/effect tails, to five minutes. A five-minute render can consume hundreds of MB of RAM; shorter previews are preferable in agent loops.
+- WAV: stereo PCM16 by default, with explicit PCM24 and float32 exports. Rendering happens offline in memory and is limited to five minutes including tails. Excerpt previews preserve full-song context and still cost a full render; compose shorter test scores to reduce iteration time.
 - Default normalization only reduces gain when the mix exceeds a 0.95 peak ceiling. It never increases a quiet mix. `--no-normalize` preserves mix gain and hard-clips values outside full scale on WAV export; the report exposes this.
 - Stems include track gain, pan, master gain, and the same attenuation applied to the mix. They approximately reconstruct the mix within PCM rounding when there are no master effects and no individual stem clips. Stems include track effects but omit master effects, with a warning when the mix uses them. Numeric filenames avoid interpreting track names as paths.
 - MIDI: type 1, 480 ticks per quarter note, tempo, track names, programs, volume, and pan. Up to 15 melodic tracks and one track per drum instrument. Overlapping notes of the same pitch on one channel are rejected, including collisions between a drum kit and an individual drum. Quantization can differ from WAV timing by a MIDI tick.
@@ -291,14 +307,14 @@ can report an export blocker, so check its readiness fields.
 
 The framework's instrument direction is sound generated from code. The score is the extension boundary for more detailed physical models. Proposed next steps:
 
-- Named clips and sections, continuous tempo ramps, and arrangement edits.
+- Continuous tempo ramps, variable-length arrangement edits and clip scheduling.
 - Coupled string/body, nonlinear reed/bore, and bow-friction models beyond the current approximations.
 - Half-pedaling, instrument articulation switches, and more expression controls.
 - An MCP server wrapping the existing validate/render/analyze operations.
-- Richer analysis, preview excerpts, and agent-assisted audition workflows.
+- Faster bounded previews, true-peak analysis and agent-assisted audition workflows.
 - Streaming renders, real-time playback, and a browser editor.
 
-These are roadmap items, not implemented features. The 0.1 API may change; score schema changes will use an explicit version.
+These are roadmap items, not implemented features. The 0.2 API may change; score schema changes will use an explicit version.
 
 Related projects worth exploring: [Strudel](https://strudel.cc/), [Sonic Pi](https://sonic-pi.net/), and [SCAMP](https://www.scamp.marcevanstein.com/). This prototype uses its own small score and synthesis implementation; it does not wrap those engines.
 

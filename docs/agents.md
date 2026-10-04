@@ -5,7 +5,7 @@ It covers setup, interpreting a musical brief, composing, rendering, checking,
 delivering files, and revisions. Add the released library to an existing uv project:
 
 ```sh
-uv add "audio-as-code==0.1.0"
+uv add "audio-as-code==0.2.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
@@ -13,6 +13,10 @@ uv run --locked aac schema
 Keep the project's lockfile. The package contains the engine and CLI; get the
 portable skill and complete examples from the source checkout or website's source
 ZIP. See the [quickstart](site/quickstart.md) for pip and pinned Git alternatives.
+For a new composition workspace, the installed CLI can scaffold one with
+`aac init "my music"`; run `aac doctor` to check its imported runtime. Init does
+not install dependencies or overwrite a nonempty directory. See
+[project setup](project-setup.md).
 Give your agent the skill and say:
 
 ```text
@@ -48,6 +52,8 @@ The CLI is the initial agent integration. Call it through your existing shell to
 | Operation | Command | JSON response |
 | --- | --- | --- |
 | Identify engine | `aac --version` | Engine version |
+| Start a project | `aac init "my music"` | Output directory, created filenames and next steps |
+| Check setup | `aac doctor` | `ok`, per-check results and recovery hints |
 | Discover playable voices | `aac instruments` | Families, engines, available voices, controls, MIDI mappings |
 | Inspect a family | `aac instruments --all --family woodwinds` | Catalog entries with explicit availability status |
 | Discover score shape | `aac schema` | JSON Schema |
@@ -55,7 +61,11 @@ The CLI is the initial agent integration. Call it through your existing shell to
 | Check score | `aac validate song.json` | Validity, tempo, length, track/note counts |
 | Inspect before rendering | `aac inspect song.json` | Per-track timing, pitches, polyphony, export readiness and structured issues |
 | Render | `aac render song.json -o song.wav --report report.json` | Render metadata, measurements, warnings |
+| Preview excerpt | `aac preview song.json -o excerpt.wav --start 12 --duration 8` | Excerpt report with full-render context; costs a complete render |
 | Render stems | `aac render song.json -o song.wav --stems stems` | Same report plus track-to-file mapping |
+| Production WAV | `aac render song.json -o song.wav --format pcm24` | 24-bit PCM report; `float32` is also available |
+| Target loudness | `aac render song.json -o song.wav --target-lufs -18` | Optional `loudness` report; requires the `loudness` extra |
+| Live progress | `aac render song.json -o song.wav --progress-file progress.jsonl` | JSON Lines progress in the file; one final JSON object on stdout |
 | Export | `aac midi song.json -o song.mid` | MIDI path, duration, export warnings |
 | Check audio | `aac analyze song.wav` | Signal measurements |
 
@@ -135,7 +145,8 @@ Pass arguments as an array and avoid `shell=True`. Resolve relative score and
 output paths against your chosen working directory. A missing executable,
 process timeout, or termination is a process-level failure; it does not promise
 a JSON diagnostic. Set a larger timeout for renders based on score length and
-voice complexity. Start with short previews to bound memory and iteration time.
+voice complexity. Compose shorter candidate scores to bound iteration time;
+`aac preview` crops a full render, so a short excerpt is not cheaper to synthesize.
 
 Keep discovery separate from rendering: `aac instruments` returns playable
 voices, `aac instruments --all` can also describe planned voices, and
@@ -152,14 +163,15 @@ Validate before rendering. Render a short arrangement, check the report, and aud
 
 Report fields:
 
-- `before_gain`: float mix measurements before optional peak attenuation.
-- `gain_applied`: global attenuation, at most 1.
-- `audio`: float mix measurements after attenuation, before PCM quantization.
-- `wav`: measurements from the saved 16-bit file.
+- `before_gain`: float mix measurements before the selected mix gain.
+- `gain_applied`: global gain; at most 1 with default peak attenuation, but it may
+  exceed 1 when optional LUFS targeting boosts the mix.
+- `audio`: float mix measurements after gain, before WAV encoding.
+- `wav`: measurements from the saved WAV, normally 16-bit PCM.
 - `warnings`: silence, gain reduction, clipping, or sub-sample notes.
 - `score_sha256`, `engine_version`, `numpy_version`, and `seed`: reproduction metadata.
 
-`clipped_samples` in float measurements counts individual channel samples with absolute amplitude at least 1. `full_scale_samples` in WAV analysis counts samples at a PCM rail; this is evidence of full-scale values, not proof of upstream clipping. Silence means exact digital zero. dB values are `null` for silence so output remains valid JSON.
+`clipped_samples` in float measurements counts individual channel samples with absolute amplitude at least 1. In PCM WAV analysis, `full_scale_samples` counts samples at an integer rail; for float WAV it counts samples with absolute amplitude at least 1 and does not imply clipping. Silence means exact digital zero. dB values are `null` for silence so output remains valid JSON.
 
 ## Inspecting a score before rendering
 
@@ -189,6 +201,18 @@ Use normal model construction or `model_validate()` to check revisions. Pydantic
 All 49 catalog entries have generated prototypes. Read each entry's `description`, `tone_controls`, `default_tone`, and `default_decay_seconds` before composing. For example, a decaying string accepts `"tone": {"brightness": 0.6, "decay_seconds": 3}`; violin accepts `"tone": {"vibrato_depth_cents": 14, "vibrato_rate_hz": 5.5}`. Unsupported controls are rejected. Longer tone decay alone does not extend a note. Optional note/track `release_seconds` adds an audible release after note-off; zero preserves the original gate behavior. See the [orchestra guide](orchestra.md) for model boundaries, control ranges, and the `drum_machine` pitch map.
 
 The schema accepts no arbitrary extra fields and rejects unsupported versions, non-finite numbers, duplicate track names, out-of-range pitches, and notes extending beyond the arrangement. Names must be unique within a score. All score timing is in quarter-note beats. Optional `tempo_map` entries change BPM at ordered beat positions. Track gain/pan and song master-gain automation use ordered points with linear or step interpolation. Track/song effects support generated delay and reverb. There is no meter metadata, swing field, clip graph or sample loading. Swing can be expressed by placing individual notes at explicit beat positions.
+
+For exact media cues across tempo changes, use `beat_at_seconds` or
+`place_at_seconds`; `Arrangement` and `Section` support bounded named-section
+revisions, and `render_loop_preview` repeats a region for join inspection. These
+are Python helpers around score version 1, not extra JSON fields. The loop
+preview renders the complete score before extracting cycles and still needs
+listening in the target player. See [arrangement](arrangement.md). Track and note
+`articulation` support `soft` and `accented` gestures on 13 bowed-string and wind
+voices; discover support in the catalog and see [articulations](articulations.md).
+Automation point values are absolute gain or pan values, not multipliers. For
+production encodings, optional LUFS targeting, exact excerpts, and progress or
+cancellation, see [production output](production-output.md).
 
 For `piano` only, `Track.pedal` accepts ordered `PedalEvent(beat=..., down=True/False)`
 events and MIDI exports binary CC64. This models a binary damper gate, with no

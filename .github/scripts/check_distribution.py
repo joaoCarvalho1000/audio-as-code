@@ -98,6 +98,11 @@ REQUIRED_SOURCE = {
     "src/audio_as_code/_voices.py",
     "src/audio_as_code/_export_rules.py",
     "src/audio_as_code/_orchestra_profiles.py",
+    "src/audio_as_code/arrangement.py",
+    "src/audio_as_code/project_setup.py",
+    "src/audio_as_code/loudness.py",
+    "src/audio_as_code/_render_control.py",
+    "src/audio_as_code/_cli_progress.py",
     "pyproject.toml",
     "uv.lock",
     "README.md",
@@ -113,6 +118,10 @@ REQUIRED_SOURCE = {
     "docs/render-performance.md",
     "docs/cloudflare-hosting.md",
     "docs/releasing.md",
+    "docs/project-setup.md",
+    "docs/arrangement.md",
+    "docs/articulations.md",
+    "docs/production-output.md",
     "schemas/song-v1.schema.json",
     "examples/first_light.py",
     "examples/classic_showcase.py",
@@ -173,9 +182,15 @@ def check_metadata(data: bytes, expected_version: str) -> None:
     if (metadata["License-Expression"] or metadata["License"]) != "MIT":
         raise ValueError("MIT license metadata is missing")
     requirements = metadata.get_all("Requires-Dist", [])
-    names = {re.split(r"[<>=!~;\s\[]", item, maxsplit=1)[0].lower() for item in requirements}
+    required = [item for item in requirements if "extra ==" not in item]
+    optional = [item for item in requirements if "extra ==" in item]
+    names = {re.split(r"[<>=!~;\s\[]", item, maxsplit=1)[0].lower() for item in required}
     if names != {"numpy", "pydantic", "mido"} or any("@" in item for item in requirements):
         raise ValueError("Runtime dependencies changed or contain nonportable direct URLs")
+    if metadata.get_all("Provides-Extra", []) != ["loudness"] or [
+        item.replace('"', "'") for item in optional
+    ] != ["pyloudnorm<0.3,>=0.2; extra == 'loudness'"]:
+        raise ValueError("Unexpected optional dependency metadata")
 
 
 def check_wheel(path: Path, expected_version: str) -> dict:
@@ -206,6 +221,17 @@ def check_wheel(path: Path, expected_version: str) -> dict:
                 "_voices.py",
                 "_export_rules.py",
                 "_orchestra_profiles.py",
+                "arrangement.py",
+                "project_setup.py",
+                "loudness.py",
+                "_render_control.py",
+                "_cli_progress.py",
+                "_project_templates/compose.py.txt",
+                "_project_templates/score.json",
+                "_project_templates/README.md.txt",
+                "_project_templates/AGENTS.md.txt",
+                "_project_templates/pyproject.toml.txt",
+                "_project_templates/gitignore.txt",
                 "py.typed",
             )
         }

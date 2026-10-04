@@ -352,6 +352,8 @@ def _source_bundle(destination: Path) -> None:
         ROOT / "README.md",
         ROOT / "docs/classic-reimaginations.md",
         *sorted((ROOT / "src/audio_as_code").glob("*.py")),
+        *sorted((ROOT / "src/audio_as_code/_project_templates").glob("*.txt")),
+        ROOT / "src/audio_as_code/_project_templates/score.json",
         ROOT / "src/audio_as_code/py.typed",
     ]
     shutil.copyfile(__file__, destination / "classic_reimaginations.py")

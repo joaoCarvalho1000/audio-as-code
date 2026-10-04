@@ -152,6 +152,22 @@
           ],
           "default": null,
           "title": "Release Seconds"
+        },
+        "articulation": {
+          "anyOf": [
+            {
+              "enum": [
+                "soft",
+                "accented"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Articulation"
         }
       },
       "title": "Note",
@@ -445,6 +461,22 @@
           "minimum": 0,
           "title": "Release Seconds",
           "type": "number"
+        },
+        "articulation": {
+          "anyOf": [
+            {
+              "enum": [
+                "soft",
+                "accented"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Articulation"
         },
         "automation": {
           "default": [],

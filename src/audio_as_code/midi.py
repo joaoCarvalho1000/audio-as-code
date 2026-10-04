@@ -28,6 +28,11 @@ def _export_warnings(song: Song) -> list[str]:
         )
     if any(track.tone is not None for track in song.tracks):
         messages.append("Instrument tone controls are not exported.")
+    if any(
+        track.articulation is not None or any(note.articulation is not None for note in track.notes)
+        for track in song.tracks
+    ):
+        messages.append("Modeled note articulations are not exported.")
     if song.tempo_map:
         messages.append("Tempo changes are rounded to the 480-tick beat grid.")
     if any(track.pedal for track in song.tracks):

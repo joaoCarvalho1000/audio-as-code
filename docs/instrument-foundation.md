@@ -52,6 +52,7 @@ Discovery defaults to available entries. `--all` also includes any future planne
 - `catalog_version`, `synthesis_policy` (`code_only`), families, and engine definitions.
 - Instrument IDs, names, availability, and truthful descriptions.
 - Supported `tone_controls`, optional `default_tone` pairs, and default natural decay.
+- Supported optional `articulations`; an empty list means no articulation switches.
 - Approximate MIDI program/percussion mappings and a suggested `preview_pitch`.
 - Counts for the selected instruments, split into available and planned.
 
@@ -83,8 +84,10 @@ controls and kit pitches.
 For a new entry: implement its synthesis, describe the algorithm and limitations, register only controls that affect it, add the typed ID and MIDI mapping, regenerate the schema, test numerical behavior, and regenerate the instrument browser. Listen before making claims about realism. Planned/available distinction remains part of the API for future additions.
 
 The renderer supports optional [tempo changes, gain/pan automation, generated effects
-and note-release envelopes](expressive-engine.md). These do not change instrument
-catalog availability or introduce a physically modeled note-off transition.
+and note-release envelopes](expressive-engine.md). Bowed strings and selected winds
+also offer [soft and accented source gestures](articulations.md), including separate
+harmonic/noise decays during release. These are source/filter approximations,
+not a physically coupled note-off transition.
 
 Piano additionally accepts [binary pedal events](piano-sustain.md). They extend
 independent note gates until lift and export MIDI CC64, without half-pedaling

@@ -154,6 +154,16 @@ def _midi_issues(song: Song, issues: list[dict]) -> int:
                 [*path, "tone"],
                 "Instrument tone controls are not exported to MIDI.",
             )
+        if track.articulation is not None or any(
+            note.articulation is not None for note in track.notes
+        ):
+            _issue(
+                issues,
+                "midi_articulations_not_exported",
+                "midi",
+                path,
+                "Modeled note articulations are not exported to MIDI.",
+            )
         if track.release_seconds or any(note.release_seconds for note in track.notes):
             _issue(
                 issues,

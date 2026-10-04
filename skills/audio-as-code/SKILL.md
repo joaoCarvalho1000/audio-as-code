@@ -21,21 +21,21 @@ To add the library to an existing Python project managed by uv, run from that
 project's root:
 
 ```sh
-uv add "audio-as-code==0.1.0"
+uv add "audio-as-code==0.2.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
-This installs version 0.1.0 from PyPI. Keep the project's `pyproject.toml` and
+This installs version 0.2.0 from PyPI. Keep the project's `pyproject.toml` and
 `uv.lock` to record package and dependency versions. Use `uv run --locked` for
 composition and rendering. Do not replace an existing application's lockfile
 with the framework's lock. The wheel contains the engine and CLI; the portable
 skill and bundled example scripts are available separately in the source project.
 
 Without uv, create `.venv` with `python -m venv .venv`, then use
-`.venv/Scripts/python.exe -m pip install audio-as-code==0.1.0` on Windows or
-`.venv/bin/python -m pip install audio-as-code==0.1.0` on macOS/Linux. Invoke that
+`.venv/Scripts/python.exe -m pip install audio-as-code==0.2.0` on Windows or
+`.venv/bin/python -m pip install audio-as-code==0.2.0` on macOS/Linux. Invoke that
 interpreter with `-m audio_as_code` and use it for composer scripts. No activation
 is needed. Reuse an existing project environment rather than a global Python.
 
@@ -69,6 +69,14 @@ For an editable source installation without uv, create `.venv`, then run
 The `--no-dev` option installs only runtime dependencies. Initial dependency
 installation needs network access or a populated cache;
 rendering afterward is offline. Do not install into the user's global Python.
+
+For a new composition workspace after installing the package, run
+`aac init "my music"`, enter that folder, follow its README to create the local environment,
+then run `aac doctor`. Init writes a composer, starter score and project files in
+a new or empty directory; it does not install dependencies or overwrite existing
+content. Doctor checks the imported runtime and a short synthesis without
+writing audio; it cannot judge realism or check an audio device. See
+[project setup](../../docs/project-setup.md).
 
 ## Compose the brief
 
@@ -104,6 +112,11 @@ Score essentials:
   Pitch is MIDI 0–127 or a name such as `C4` (= 60). Velocity is greater than 0
   and at most 1. Omit a note for a rest. `release_seconds` (0–10) can extend the
   sound after note-off; a note inherits its track release unless overridden.
+- Thirteen bowed-string and wind voices accept optional `soft` or `accented`
+  `articulation` on a track or note; the note overrides its track. Check each
+  catalog entry's `articulations` list. Other instruments reject this field.
+  These are designed source gestures, not recorded samples; MIDI omits them.
+  See [articulations](../../docs/articulations.md).
 - Tracks have unique `name`, playable `instrument`, `notes`, and optional `gain`,
   `pan`, `tone`. Gain and master gain are 0–1; pan is -1 to 1. Tone is per track
   and accepts only that voice's supported controls. Omit it for basic voices.
@@ -134,13 +147,19 @@ the WAV. At constant tempo a 30-second piece at 96 BPM is 48 beats and a cue at
 are rejected. Check the exported WAV's actual frames against the target seconds
 times sample rate, allowing one sample only when the target cannot be represented
 exactly. Do not assume trimming an active tail creates a settled ending.
+Across tempo changes, use `beat_at_seconds` or `place_at_seconds` for timestamp
+cues. `Arrangement` and `Section` can revise named beat ranges while preserving
+untouched score data. These helpers do not add section fields to score JSON; see
+[arrangement](../../docs/arrangement.md).
 
 For a loop, choose a musical period first. A dry arrangement with duration-gated
 notes and intentional rests at the bar line is one supported approach. Measure
 the saved PCM join and neighboring sample steps, export two unchanged cycles,
 and audition their middle join when possible. Endpoint agreement alone does not
-prove a convincing musical loop. Effect tails, releases and continuous sustained
-textures need deliberate boundary handling; there is no general loop-export API.
+prove a convincing musical loop. `render_loop_preview` can repeat a chosen region
+and report boundary measurements, but it renders the full song first and does not
+make a wet loop seamless. Effect tails, releases and sustained textures still
+need deliberate boundary handling. See [arrangement](../../docs/arrangement.md).
 The source example `examples/creative_workflows.py` implements three original
 briefs and constrained revisions; `docs/creative-workflows.md` explains the checks.
 
@@ -156,6 +175,15 @@ uv run --no-dev aac render output/my-piece/v1/score.json -o output/my-piece/v1/s
 uv run --no-dev aac analyze output/my-piece/v1/song.wav
 uv run --no-dev aac midi output/my-piece/v1/score.json -o output/my-piece/v1/song.mid
 ```
+
+Default WAV is 16-bit PCM. Use `aac render ... --format pcm24` or
+`aac render ... --format float32` when requested. Optional `--target-lufs -18` needs the
+`audio-as-code[loudness]` extra and uses one constant gain subject to a sample
+peak ceiling; it is not true-peak limiting. Use `--progress-file progress.jsonl`
+for live UTF-8 JSON Lines without changing the final JSON stdout contract.
+`aac preview score.json -o excerpt.wav --start 12 --duration 8` extracts exact
+frames only after rendering the complete score, so it does not reduce synthesis
+cost. See [production output](../../docs/production-output.md).
 
 Add `--stems output/my-piece/v1/stems` when separate parts help or are requested.
 Output paths overwrite existing files; keep score, WAV, MIDI and report distinct.
@@ -173,9 +201,10 @@ Attenuation below 1 is not itself a failure; balance gains when it obscures the
 intended arrangement. Listen if audio perception is available. Measurements do
 not establish musical quality, acoustic realism or a good loop seam.
 
-Use short previews for expensive arrangements, then render the complete requested
-piece. Revise when the brief, listening, or diagnostics justify it; do not run an
-unbounded optimization loop. For user feedback, preserve the previous version and
+Compose short candidate scores for expensive arrangements, then render the
+complete requested piece. An excerpt preview is useful to inspect a time range
+but costs a complete render. Revise when the brief, listening, or diagnostics
+justify it; do not run an unbounded optimization loop. For user feedback, preserve the previous version and
 edit only what the request warrants. Stop when the requested artifacts are valid
 and the stated brief is addressed; report unresolved limitations honestly.
 
@@ -191,7 +220,7 @@ Link the actual WAV, MIDI, editable JSON score, render report, and composer sour
 if one was used. Include a brief musical description, duration, important warnings,
 and whether audio was actually auditioned. Keep the score, seed, report and project
 lockfile for reproduction. MIDI uses the receiving synthesizer's sounds; it does
-not contain these voices, tone controls, automation, effects or audio releases.
+not contain these voices, articulations, tone controls, automation, effects or audio releases.
 Tempo changes and piano pedal CC64 do export; pedal release behavior depends on
 the receiver. Stems omit master effects, so their sum differs from a
 mix with master processing. Invite concrete revisions such as

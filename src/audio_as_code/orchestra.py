@@ -12,7 +12,7 @@ import math
 import numpy as np
 from numpy.typing import NDArray
 
-from ._orchestra_profiles import HELD, RESONATORS, STRINGS
+from ._orchestra_profiles import HELD, HELD_RELEASE, RESONATORS, STRINGS
 from ._orchestra_profiles import HeldProfile as HeldProfile
 from ._orchestra_profiles import ResonatorProfile as ResonatorProfile
 from ._orchestra_profiles import StringProfile as StringProfile
@@ -217,6 +217,8 @@ def _held(
     seed: int,
     brightness: float,
     settings: dict,
+    articulation: str | None = None,
+    held_frames: int | None = None,
 ) -> Signal:
     profile = HELD[instrument]
     bowed = instrument in {"violin", "viola", "cello", "double_bass"}
@@ -254,6 +256,13 @@ def _held(
     )
     # The pressure exponent is capped at harmonic twelve for every voice.
     upper_evolution = pressure ** (1 + 0.12 * 12) if len(partials) >= 12 else None
+    # These source/filter gestures are deliberately independent of pitch and
+    # velocity. They change harmonic build-up and noise, not just overall gain.
+    soft = articulation == "soft"
+    transient = np.exp(-t / (3 * profile.attack)) if articulation else None
+    release_age = (
+        np.maximum(0, t - held_frames / rate) if articulation and held_frames is not None else None
+    )
     for n, base in enumerate(partials, start=1):
         if bowed:
             # A rounded Helmholtz corner limits absolute bandwidth; tying that
@@ -273,8 +282,19 @@ def _held(
             continue
         # Upper modes build after the fundamental, giving a played onset.
         attack = profile.attack * (1 + 0.035 * (n - 1)) / (0.7 + 0.6 * brightness)
+        if articulation:
+            attack *= (1.8 if soft else 0.45) * (1 + (0.045 if soft else 0.008) * (n - 1))
         onset = 1 - np.exp(-t / attack)
         bloom = 1 + bloom_envelope * (1 - 1 / n)
+        if articulation:
+            # Soft attacks delay the upper spectrum; accents briefly emphasize
+            # it. The nominal sustained spectrum and oscillator pitch survive.
+            color = (1 - 1 / n) * transient
+            onset *= np.exp(-1.4 * color) if soft else 1 + 0.7 * color
+            if release_age is not None:
+                loss = HELD_RELEASE[instrument]
+                tau = loss.fundamental / (1 + loss.upper_loss * (n - 1))
+                onset *= np.exp(-release_age / tau)
         evolution = pressure ** (1 + 0.12 * n) if n < 12 else upper_evolution
         signal += (
             amplitude
@@ -290,6 +310,15 @@ def _held(
     if noise_amount:
         noise = colored_noise(len(t), rate, seed, *profile.noise_band)
         noise_envelope = (1 - np.exp(-t / 0.006)) * (1 + 0.6 * np.exp(-t / 0.06)) * pressure
+        if articulation:
+            # Keep each instrument's colored, phase-modulated noise source.
+            # A soft onset brings it in with the bow/air ramp; an accent has a
+            # brief excitation burst. Neither adds an unrelated sampled attack.
+            noise_attack = profile.attack * 0.75 if soft else 0.004
+            noise_envelope = (1 - np.exp(-t / noise_attack)) * pressure
+            noise_envelope *= 1 + (0.1 if soft else 1.1) * transient
+            if release_age is not None:
+                noise_envelope *= np.exp(-release_age / HELD_RELEASE[instrument].noise)
         if instrument == "organ":
             noise_envelope *= np.exp(-t / 0.08)
         # Bow friction and breath are colored by the evolving excitation,
@@ -454,10 +483,14 @@ def synthesize(
     seed: int,
     velocity: float,
     tone: Tone | None,
+    articulation: str | None = None,
+    held_frames: int | None = None,
 ) -> Signal:
     info = require_instrument(instrument)
     if instrument not in EXTRA_INSTRUMENTS:
         raise ValueError(f"No orchestra model for {instrument!r}")
+    if articulation is not None and articulation not in info.articulations:
+        raise ValueError(f"articulation {articulation!r} is not supported by {instrument}")
     if frames < 1 or (info.midi_note is None and frequency >= rate / 2):
         return np.zeros(frames)
     tone = tone or Tone()
@@ -473,7 +506,9 @@ def synthesize(
     if instrument == "piano":
         return _piano(frequency, t, rate, brightness, decay, seed)
     if instrument in HELD:
-        return _held(instrument, frequency, t, rate, seed, brightness, settings)
+        return _held(
+            instrument, frequency, t, rate, seed, brightness, settings, articulation, held_frames
+        )
     if instrument in RESONATORS:
         return _resonator(instrument, frequency, t, rate, seed, brightness, decay)
     if instrument in {"cymbal", "tambourine"}:

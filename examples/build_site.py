@@ -57,6 +57,10 @@ RAW_DOCS = {
     "analytics.md": "docs/analytics.md",
     "piano-sustain.md": "docs/piano-sustain.md",
     "creative-workflows.md": "docs/creative-workflows.md",
+    "project-setup.md": "docs/project-setup.md",
+    "arrangement.md": "docs/arrangement.md",
+    "articulations.md": "docs/articulations.md",
+    "production-output.md": "docs/production-output.md",
 }
 ANALYTICS_CONFIG = WEB / "analytics-config.json"
 POSTHOG_HOSTS = ("https://us.i.posthog.com", "https://eu.i.posthog.com")
@@ -1409,7 +1413,9 @@ def build(
     if (WEB / "404.html").exists():
         site.templated("404.html", "404.html", root="/")
     write_discovery(
-        out, IDENTITY["canonical_origin"], [f"docs/{source_name(slug)}" for slug, *_ in guide_pages]
+        out,
+        IDENTITY["canonical_origin"],
+        [f"docs/{source_name(slug)}" for slug, *_ in guide_pages] + raw_docs,
     )
     problems = check_links(out)
     summary = {

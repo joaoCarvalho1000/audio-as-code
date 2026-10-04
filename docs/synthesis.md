@@ -84,8 +84,9 @@ Each body band is a damped bandpass resonance with a center frequency,
 half-power bandwidth and peak gain. Its complex response colors both magnitude
 and phase at each nominal harmonic. This is a steady-state response with a
 prescribed onset, not a coupled body transient or measured admittance. Bow
-position, force-dependent friction, wolf notes, articulation switches and
-ensembles are outside the model.
+position, force-dependent friction, wolf notes and ensembles are outside the model.
+Optional [soft and accented articulations](articulations.md) alter harmonic buildup,
+onset noise and source release; they do not simulate those bow mechanics.
 
 ## Score controls
 
@@ -110,7 +111,9 @@ setting alone does not extend a short note. Optional track/note `release_seconds
 continues the generated voice under a cosine fade after note-off, and the renderer
 allocates its tail automatically. Gain/pan automation, tempo changes, generated
 delay and algorithmic reverb are described in [the expressive engine guide](expressive-engine.md).
-This renderer release is not a physical damper or excitation transition. Sustain
+This renderer release is not a physical damper or excitation transition. The optional
+[bowed/wind articulations](articulations.md) add designed harmonic and noise decay
+at note-off while retaining that renderer fade. Sustain
 pedal, continuous tone/pitch expression and sympathetic-string coupling remain
 outside these models.
 

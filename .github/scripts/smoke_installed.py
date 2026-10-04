@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 from importlib.metadata import distribution
+from importlib.util import find_spec
 from pathlib import Path
 
 import audio_as_code
@@ -40,6 +41,27 @@ def main() -> None:
             )
             assert json.loads(version.stdout) == {"version": metadata.version}
             subprocess.run([*command, "--help"], cwd=work, capture_output=True, check=True)
+        health = subprocess.run(
+            [str(console), "doctor"], cwd=work, capture_output=True, text=True, check=True
+        )
+        assert json.loads(health.stdout)["ok"] and not health.stderr
+        starter = work / "composition project"
+        initialized = subprocess.run(
+            [str(console), "init", str(starter)],
+            cwd=work,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert len(json.loads(initialized.stdout)["files"]) == 6
+        assert f"audio-as-code=={metadata.version}" in (starter / "pyproject.toml").read_text()
+        subprocess.run(
+            [sys.executable, str(starter / "compose.py")],
+            cwd=work,
+            capture_output=True,
+            check=True,
+        )
+        assert (starter / "output" / "song.wav").is_file()
         phrase = Pattern.sequence(["C4"], step=0.25)
         phrase = phrase.overlay(phrase.transpose(12), offset=0.25).stretch(2).scale_velocity(0.5)
         song = Song(
@@ -69,6 +91,48 @@ def main() -> None:
         export_midi(song, work / "score.mid")
         assert report["wav"] == analyze_wav(work / "score.wav")
         assert not report["wav"]["silent"] and not report["wav"]["full_scale_samples"]
+        preview = subprocess.run(
+            [
+                str(console),
+                "preview",
+                str(score),
+                "-o",
+                str(work / "preview.wav"),
+                "--start",
+                "0.1",
+                "--duration",
+                "0.2",
+                "--format",
+                "float32",
+                "--progress-file",
+                str(work / "progress.jsonl"),
+            ],
+            cwd=work,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert json.loads(preview.stdout)["wav"]["wav_format"] == "float32"
+        assert not preview.stderr
+        assert (work / "progress.jsonl").read_text().strip()
+        if find_spec("pyloudnorm") is None:
+            missing = subprocess.run(
+                [
+                    str(console),
+                    "render",
+                    str(score),
+                    "-o",
+                    str(work / "optional.wav"),
+                    "--target-lufs",
+                    "-18",
+                ],
+                cwd=work,
+                capture_output=True,
+                text=True,
+            )
+            assert missing.returncode == 2 and not missing.stdout
+            assert "optional extra" in json.loads(missing.stderr)["message"]
+            assert not (work / "optional.wav").exists()
         validation = subprocess.run(
             [str(console), "validate", str(score)],
             cwd=work,

@@ -18,6 +18,13 @@ For looping game music, ask for a loop candidate and audition the join in the ga
 Matching endpoints and managing release/effect tails need deliberate work; a render
 is not automatically a seamless loop. For narration-heavy videos or presentations,
 request sparse music and adjust its level in the consuming tool.
+The [arrangement helpers](arrangement.md) place cues at exact timestamps across
+tempo changes, revise named sections, and repeat a loop region for inspection.
+Their excerpt and loop previews render the complete song first; budget the same
+synthesis time as a full render, then listen in the target player.
+For bowed-string and wind cues, 13 voices support `soft` and `accented`
+[articulations](articulations.md) on tracks or individual notes. These gestures
+change the rendered WAV; MIDI does not carry them.
 
 The source project includes an executable set of original creative briefs:
 
@@ -46,7 +53,7 @@ music and where it will go. The agent needs a shell and Python 3.10+.
 To add the released engine to an existing uv project, run:
 
 ```sh
-uv add "audio-as-code==0.1.0"
+uv add "audio-as-code==0.2.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
@@ -57,6 +64,9 @@ project and run `uv sync --locked --no-dev` from its root. The
 [quickstart](quickstart.md) covers pip/virtual environments and pinned Git installs.
 The renderer needs no model or provider key; your agent has its own account and
 runtime requirements.
+For a separate music workspace, the installed `aac init "my music"` creates a
+composer, starter score and project instructions; `aac doctor` checks the local
+runtime after its dependencies are installed. See [project setup](project-setup.md).
 
 ## Codex: keep the composer beside the project
 
@@ -99,6 +109,11 @@ WAV source. [Hyperframes repository](https://github.com/heygen-com/hyperframes).
 
 1. Render the cue and inspect `report.json` or `aac analyze song.wav`. Use the
    measured WAV duration, including release/effect tails, to plan the video cut.
+   The default WAV is 16-bit PCM. Choose `--format pcm24` or `--format float32`
+   only when the consuming tool accepts it. Optional LUFS targeting requires the
+   `loudness` extra and sets integrated loudness subject to a sample-peak ceiling;
+   it cannot certify a platform delivery target. See
+   [production output](production-output.md).
 2. Create or open a Hyperframes project. For a new one, its documented local route
    is `npx hyperframes init my-video`, then work inside `my-video/`. Local video
    rendering requires Node.js 22+ and FFmpeg. The official skill installation is
@@ -169,6 +184,10 @@ local tool and read its JSON result; no provider SDK is required by the bridge.
 The bridge does not copy a separately authored composer script: retain that source
 alongside the score. When transferring to another machine, copy the artifacts and
 update paths rather than expecting absolute local paths to work remotely.
+For longer direct renders, `aac render ... --progress-file progress.jsonl` writes
+live JSON Lines to that file while stdout remains one final JSON object. Agents
+should parse the result and inspect the saved WAV; progress counts are not time
+estimates. See [production output](production-output.md).
 
 ## Let errors guide the next edit
 

@@ -5,10 +5,27 @@ are separate.
 
 ## Unreleased
 
+### Added
+
+- `aac init` creates an editable composition project from installed wheel resources;
+  `aac doctor` checks the active runtime with a short local synthesis probe.
+- Tempo-aware timestamp cues, named section replacement and repeated loop previews
+  with boundary measurements through the Python arrangement helpers.
+- Optional `soft` and `accented` note/track articulations for 13 bowed-string and
+  wind voices, with shaped harmonic attacks and releases. Existing unarticulated
+  scores retain their deterministic audio and score hashes.
+- PCM24 and float32 WAV export, full-context excerpt previews, progress callbacks,
+  cooperative cancellation and staged audio publication. CLI progress uses a
+  separate JSON Lines file.
+- Optional `loudness` extra for BS.1770-4 integrated measurement and constant-gain
+  targeting with a sample-peak ceiling. It does not measure or limit true peak.
+
 ### Changed
 
 - Documented versioned PyPI installation alongside the source workspace and pinned
   Git routes. These onboarding updates follow the 0.1.0 package release.
+- HTML responses allow compression after disabling the Cloudflare RUM injection;
+  post-deployment checks still verify that no beacon is added.
 
 ## 0.1.0 — 2026-10-03
 

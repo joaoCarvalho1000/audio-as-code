@@ -178,7 +178,7 @@ Useful paths relative to the built site root:
 | `docs/integrations.html` | Codex, Claude Code, Hyperframes, game and slide recipes |
 | `instruments/index.html` | 147-clip instrument library |
 | `source.html` | Source download, size, and SHA-256 |
-| `download/audio-as-code-0.1.0-source.zip` | Portable source snapshot; version follows the package |
+| `download/audio-as-code-0.2.0-source.zip` | Portable source snapshot; version follows the package |
 | `llms.txt` | Agent documentation index |
 | `schemas/song-v1.schema.json` | Versioned score contract |
 | `instruments.json` | Live catalog with explicit availability and controls |
@@ -189,8 +189,8 @@ Useful paths relative to the built site root:
 The source archive excludes generated media and operational files through a
 source allowlist and filters; it includes `.github/FUNDING.yml`. Its recipient
 installs from the extracted checkout to run the complete examples and site tools.
-For the engine and CLI in an existing project, install `audio-as-code==0.1.0`
-from [PyPI](https://pypi.org/project/audio-as-code/0.1.0/). The website source ZIP is
+For the engine and CLI in an existing project, install `audio-as-code==0.2.0`
+from [PyPI](https://pypi.org/project/audio-as-code/0.2.0/). The website source ZIP is
 a separately built snapshot; its published hash identifies its contents, which can
 include documentation updates made after the registry release. The
 public source repository is [joaoCarvalho1000/audio-as-code](https://github.com/joaoCarvalho1000/audio-as-code).

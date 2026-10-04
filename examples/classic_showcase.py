@@ -175,6 +175,8 @@ def _copy_source(destination: Path) -> None:
             root / "README.md",
             root / "docs/classic-showcase.md",
             *sorted((root / "src/audio_as_code").glob("*.py")),
+            *sorted((root / "src/audio_as_code/_project_templates").glob("*.txt")),
+            root / "src/audio_as_code/_project_templates/score.json",
             root / "src/audio_as_code/py.typed",
         ]:
             archive.write(path, "audio-as-code-classics/" + path.relative_to(root).as_posix())

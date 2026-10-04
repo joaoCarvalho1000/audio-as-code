@@ -1,0 +1,240 @@
+{
+  "schema_version": "1",
+  "title": "Small beginnings",
+  "bpm": 112.0,
+  "beats": 8.0,
+  "sample_rate": 44100,
+  "seed": 17,
+  "master_gain": 0.8,
+  "tracks": [
+    {
+      "name": "Melody",
+      "instrument": "pluck",
+      "gain": 0.55,
+      "pan": 0.15,
+      "tone": null,
+      "notes": [
+        {
+          "pitch": "D5",
+          "start": 0.0,
+          "duration": 0.7,
+          "velocity": 0.72,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "A4",
+          "start": 1.0,
+          "duration": 0.7,
+          "velocity": 0.72,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "F5",
+          "start": 2.0,
+          "duration": 0.7,
+          "velocity": 0.72,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "E5",
+          "start": 4.0,
+          "duration": 0.7,
+          "velocity": 0.72,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "C5",
+          "start": 5.0,
+          "duration": 0.7,
+          "velocity": 0.72,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "A4",
+          "start": 6.0,
+          "duration": 0.7,
+          "velocity": 0.72,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "D5",
+          "start": 7.0,
+          "duration": 0.7,
+          "velocity": 0.72,
+          "release_seconds": null,
+          "articulation": null
+        }
+      ],
+      "release_seconds": 0.0,
+      "articulation": null,
+      "automation": [],
+      "effects": [],
+      "pedal": []
+    },
+    {
+      "name": "Bass",
+      "instrument": "bass",
+      "gain": 0.5,
+      "pan": 0.0,
+      "tone": null,
+      "notes": [
+        {
+          "pitch": "D3",
+          "start": 0.0,
+          "duration": 1.6,
+          "velocity": 0.65,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "Bb2",
+          "start": 2.0,
+          "duration": 1.6,
+          "velocity": 0.65,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "F3",
+          "start": 4.0,
+          "duration": 1.6,
+          "velocity": 0.65,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "C3",
+          "start": 6.0,
+          "duration": 1.6,
+          "velocity": 0.65,
+          "release_seconds": null,
+          "articulation": null
+        }
+      ],
+      "release_seconds": 0.0,
+      "articulation": null,
+      "automation": [],
+      "effects": [],
+      "pedal": []
+    },
+    {
+      "name": "Chords",
+      "instrument": "pad",
+      "gain": 0.3,
+      "pan": -0.2,
+      "tone": null,
+      "notes": [
+        {
+          "pitch": "D4",
+          "start": 0.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "F4",
+          "start": 0.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "A4",
+          "start": 0.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "Bb3",
+          "start": 2.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "D4",
+          "start": 2.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "F4",
+          "start": 2.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "F4",
+          "start": 4.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "A4",
+          "start": 4.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "C5",
+          "start": 4.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "C4",
+          "start": 6.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "E4",
+          "start": 6.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        },
+        {
+          "pitch": "G4",
+          "start": 6.0,
+          "duration": 1.8,
+          "velocity": 0.4,
+          "release_seconds": null,
+          "articulation": null
+        }
+      ],
+      "release_seconds": 0.0,
+      "articulation": null,
+      "automation": [],
+      "effects": [],
+      "pedal": []
+    }
+  ],
+  "tempo_map": [],
+  "automation": [],
+  "effects": []
+}

@@ -9,7 +9,7 @@ from ._audio import Audio
 from .acoustics import colored_noise, nyquist_gain
 from .extended import EXTENDED_INSTRUMENTS
 from .extended import synthesize as synthesize_extended
-from .instruments import KIT_NOTES, PHYSICAL_INSTRUMENTS
+from .instruments import KIT_NOTES, PHYSICAL_INSTRUMENTS, get_instrument
 from .model import Tone
 from .orchestra import EXTRA_INSTRUMENTS
 from .orchestra import synthesize as synthesize_orchestra
@@ -143,7 +143,10 @@ def _voice(
     velocity: float = 0.8,
     tone: Tone | None = None,
     held_frames: int | None = None,
+    articulation: str | None = None,
 ) -> Audio:
+    if articulation is not None and articulation not in get_instrument(instrument).articulations:
+        raise ValueError(f"articulation {articulation!r} is not supported by {instrument}")
     if instrument == "drum_machine":
         return _voice(
             KIT_NOTES[pitch], pitch, frames, rate, seed, velocity, held_frames=held_frames
@@ -152,7 +155,9 @@ def _voice(
     if instrument in EXTENDED_INSTRUMENTS:
         signal = synthesize_extended(instrument, frequency, frames, rate, seed, velocity, tone)
     elif instrument in EXTRA_INSTRUMENTS:
-        signal = synthesize_orchestra(instrument, frequency, frames, rate, seed, velocity, tone)
+        signal = synthesize_orchestra(
+            instrument, frequency, frames, rate, seed, velocity, tone, articulation, held_frames
+        )
     elif instrument in PHYSICAL_INSTRUMENTS:
         signal = synthesize(instrument, frequency, frames, rate, seed, velocity, tone)
     else:
