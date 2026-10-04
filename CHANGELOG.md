@@ -5,6 +5,14 @@ are separate.
 
 ## Unreleased
 
+### Fixed
+
+- Release verification now waits for PyPI's installation index as well as release metadata.
+
+## 0.2.0 ? 2026-10-04
+
+Published on [PyPI](https://pypi.org/project/audio-as-code/0.2.0/).
+
 ### Added
 
 - `aac init` creates an editable composition project from installed wheel resources;

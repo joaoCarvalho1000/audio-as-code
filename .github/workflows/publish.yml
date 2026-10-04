@@ -132,6 +132,19 @@ jobs:
           remote = {item["filename"]: item["digests"]["sha256"] for item in published["urls"]}
           for artifact in Path("dist").iterdir():
               assert remote[artifact.name] == hashlib.sha256(artifact.read_bytes()).hexdigest()
+          # Release metadata can appear before PyPI's installation index updates.
+          request = urllib.request.Request(
+              "https://pypi.org/simple/audio-as-code/",
+              headers={"Accept": "application/vnd.pypi.simple.v1+json"},
+          )
+          for attempt in range(24):
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  indexed = {item["filename"] for item in json.load(response)["files"]}
+              if set(remote) <= indexed:
+                  break
+              if attempt == 23:
+                  raise RuntimeError("Published files have not reached PyPI's install index")
+              time.sleep(5)
           script = Path(".github/scripts/smoke_installed.py").resolve()
           with tempfile.TemporaryDirectory(prefix="aac-pypi-") as temporary:
               subprocess.run([
