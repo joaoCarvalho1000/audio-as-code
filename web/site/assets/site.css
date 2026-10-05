@@ -511,7 +511,7 @@ html.js .prompt-card { padding-bottom: 34px; }
 /* instruments (blue) */
 .instruments h2 { max-width: 13ch; }
 .families { list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0; padding: 0; margin: clamp(48px, 6vw, 80px) 0 0; }
-.families li { --fs: clamp(22px, calc(var(--n, 5) * .86vw + 10px), 88px); font-size: var(--fs); line-height: 1; margin: 0 0 .16em; }
+.families li { --fs: clamp(22px, calc(var(--n, 5) * .86vw + 10px), 88px); font-size: var(--fs); line-height: 1; margin: 0 0 .16em; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .families b { font: 900 1em/1 var(--display); font-stretch: 68%; text-transform: uppercase; letter-spacing: -0.005em; }
 /* Count: ink on a yellow chip (>=4.5:1 on blue). The separator rides on the count, outside the chip,
    so a wrap never strands it on its own line. */
