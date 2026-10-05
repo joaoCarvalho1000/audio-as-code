@@ -66,3 +66,42 @@ def test_repository_guides_publish_existing_pedal_targets_without_source_changes
             assert (site.out / "docs" / target).is_file()
     assert linked_guides >= 3
     assert all(source.read_bytes() == contents for source, contents in before.items())
+
+
+def test_website_copy_rejects_literal_and_encoded_em_dashes(tmp_path):
+    cases = {
+        "index.html": "Title\nMusic \u2014 made from code",
+        "entity.html": "Music &mdash; made from code",
+        "numeric.html": "Music &#8212; made from code",
+        "hex.html": "Music &#x2014; made from code",
+        "metadata.json": r'{"title": "Music \u2014 made from code"}',
+        "style.css": r'p::before { content: "\2014 "; }',
+    }
+    for name, text in cases.items():
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    (tmp_path / "clean.md").write_text("Music: made from code.", encoding="utf-8")
+    (tmp_path / "audio.wav").write_bytes(b"\xff\x00")
+    problems = builder.check_website_copy(tmp_path)
+    assert {problem.split(":", 1)[0] for problem in problems} == set(cases)
+    assert any(problem.startswith("index.html:2:") for problem in problems)
+
+
+def test_link_check_matches_clean_urls_and_rejects_missing_or_escaping_targets(tmp_path):
+    site = tmp_path / "site"
+    docs = site / "docs"
+    docs.mkdir(parents=True)
+    (site / "index.html").write_text('<a href="/docs/quickstart?from=home#start">Start</a>')
+    (site / "source.html").write_text("Source")
+    (site / "source").mkdir()  # Downloads may share a basename with an HTML route.
+    guide = docs / "quickstart.html"
+    guide.write_text(
+        '<h1 id="start">Start</h1><a href="/">Home</a>'
+        '<a href="../source">Source</a><a href="?from=guide#start">Here</a>'
+    )
+    assert builder.check_links(site) == []
+    (tmp_path / "private.html").write_text("Outside the website")
+    guide.write_text('<a href="../../private">Escape</a><a href="/missing">Missing</a>')
+    problems = builder.check_links(site)
+    assert len(problems) == 2
+    assert any("leaves the site" in problem for problem in problems)
+    assert any("not found" in problem for problem in problems)

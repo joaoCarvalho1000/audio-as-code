@@ -1,5 +1,11 @@
 name: CI
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,6 +26,8 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci
+        working-directory: web/cloudflare
+      - run: npm audit --audit-level=high
         working-directory: web/cloudflare
       - run: npm exec --no -- wrangler --version
         working-directory: web/cloudflare
@@ -74,3 +82,89 @@ jobs:
         run: uv run --locked python .github/scripts/check_distribution.py dist
       - name: Install wheel and rebuilt sdist outside the checkout
         run: uv run --locked python .github/scripts/smoke_distribution.py dist
+
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      AAC_REQUIRE_BROWSER: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: '3.13'
+          version: '0.12.15'
+          prune-cache: true
+      - run: uv sync --locked --group browser --extra loudness
+      - name: Install media encoder and browser
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          uv run --no-sync python -m playwright install --with-deps chromium
+      - name: Identify the render runtime
+        id: runtime
+        run: |
+          uv run --no-sync python - <<'PY'
+          import hashlib
+          import os
+          import platform
+          import subprocess
+          import sys
+
+          runtime = sys.version + platform.platform() + subprocess.check_output(
+              ["ffmpeg", "-version"], text=True
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("fingerprint=" + hashlib.sha256(runtime.encode()).hexdigest() + "\n")
+          PY
+      - name: Reuse demos only for identical render inputs
+        id: media
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            output/classic-showcase
+            output/classic-reimaginations
+            output/instruments
+            output/electronic-music
+          key: media-v1-${{ runner.os }}-${{ steps.runtime.outputs.fingerprint }}-${{ hashFiles('src/**', 'examples/**', 'schemas/**', 'web/instrument-browser.html', 'pyproject.toml', 'uv.lock', 'LICENSE', 'README.md', 'docs/classic-showcase.md', 'docs/classic-reimaginations.md') }}
+      - name: Render the complete public demo inputs
+        if: steps.media.outputs.cache-hit != 'true'
+        run: |
+          uv run --no-sync python examples/classic_showcase.py --ffmpeg ffmpeg
+          uv run --no-sync python examples/classic_reimaginations.py --ffmpeg ffmpeg
+          uv run --no-sync python examples/instrument_browser.py
+          uv run --no-sync python examples/electronic_music.py
+      - name: Build and check the actual website
+        run: uv run --no-sync python examples/build_site.py --strict
+      - name: Browser checks, including actual audio playback
+        run: uv run --no-sync pytest tests/test_site_analytics.py tests/test_site_browser.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: website-report
+          path: |
+            output/site-build-report.json
+            output/browser-checks/
+          if-no-files-found: warn
+          retention-days: 14
+
+  gate:
+    name: CI gate
+    if: always()
+    needs: [hosting, test, distribution, website]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every check to succeed
+        env:
+          HOSTING: ${{ needs.hosting.result }}
+          TEST: ${{ needs.test.result }}
+          DISTRIBUTION: ${{ needs.distribution.result }}
+          WEBSITE: ${{ needs.website.result }}
+        run: |
+          test "$HOSTING" = success
+          test "$TEST" = success
+          test "$DISTRIBUTION" = success
+          test "$WEBSITE" = success
