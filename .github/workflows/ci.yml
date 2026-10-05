@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   hosting:
@@ -84,6 +84,8 @@ jobs:
         run: uv run --locked python .github/scripts/smoke_distribution.py dist
 
   website:
+    outputs:
+      artifact: ${{ steps.release.outputs.artifact-id }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -150,6 +152,25 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Release safety tests
+        run: python -m unittest discover -s .github/scripts -p 'test_site_release.py'
+      - name: Package the tested website with commit and file hashes
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          python .github/scripts/site_release.py package --site audio-as-code --sha "$RELEASE_SHA" --directory output/website-release
+      - name: Preserve the release from this main workflow run
+        id: release
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: website-release-${{ github.sha }}
+          path: output/website-release/
+          include-hidden-files: true
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+
   gate:
     name: CI gate
     if: always()
@@ -168,3 +189,58 @@ jobs:
           test "$TEST" = success
           test "$DISTRIBUTION" = success
           test "$WEBSITE" = success
+
+  deploy:
+    name: Deploy website
+    needs: [gate, website]
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      vars.WEBSITE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: website-production
+      url: https://audioascode.com
+    concurrency:
+      group: website-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts
+        working-directory: web/cloudflare
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.website.outputs.artifact }}
+          path: output/website-release
+          merge-multiple: true
+      - name: Verify the release before exposing credentials
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          python .github/scripts/site_release.py verify --site audio-as-code --sha "$RELEASE_SHA" --directory output/website-release
+          python .github/scripts/site_release.py prepare --site audio-as-code --sha "$RELEASE_SHA" --directory output/website-release
+      - name: Publish, verify production, and roll back a failed release
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_ACCOUNT_ID: '52b57879a0260045efcd7a51b2bbdfdb'
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: python .github/scripts/site_release.py deploy --site audio-as-code --sha "$RELEASE_SHA" --directory output/website-release
+      - name: Preserve deployment and rollback evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: website-deployment-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/website-release/deployment.json
+          if-no-files-found: warn
+          retention-days: 30

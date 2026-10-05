@@ -164,3 +164,24 @@ with urlopen(request, timeout=30) as response:
 The HTML cache policy does not change this zone access behavior. Workers
 observability logs and traces also remain enabled independently of client-side
 analytics.
+
+## Releases from GitHub
+
+After the complete CI gate passes on `main`, the website job preserves the tested
+site with a commit marker and SHA-256 file manifest. The deployment job downloads
+that exact artifact, verifies it, stages assets without credentials, then publishes
+through the `website-production` environment. That environment must permit only
+`main` and hold a restricted `CLOUDFLARE_API_TOKEN`, scoped to this account's
+Workers deployment and R2 upload permissions. Do not store a workstation OAuth
+token. Set the repository variable `WEBSITE_DEPLOY_ENABLED=true` after setup.
+
+Deployments are serialized and refuse stale commits. Large media uploads finish
+before the Worker changes. `/release.json` identifies the deployed commit. Live
+checks cover core pages, discovery endpoints, missing routes and large-file
+range/ETag behavior. A failed verification rolls back the observed deployment,
+provided production has not since changed outside the workflow. Ambiguous upload
+failures require reconciliation, not blind retries. The deployment artifact
+records the outcome and previous Cloudflare version. Old R2 objects are retained.
+
+A rollback cannot reverse connected-resource changes. These checks do not replace
+listening tests or establish perceptual realism. PyPI publication stays separate.
