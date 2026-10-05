@@ -1209,17 +1209,73 @@ class Site:
             self.copy(source, f"electronic/{name}")
         page = (self.out / "electronic/index.html").read_text(encoding="utf-8")
         canonical = canonical_url(IDENTITY["canonical_origin"], "electronic/index.html")
+        title = "Procedural Electronic Music in Python · Audio as Code"
+        description = (
+            "Ode to Joy as procedural disco, techno, trance and drum and bass, "
+            "plus 27 electronic voices synthesized from code. "
+            "Download WAV, MIDI and editable scores."
+        )
+        image = IDENTITY["canonical_origin"].rstrip("/") + "/assets/social.png"
+        image_alt = (
+            "Audio as Code Electronic Lab: Ode to Joy rearranged as disco, techno, "
+            "trance and drum and bass, all synthesized from code"
+        )
+        og_twitter = "".join(
+            [
+                '<meta name="robots" content="index,follow,max-image-preview:large">',
+                '<meta property="og:type" content="website">',
+                '<meta property="og:site_name" content="Audio as Code">',
+                f'<meta property="og:title" content="{html.escape(title)}">',
+                f'<meta property="og:description" content="{html.escape(description)}">',
+                f'<meta property="og:url" content="{html.escape(canonical)}">',
+                f'<meta property="og:image" content="{html.escape(image)}">',
+                '<meta property="og:image:width" content="1200">',
+                '<meta property="og:image:height" content="630">',
+                '<meta property="og:image:type" content="image/png">',
+                f'<meta property="og:image:alt" content="{html.escape(image_alt)}">',
+                '<meta property="og:locale" content="en_US">',
+                '<meta name="twitter:card" content="summary_large_image">',
+                f'<meta name="twitter:title" content="{html.escape(title)}">',
+                f'<meta name="twitter:description" content="{html.escape(description)}">',
+                f'<meta name="twitter:image" content="{html.escape(image)}">',
+                f'<meta name="twitter:image:alt" content="{html.escape(image_alt)}">',
+                '<meta name="theme-color" content="#f9fbfd">',
+                '<link rel="icon" href="/assets/icon.svg">',
+            ]
+        )
+        json_ld = json.dumps(
+            {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "WebPage",
+                        "@id": canonical + "#webpage",
+                        "url": canonical,
+                        "name": title,
+                        "description": description,
+                        "inLanguage": "en",
+                        "isPartOf": {"@id": IDENTITY["canonical_origin"].rstrip("/") + "/#website"},
+                        "about": {"@id": IDENTITY["canonical_origin"].rstrip("/") + "/#software"},
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ).replace("<", "\\u003c")
+        page = re.sub(r"<title>.*?</title>", f"<title>{html.escape(title)}</title>", page, count=1)
         additions = (
-            f'<link rel="canonical" href="{canonical}">'
-            '<meta name="description" content="Hear procedural disco, techno, trance and '
-            'drum and bass. Download complete classical arrangements and editable scores.">'
+            f'<meta name="description" content="{html.escape(description)}">'
+            f'<link rel="canonical" href="{html.escape(canonical)}">'
+            + og_twitter
+            + f'<script type="application/ld+json">{json_ld}</script>'
             + analytics_html(self.analytics, "../")
         )
         page = page.replace("</title>", "</title>" + additions, 1)
         page = page.replace(
             "<main>",
-            '<main><p><a href="../index.html">Audio as Code</a> / '
-            '<a href="../instruments/index.html">Instrument library</a></p>',
+            '<main><p><a href="/">Audio as Code</a> / '
+            '<a href="/instruments/">Instrument library</a> · '
+            '<a href="/docs/composition">Composition</a> · '
+            '<a href="/docs/quickstart">Quickstart</a></p>',
             1,
         )
         self.write("electronic/index.html", page)

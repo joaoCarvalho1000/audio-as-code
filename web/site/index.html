@@ -1,4 +1,4 @@
-<!-- title: Audio as Code — Create music with AI agents and Python | description: Give your AI agent an open-source orchestra. Compose editable music for videos, games and presentations with code-generated instruments. Render WAV and MIDI locally. -->
+<!-- title: Audio as Code — AI Agent Music Framework in Python (WAV/MIDI) | description: Give your coding agent an open-source orchestra. Compose editable scores for video, games and slides, then render WAV and MIDI locally—no API keys. -->
 <script>
   // Mark script support before first paint; the headliner stays visible and its fixed box absorbs the font swap.
   document.documentElement.classList.add("js");
@@ -7,8 +7,9 @@
   <canvas class="plates" data-trace aria-hidden="true"></canvas>
   <div class="poster-grid">
     <div class="bill-head">
-      <h1 id="hero-title" class="presenter"><span class="presenter-name" data-knockout>Audio as Code</span> <span class="presenter-verb" data-knockout>presents</span></h1>
-      <p class="tagline" data-knockout>Describe the music your video, game or slides need. Your agent writes the score. Audio as Code brings the band.</p>
+      <p class="presenter" data-knockout><span class="presenter-name">Audio as Code</span> <span class="presenter-verb">presents</span></p>
+      <h1 id="hero-title" class="tagline" data-knockout>Create editable music with AI agents and Python</h1>
+      <p class="lede" data-knockout>Open-source Audio as Code: 70 instruments synthesized from code, WAV and MIDI rendered locally, and a score your agent can keep revising.</p>
     </div>
 
     <div class="headliner" data-headliner aria-hidden="true"><div class="hl-ink"><span class="hl-line">{{HEADLINE_1}}</span><span class="hl-line">{{HEADLINE_2}}</span></div></div>
@@ -37,7 +38,7 @@
         <div><dt>Seed</dt><dd><output data-seed>–</output></dd></div>
       </dl>
       <p class="lede" data-knockout>An open-source music framework for creative agents. Compose with {{PLAYABLE}} instruments synthesized from code, take the WAV into your project, and keep every note editable. No recorded samples.</p>
-      <p class="admission" data-knockout>Writing it yourself? <a class="key-quick" href="{{FIRST_GUIDE}}">Developer quickstart</a> · <a href="source.html">Get the source</a>. Version {{VERSION}} · Python 3.10+.</p>
+      <p class="admission" data-knockout>Writing it yourself? <a class="key-quick" href="{{FIRST_GUIDE}}">Developer quickstart</a> · <a href="/source">Get the source</a>. Version {{VERSION}} · Python 3.10+.</p>
     </div>
 
     <div class="tabs" data-frames role="group" aria-label="Sections: jump to a section"></div>
@@ -97,13 +98,13 @@ A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my
       </div>
     </li>
   </ol>
-  <p class="handoff-next">Working in Hyperframes, Codex or Claude Code? The <a href="docs/integrations.html">integrations guide</a> has recipes for a video timeline, a game's audio folder and a slide deck.</p>
+  <p class="handoff-next">Working in Hyperframes, Codex or Claude Code? The <a href="/docs/integrations">integrations guide</a> has recipes for a video timeline, a game's audio folder and a slide deck.</p>
   <ul class="handoff-links" aria-label="Agent and developer resources">
-    <li><a class="tag" href="docs/integrations.html">Integrations guide</a></li>
+    <li><a class="tag" href="/docs/integrations">Integrations guide</a></li>
     <li><a class="tag" data-handoff-skill href="skills/audio-as-code/SKILL.md">Agent skill · SKILL.md</a></li>
     <li><a class="tag" data-handoff-zip href="{{ARCHIVE}}" download>Source ZIP</a></li>
     <li><a class="tag" data-handoff-llms href="llms.txt">llms.txt</a></li>
-    <li><a class="tag" href="docs/agents.html">Agent guide</a></li>
+    <li><a class="tag" href="/docs/agents">Agent guide</a></li>
     <li><a class="tag" href="{{FIRST_GUIDE}}">Developer quickstart</a></li>
   </ul>
 </section>
@@ -183,7 +184,7 @@ A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my
       <li><strong>Revise the arrangement.</strong> Change a voice, thin the accompaniment or shift the tempo.</li>
       <li><strong>Keep the recipe.</strong> Save the score and source alongside the audio for the next edit.</li>
     </ul>
-    <a class="tag tag-ink" href="docs/agents.html">Read the agent guide<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
+    <a class="tag tag-ink" href="/docs/agents">Read the agent guide<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
   </div>
   <div class="tearoff-sheet">
     <p class="tearoff-call">Take one</p>
@@ -206,12 +207,12 @@ A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my
   <div class="inst-foot">
     <div>
       <p class="section-lede">Pluck a string, strike a bell, call in the brass. Every voice is generated from equations. These are playful, simplified instrument models; audition them to find the character your piece needs.</p>
-      <p class="section-lede">Shape the timing, move parts across the stereo field, and give the ending room to ring. <a href="docs/composition.html#tempo-movement-and-space">Explore tempo, movement and space</a>.</p>
+      <p class="section-lede">Shape the timing, move parts across the stereo field, and give the ending room to ring. <a href="/docs/composition#tempo-movement-and-space">Explore tempo, movement and space</a>.</p>
     </div>
     <div>
-      <a class="tag" href="instruments/index.html">Open the instrument library<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
+      <a class="tag" href="/instruments/">Open the instrument library<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
       <p class="fineprint">{{CLIPS}} preview clips: a famous-music arrangement, a phrase, and a single note or hit for every voice.</p>
-      <p><a href="electronic/index.html">Take the classical theme to the dance floor: disco, techno, trance and drum &amp; bass</a>.</p>
+      <p><a href="/electronic/">Take the classical theme to the dance floor: disco, techno, trance and drum &amp; bass</a>.</p>
     </div>
   </div>
 </section>
@@ -222,9 +223,9 @@ A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my
     <li>Version {{VERSION}} runs locally in Python. Install the package or download the source to get started.</li>
     <li>All {{PLAYABLE}} voices are synthesized prototypes, each with its own character and limits.</li>
     <li>Make instrumental music and musical cues for videos, games and slides. Speech and everyday sound effects need other tools.</li>
-    <li>Render offline, listen, then revise. The <a href="docs/reference.html">technical reference</a> covers timing, expression and export limits.</li>
+    <li>Render offline, listen, then revise. The <a href="/docs/reference">technical reference</a> covers timing, expression and export limits.</li>
   </ul>
-  <a class="tag tag-ink" href="source.html">Get the source<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
+  <a class="tag tag-ink" href="/source">Get the source<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></a>
 </section>
 
 <script type="application/json" id="pieces-data">{{PIECES}}</script>
