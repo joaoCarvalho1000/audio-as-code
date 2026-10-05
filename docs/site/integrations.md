@@ -1,5 +1,8 @@
 # Put the music in your project
 
+For a full landing on agent soundtracks (games cues, video beds, slide music),
+see [AI agent soundtrack with Python](/ai-agent-soundtrack-python/).
+
 Make a reveal land, give the boss fight some nerve, or let the last slide take a
 bow. Your agent composes with Audio as Code, brings the WAV into your creative
 project, and keeps the score for revisions.

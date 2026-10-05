@@ -1544,6 +1544,11 @@ def build(
         ARCHIVE_ROOTS=", ".join(f"<code>{html.escape(r)}</code>" for r in archive["roots"]),
         VERSION=__version__,
     )
+    if (WEB / "ai-agent-soundtrack-python.html").exists():
+        site.templated(
+            "ai-agent-soundtrack-python.html",
+            "ai-agent-soundtrack-python/index.html",
+        )
     if (WEB / "404.html").exists():
         site.templated("404.html", "404.html", root="/")
     write_discovery(
