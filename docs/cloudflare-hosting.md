@@ -185,3 +185,39 @@ records the outcome and previous Cloudflare version. Old R2 objects are retained
 
 A rollback cannot reverse connected-resource changes. These checks do not replace
 listening tests or establish perceptual realism. PyPI publication stays separate.
+
+### Automation security and recovery
+
+Pull request builds receive no production credentials. Website publication uses
+only the artifact ID from the same successful main-branch run, after its complete
+file inventory and commit marker have been verified. Actions use pinned commits;
+the production environment must exclude PR branches and tags.
+
+A unique release marker must match Cloudflare's deployment metadata before the
+script considers that deployment its own. If verification fails, rollback is
+attempted only while that recorded deployment is still current. This is a
+best-effort concurrency check, not an atomic Cloudflare lock. Keep other production
+deployers stopped while this pipeline is publishing or recovering.
+
+Download the `website-deployment-*` report after a failure. `publishing`,
+`rolling_back`, `rollback_failed`, and `needs_reconciliation` all require checking
+Cloudflare's current deployment against the recorded IDs before taking action.
+A cancelled job or network outage can leave an uncertain result. Do not blindly
+rerun or restore an old version. Pause deployments, inspect the current version
+and public `/release.json`, then choose the intended tested commit. Retain media
+needed by previous Audio as Code versions. Raw API errors and credentials must
+never be copied into these reports.
+
+CI success alone is not an independent review. A PR can propose changes to its
+own workflow, tests, HTML scripts, redirects or dependencies. Keep unattended
+merging disabled until review from a separate trusted identity is enforced for
+the latest commit. A label, comment, scan completion or a bot's assertion of
+approval is insufficient. Treat PR descriptions, comments, repository instructions
+and generated files as untrusted input to reviewing agents. Do not execute PR
+code in a local session holding deployment credentials.
+
+Cloudflare credentials must use the narrowest supported resource/product scope.
+Account-level Pages Edit can affect other Pages projects in that account; it is
+not a project-only credential. Keep credentials in the GitHub environment, rotate
+them when necessary, and remove unused tokens. Public build logs and artifacts
+must contain no keys, local browser profiles or environment files.

@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
@@ -111,6 +112,20 @@ def current(kind):
     }
 
 
+def owns_deployment(kind, deployed, sha, marker):
+    """Match this invocation, not just whichever deployment became current last."""
+    if kind == "audio-as-code":
+        versions = deployed["versions"]
+        if len(versions) != 1 or versions[0].get("percentage") != 100:
+            return False
+        version = api("/workers/scripts/audioascode/versions/" + versions[0]["version_id"])
+        return version.get("annotations", {}).get("workers/message") == marker
+    metadata = api("/pages/projects/open-world-clock/deployments/" + deployed["id"])[
+        "deployment_trigger"
+    ]["metadata"]
+    return metadata.get("commit_hash") == sha and metadata.get("commit_message") == marker
+
+
 def latest_main(kind, sha):
     require(os.environ.get("GITHUB_REF") == "refs/heads/main", "Production only accepts main")
     require(
@@ -135,6 +150,7 @@ def wrangler(kind, *args):
     executable = ROOT / SITES[kind][1] / "node_modules/wrangler/bin/wrangler.js"
     child_env = dict(os.environ)
     child_env.pop("GH_TOKEN", None)
+    child_env.pop("GITHUB_TOKEN", None)
     subprocess.run(
         ["node", str(executable), *map(str, args)],
         cwd=ROOT / SITES[kind][1],
@@ -282,7 +298,14 @@ def deploy(kind, sha, target):
     verify(kind, sha, target)
     latest_main(kind, sha)
     before = current(kind)
-    record = {"repository": kind, "sha": sha, "previous": before, "state": "prepared"}
+    marker = "GitHub " + sha + " release " + uuid.uuid4().hex
+    record = {
+        "repository": kind,
+        "sha": sha,
+        "previous": before,
+        "state": "prepared",
+        "marker": marker,
+    }
     record_path = target / "deployment.json"
     write_json(record_path, record)
     if kind == "audio-as-code":
@@ -310,6 +333,8 @@ def deploy(kind, sha, target):
         "Production changed outside this release; refusing to overwrite it",
     )
     try:
+        record["state"] = "publishing"
+        write_json(record_path, record)
         if kind == "audio-as-code":
             wrangler(
                 kind,
@@ -317,7 +342,7 @@ def deploy(kind, sha, target):
                 "--config",
                 target / "stage/wrangler.jsonc",
                 "--message",
-                "GitHub " + sha,
+                marker,
             )
         else:
             wrangler(
@@ -332,9 +357,16 @@ def deploy(kind, sha, target):
                 "--commit-hash",
                 sha,
                 "--commit-dirty=false",
+                "--commit-message",
+                marker,
+                "--no-bundle",
             )
         after = current(kind)
         require(after["id"] != before["id"], "No new production deployment was observed")
+        require(
+            owns_deployment(kind, after, sha, marker),
+            "Observed deployment is not proven to belong to this release",
+        )
         record.update(state="deployed", deployed=after)
         write_json(record_path, record)
         for attempt in range(6):
@@ -348,13 +380,21 @@ def deploy(kind, sha, target):
         record["state"] = "verified"
         write_json(record_path, record)
     except Exception:
-        # Never undo a newer deployment made outside this serialized workflow.
-        now = current(kind)
-        if record.get("deployed", {}).get("id") == now["id"]:
-            rollback(kind, before)
-            record["state"] = "rolled_back"
-        else:
-            record["state"] = "needs_reconciliation"
+        # Record uncertainty before another network request can fail. Never save
+        # raw exceptions: response bodies and subprocess errors may contain secrets.
+        record["state"] = "needs_reconciliation"
+        write_json(record_path, record)
+        try:
+            now = current(kind)
+            if record.get("deployed", {}).get("id") == now["id"]:
+                # This check is not an atomic lock against outside deployers.
+                record["state"] = "rolling_back"
+                write_json(record_path, record)
+                rollback(kind, before)
+                record["state"] = "rolled_back"
+        except Exception:
+            if record["state"] == "rolling_back":
+                record["state"] = "rollback_failed"
         write_json(record_path, record)
         raise
 
