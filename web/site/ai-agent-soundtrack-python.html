@@ -1,0 +1,80 @@
+<!-- title: AI Agent Soundtrack with Python: Editable Game & Video Music | description: Let your coding agent compose a soundtrack in Python: game cues, video beds and slide music rendered locally to WAV and MIDI, with a score you can revise. -->
+<section class="stock stock-paper sheet guide-like" id="soundtrack">
+  <p class="crumbs"><a href="/">Audio as Code</a> / AI agent soundtrack</p>
+  <h1>Give your AI agent a soundtrack it can write in Python</h1>
+  <p class="section-lede">Describe the scene. Your coding agent writes an editable score with Audio as Code, renders WAV and MIDI locally, and keeps every note revisable. No API key to synthesize.</p>
+  <p class="actions">
+    <a class="tag tag-ink" href="/#handoff">Copy the agent prompt</a>
+    <a class="tag" href="/docs/quickstart">Developer quickstart</a>
+    <a class="tag" href="/source">Get the source</a>
+  </p>
+
+  <h2 id="delivers">What your agent delivers</h2>
+  <ul>
+    <li><strong>WAV</strong> ready for your game, video timeline or slides.</li>
+    <li><strong>MIDI</strong> for your DAW.</li>
+    <li><strong>score.json</strong>, the editable score your agent can keep revising.</li>
+    <li><strong>Python source</strong> beside the audio so the next change is a revision, not a rewrite.</li>
+    <li><strong>Render report</strong> with duration and level checks.</li>
+  </ul>
+
+  <h2 id="how">How it works in three steps</h2>
+  <ol>
+    <li>Describe the scene in plain words (mood, BPM, instruments, duration).</li>
+    <li>The agent reads the skill (<code>skills/audio-as-code/SKILL.md</code> + <a href="/llms.txt">llms.txt</a>), writes the score, then validates and renders it locally.</li>
+    <li>You listen and ask for changes the way you would brief a musician.</li>
+  </ol>
+  <p><a class="tag tag-ink" href="/#handoff">Copy the agent prompt on the home page</a></p>
+
+  <h2 id="example">Example: a 16-second boss-fight cue for a game</h2>
+  <p>Brief your agent roughly like this:</p>
+  <blockquote>
+    <p>“A tiny dragon thinks this is the final boss fight. Give me a 16-second battle cue around 150 BPM, with timpani, low brass, string ostinato, and a separate 2-second victory sting.”</p>
+  </blockquote>
+  <p>What you get back: two WAV assets for the game’s audio folder, plus editable scores and Python sources so you can thin the drums or move the sting without starting over. Recipes for Hyperframes, Codex and Claude Code live in the <a href="/docs/integrations">integrations guide</a>.</p>
+
+  <h2 id="python">The Python behind it</h2>
+  <p>Scores are ordinary Python: patterns, tracks, a song, then render and export. Typical CLI loop:</p>
+  <figure class="code" data-lang="sh"><figcaption><span>shell</span></figcaption><pre><code>aac validate path/to/score.json
+aac render path/to/score.json -o output/cue.wav --report output/report.json
+aac analyze output/cue.wav</code></pre></figure>
+  <p>A <code>seed</code> keeps renders reproducible for the same score and environment. Start with the <a href="/docs/quickstart">quickstart</a> and the <a href="/docs/reference">technical reference</a>.</p>
+
+  <h2 id="uses">Soundtracks for games, videos and slides</h2>
+  <ul>
+    <li><strong>Games:</strong> separate cues per state (fight, victory, menu), each as its own WAV.</li>
+    <li><strong>Video:</strong> music as a timeline asset (see the Hyperframes recipe in <a href="/docs/integrations">integrations</a>).</li>
+    <li><strong>Slides / reports:</strong> short opening and closing beds.</li>
+  </ul>
+  <p>Codex and Claude Code use the same skill; only the host changes.</p>
+
+  <h2 id="revise">Revise like you would brief a musician</h2>
+  <p>“Keep the melody, give it to the marimba, calm the drums, land the last note on the reveal.” Named sections, motifs, instrument swaps, gain/pan automation and stems (without master effects) are all fair game. See <a href="/docs/composition">composition</a> and the <a href="/docs/agents">agent guide</a>.</p>
+
+  <h2 id="instruments">70 instruments, all synthesized from code</h2>
+  <p>Orchestra plus electronics (acid bass, supersaw, Reese, 808/909-style kicks, and more), all without recorded samples. Browse the <a href="/instruments/">instrument library</a>, or hear Ode to Joy as disco, techno, trance and drum &amp; bass in the <a href="/electronic/">electronic lab</a>.</p>
+
+  <h2 id="limits">Limits worth knowing</h2>
+  <ul>
+    <li>Instrumental music and cues only, without speech or everyday sound effects.</li>
+    <li>WAV renders up to 300 seconds (tails included). Rendering is offline and uses real CPU time; orchestral voices are slower than electronic ones.</li>
+    <li>Instruments are code-generated approximations, not recordings.</li>
+    <li>MIDI keeps notes and tempo; audio controls (gain/pan automation, effects, articulations) do not carry over.</li>
+    <li>Requires Python 3.10+ and an agent with shell access.</li>
+  </ul>
+
+  <h2 id="faq">FAQ</h2>
+  <details><summary>Do I need an API key to render?</summary><p>No. Synthesis and rendering run locally on your machine.</p></details>
+  <details><summary>Which agents work?</summary><p>Any agent with a shell and Python 3.10+. Documented recipes cover Codex, Claude Code and Hyperframes in the <a href="/docs/integrations">integrations guide</a>.</p></details>
+  <details><summary>Can I edit the music later?</summary><p>Yes. Keep <code>score.json</code> and the Python source beside the WAV/MIDI; ask your agent for a revision instead of a rewrite.</p></details>
+  <details><summary>Is Audio as Code open source?</summary><p>Yes. MIT licensed. Download the <a href="/source">source archive</a> or clone the GitHub repository.</p></details>
+
+  <h2 id="start">Start now</h2>
+  <ul class="handoff-links" aria-label="Next steps">
+    <li><a class="tag tag-ink" href="/#handoff">Copy the agent prompt</a></li>
+    <li><a class="tag" href="/docs/quickstart">Quickstart</a></li>
+    <li><a class="tag" href="/docs/integrations">Integrations</a></li>
+    <li><a class="tag" href="/source">Download source</a></li>
+    <li><a class="tag" href="/electronic/">Electronic lab</a></li>
+  </ul>
+</section>
