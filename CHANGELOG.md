@@ -5,6 +5,10 @@ are separate.
 
 ## Unreleased
 
+## 0.3.0 — 2026-10-05
+
+Published on [PyPI](https://pypi.org/project/audio-as-code/0.3.0/).
+
 ### Added
 
 - 21 generated voices for disco, techno, trance and drum & bass, with explicit
