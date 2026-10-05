@@ -128,7 +128,7 @@ jobs:
             output/classic-reimaginations
             output/instruments
             output/electronic-music
-          key: media-v1-${{ runner.os }}-${{ steps.runtime.outputs.fingerprint }}-${{ hashFiles('src/**', 'examples/**', 'schemas/**', 'web/instrument-browser.html', 'pyproject.toml', 'uv.lock') }}
+          key: media-v1-${{ runner.os }}-${{ steps.runtime.outputs.fingerprint }}-${{ hashFiles('src/**', 'examples/**', 'schemas/**', 'web/instrument-browser.html', 'pyproject.toml', 'uv.lock', 'LICENSE', 'README.md', 'docs/classic-showcase.md', 'docs/classic-reimaginations.md') }}
       - name: Render the complete public demo inputs
         if: steps.media.outputs.cache-hit != 'true'
         run: |
