@@ -7,7 +7,6 @@ The fixture uses built HTML, but serves it entirely through browser routes.
 from __future__ import annotations
 
 import json
-import os
 import re
 import runpy
 from pathlib import Path
@@ -35,17 +34,6 @@ const instance = {
 window.posthog = instance;
 __sdkOptions.loaded(instance);
 """
-
-
-@pytest.fixture
-def browser():
-    playwright = pytest.importorskip("playwright.sync_api")
-    if not (SITE / "index.html").exists():
-        pytest.skip("Build output/site first")
-    with playwright.sync_playwright() as session:
-        browser = session.chromium.launch(executable_path=os.environ.get("AAC_CHROMIUM") or None)
-        yield browser
-        browser.close()
 
 
 def page_for(browser, *, config=None, init="", sdk=SDK, host="site.example", path="index.html"):

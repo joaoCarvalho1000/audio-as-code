@@ -1430,6 +1430,23 @@ def preflight(
     return resolved
 
 
+def check_website_copy(out: Path) -> list[str]:
+    """Check published copy, including entity-encoded HTML and escaped asset strings."""
+    problems = []
+    text_types = {".html", ".js", ".css", ".json", ".md", ".txt", ".svg", ".xml"}
+    em_dash = re.compile(r"\u2014|\\(?:u2014|U00002014)|\\2014\b", re.IGNORECASE)
+    for path in sorted(out.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in text_types:
+            continue
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if em_dash.search(html.unescape(line)):
+                problems.append(
+                    f"{path.relative_to(out).as_posix()}:{line_number}: "
+                    "website copy contains an em dash; rewrite its punctuation"
+                )
+    return problems
+
+
 def build(
     out: Path,
     compositions: Path = COMPOSITIONS,
@@ -1523,6 +1540,7 @@ def build(
         [f"docs/{source_name(slug)}" for slug, *_ in guide_pages] + raw_docs,
     )
     problems = check_links(out)
+    site.warnings.extend(check_website_copy(out))
     summary = {
         "output": str(out),
         "pieces": [p["id"] for p in pieces],

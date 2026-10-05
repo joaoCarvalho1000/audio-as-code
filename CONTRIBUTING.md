@@ -62,6 +62,25 @@ The Linux Python 3.13 job also tests the optional loudness backend. For changes
 to that path, run `uv run --extra loudness pytest tests/test_loudness.py -W error`.
 Report checks you could not run; do not label an unrun audition or CI job as passed.
 
+The website CI job renders all public demos, builds the site with `--strict`,
+and runs Chromium checks for pages, playback and analytics privacy. To run its
+browser checks locally after the [website build](docs/website.md):
+
+```sh
+uv sync --locked --group browser --extra loudness
+uv run --no-sync python -m playwright install chromium
+uv run --no-sync pytest tests/test_site_analytics.py tests/test_site_browser.py
+```
+
+CI sets `AAC_REQUIRE_BROWSER=1`, making a missing browser dependency or built
+site a failure. The `CI gate` check fails if any prerequisite fails, is cancelled,
+or is skipped. Configure it as a required GitHub check after it has run on the
+repository. Defining the check in YAML does not enable branch protection.
+
+Website changes do not publish to Cloudflare or PyPI. Review bot-authored PRs
+against their latest commit, including generated pages and browser reports.
+Do not bypass a failing check because the same failure exists on `main`.
+
 For website hosting changes, install Node.js 24 and run the hosting checks from
 the repository root. These install the locked tools and check Wrangler without
 deploying:
