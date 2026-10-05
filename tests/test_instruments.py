@@ -88,7 +88,7 @@ def test_filters_and_meaningful_errors():
     assert {
         item.id
         for item in list_instruments(family="keyboards", engine="string", include_planned=True)
-    } == {"piano", "harpsichord"}
+    } == {"piano", "harpsichord", "clavinet"}
     assert {item.id for item in list_instruments(family="woodwinds")} == {
         "flute",
         "clarinet",
@@ -142,7 +142,7 @@ def test_cli_discovery_and_unknown_score_errors(tmp_path, capsys):
     assert main(["instruments"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["synthesis_policy"] == "code_only"
-    assert result["counts"] == {"available": 49, "planned": 0}
+    assert result["counts"] == {"available": 70, "planned": 0}
     assert main(["instruments", "--all", "--family", "bowed_strings"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["counts"] == {"available": 4, "planned": 0}

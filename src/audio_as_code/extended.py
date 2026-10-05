@@ -238,7 +238,8 @@ def _recorder(
     breath = settings["breath"]
     if breath:
         noise = colored_noise(len(t), rate, seed + 1, 1200, 7500)
-        noise = modulate_noise(noise, phase, float(np.max(frequencies)) + 2, rate, 0.18)
+        maximum_frequency = frequency * 2 ** ((depth + 0.35) / 1200) + 2
+        noise = modulate_noise(noise, phase, maximum_frequency, rate, 0.18)
         envelope = (1 - np.exp(-t / 0.003)) * (0.55 + 0.8 * np.exp(-t / 0.045))
         signal += 0.15 * breath * noise * envelope * pressure
     return signal

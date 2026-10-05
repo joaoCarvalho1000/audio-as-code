@@ -1,10 +1,13 @@
 # Tempo, automation, effects, and release
 
 Audio as Code supports these optional features in **schema version 1**. Existing
-scores retain fixed BPM, their original within-note fades, identical seeded audio
-in the same environment, and their previous canonical score hashes when new
+scores retain fixed BPM, within-note fades, and their canonical score hashes when new
 fields are left at their defaults. The expanded saved JSON includes new defaults;
 the renderer omits those defaults when computing the score hash.
+
+Audio is deterministic for a fixed engine and runtime. Synthesis improvements
+can change the sound without changing the score ID; pin the engine version as
+well as saving the score when reproducing a render.
 
 Run the complete example:
 

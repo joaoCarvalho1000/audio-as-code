@@ -5,9 +5,36 @@ are separate.
 
 ## Unreleased
 
+### Added
+
+- 21 generated voices for disco, techno, trance and drum & bass, with explicit
+  resonant spectral envelopes, unison, glide, FM and electronic drum controls.
+  Catalog descriptions distinguish designed timbres from physical/circuit models.
+- Slap/pop/muted bass and muted electric-guitar articulations.
+- Resonant filter sweeps, oversampled distortion, stereo chorus, phaser,
+  tempo-synced tremolo and beat-triggered ducking in track/master effect chains.
+- Four complete dance arrangements of the 16-bar “Ode to Joy” hymn edition,
+  alongside its original setting, dry auditions and editable score/MIDI exports.
+
 ### Fixed
 
+- Generated attack/breath noise no longer depends on note length or wraps the
+  end of a note onto its attack. Noise-sideband filtering uses causal convolution.
+- Pulse-width voices now use the centered pulse's correct Fourier phase.
+- Basic oscillators taper partials below Nyquist without normalizing away the
+  loss of inaudible harmonics. Distortion reconstructs its input with a sinc
+  filter before saturation, reducing imaging and preserving treble response.
 - Release verification now waits for PyPI's installation index as well as release metadata.
+
+### Changed
+
+- Normal bowed-string and wind notes now use the same separate harmonic/noise
+  release laws as articulated notes when `release_seconds` is positive.
+- Bell and clavinet use finite strike contact; electronic hats and ride lose
+  upper-band energy faster than their lower ringing modes.
+- These synthesis refinements intentionally change generated audio from older
+  builds. Canonical score IDs are preserved; seeded rendering is repeatable
+  within the same engine/runtime. Pin the engine version when reproducing audio.
 
 ## 0.2.0 ? 2026-10-04
 

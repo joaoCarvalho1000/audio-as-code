@@ -2,8 +2,8 @@
 
 Run `uv run python examples/instrument_browser.py`, then open
 `output/instruments/index.html`. **Music** is the default preview mode.
-All 49 instruments have a dedicated short music arrangement, a dry phrase, and a
-single note/hit preview: 147 clips at 44.1 kHz. Music clips are roughly 11–24 seconds.
+All 70 instruments have a dedicated short music arrangement, a dry phrase, and a
+single note/hit preview: 210 clips at 44.1 kHz. Music clips are roughly 11–24 seconds.
 
 The music comes from five credited public-domain score editions. Imported data
 contains notes, not audio. Each music demo offers WAV, approximate MIDI, editable

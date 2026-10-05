@@ -8,6 +8,8 @@ from functools import lru_cache
 import numpy as np
 from numpy.typing import NDArray
 
+from ._fir import convolve_causal, kernel_from_magnitude
+
 Signal = NDArray[np.float64]
 
 
@@ -44,15 +46,50 @@ def nyquist_gain(frequency: Signal | float, rate: int) -> Signal | float:
     return 0.5 + 0.5 * np.cos(np.pi * fraction)
 
 
-def colored_noise(frames: int, rate: int, seed: int, low: float, high: float) -> Signal:
-    if frames == 0:
-        return np.zeros(0)
-    noise = np.random.Generator(np.random.PCG64(seed)).standard_normal(frames)
-    frequencies = np.fft.rfftfreq(frames, 1 / rate)
+@lru_cache(maxsize=128)
+def _noise_kernel(rate: int, low: float, high: float) -> Signal:
+    half = math.ceil(rate * 0.012)
+    size = 1 << (max(4096, 8 * half) - 1).bit_length()
+    frequencies = np.fft.rfftfreq(size, 1 / rate)
     shape = (frequencies / max(low, 1)) ** 2
     shape = shape / (1 + shape) / (1 + (frequencies / high) ** 4)
     shape *= nyquist_gain(frequencies, rate)
-    return np.fft.irfft(np.fft.rfft(noise) * shape, n=frames) * 0.3
+    kernel = kernel_from_magnitude(shape, half)
+    # Restore the exact DC null after windowing, without changing the passband.
+    window = np.kaiser(len(kernel), 10)
+    kernel -= np.sum(kernel) * window / np.sum(window)
+    kernel.flags.writeable = False
+    return kernel
+
+
+def colored_noise(frames: int, rate: int, seed: int, low: float, high: float) -> Signal:
+    """Stationary seeded noise whose attack never depends on the note's length.
+
+    A generated FIR shapes white noise with deterministic prehistory. Whole
+    processing blocks are generated even for short notes, so extending a tail
+    cannot rewrite the preceding noise or wrap the end back onto the attack.
+    """
+    if frames == 0:
+        return np.zeros(0)
+    kernel = _noise_kernel(rate, low, high)
+    history = len(kernel) - 1
+    size = 1 << (max(4096, len(kernel) * 2) - 1).bit_length()
+    block = size - history
+    count = math.ceil((frames + history) / block) * block
+    noise = np.random.Generator(np.random.PCG64(seed)).standard_normal(count)
+    return convolve_causal(noise, kernel)[history : history + frames] * 0.3
+
+
+@lru_cache(maxsize=128)
+def _sideband_kernel(cutoff: float, rate: int) -> Signal:
+    half = math.ceil(5 * rate / max(cutoff * 0.1, rate * 0.005))
+    size = 1 << (max(4096, 8 * half) - 1).bit_length()
+    bins = np.fft.rfftfreq(size, 1 / rate)
+    shoulder = np.clip((bins / cutoff - 0.9) / 0.1, 0, 1)
+    kernel = kernel_from_magnitude(0.5 + 0.5 * np.cos(np.pi * shoulder), half)
+    kernel /= np.sum(kernel)
+    kernel.flags.writeable = False
+    return kernel
 
 
 def modulate_noise(
@@ -67,10 +104,7 @@ def modulate_noise(
     cutoff = 0.49 * rate - maximum_frequency
     if not len(noise) or cutoff <= 0 or depth == 0:
         return noise
-    bins = np.fft.rfftfreq(len(noise), 1 / rate)
-    shoulder = np.clip((bins / cutoff - 0.9) / 0.1, 0, 1)
-    gain = 0.5 + 0.5 * np.cos(np.pi * shoulder)
-    band_limited = np.fft.irfft(np.fft.rfft(noise) * gain, n=len(noise))
+    band_limited = convolve_causal(noise, _sideband_kernel(cutoff, rate))
     return noise + depth * band_limited * np.sin(phase)
 
 

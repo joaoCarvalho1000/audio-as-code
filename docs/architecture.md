@@ -38,6 +38,8 @@ flowchart TD
 | `orchestra.py` | Additional procedural instrument synthesis and source/filter approximations. |
 | `_orchestra_profiles.py` | Private immutable instrument parameters shared by the orchestra models; keep numerical processing in `orchestra.py`. |
 | `extended.py` | Paired-string mandolin, kalimba lamellae, celesta bars, and recorder jet-spectrum models. |
+| `electronic.py`, `_electronic_dsp.py`, `_electronic_drums.py` | Dance voices, band-limited harmonic oscillators, oversampled FM, clavinet and generated electronic percussion. |
+| `_modulation_effects.py` | Resonant filtering, saturation, chorus, phaser and beat-aware gain modulation. |
 | `acoustics.py` | Shared generated excitations, modal/resonance utilities, and anti-alias helpers. |
 | `automation.py`, `effects.py` | Gain/pan lane evaluation, finite generated delay/reverb, and effect-tail accounting. |
 | `midi.py` | Type-1 Standard MIDI File export, tempo/program/pan mapping, note quantization, and channel/overlap checks. |
@@ -63,7 +65,7 @@ half-pedaling and sympathetic resonance are not modeled. See [piano sustain](pia
 `schemas/song-v1.schema.json` is generated from `Song.model_json_schema()`. Runtime
 checks additionally enforce unique track names, note bounds, supported controls,
 and cross-field relationships. Schema version `"1"` is independent of package
-version `0.2.0`. Breaking the score contract requires explicit version/migration
+version `0.3.0`. Breaking the score contract requires explicit version/migration
 work; adding a Python helper does not automatically change the score schema.
 
 Rendering revalidates scores and is limited to 300 seconds including tails. It

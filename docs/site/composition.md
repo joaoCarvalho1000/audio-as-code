@@ -158,7 +158,7 @@ Track(name="Bass", instrument="bass_guitar", gain=0.65, pan=-0.1, notes=bass_not
 
 ## Choosing instruments
 
-`aac instruments` lists the 49 playable voices with family, engine, supported controls, and defaults. All are generated from code: modal resonances, a damped string loop, harmonic source/filter models, and electronic oscillators. They are approximations, not calibrated replicas; read each entry's `description`.
+`aac instruments` lists the 70 playable voices with family, engine, supported controls, and defaults. All are generated from code: modal resonances, a damped string loop, harmonic source/filter models, and electronic oscillators. They are approximations, not calibrated replicas; read each entry's `description`.
 
 | Family | Instrument IDs |
 | --- | --- |

@@ -1,6 +1,6 @@
 # Instrument foundation
 
-Audio as Code generates instrument sounds from equations. No recordings, sample libraries, SoundFonts, measured impulse responses, or external synthesis services are used. All 49 catalog entries are playable prototypes, including the composite drum-machine kit. **Available means renderable, not calibrated or perceptually realistic.** See [orchestra models and limits](orchestra.md).
+Audio as Code generates instrument sounds from equations. No recordings, sample libraries, SoundFonts, measured impulse responses, or external synthesis services are used. All 70 catalog entries are playable prototypes, including the composite drum-machine kit. **Available means renderable, not calibrated or perceptually realistic.** See [orchestra models and limits](orchestra.md).
 
 ## Musical families
 
@@ -10,14 +10,19 @@ Families describe how a musician finds instruments. These practical groups are n
 | --- | --- |
 | `plucked_strings` | `guitar`, `electric_guitar`, `bass_guitar`, `harp`, `ukulele`, `banjo`, `mandolin` |
 | `bowed_strings` | `violin`, `viola`, `cello`, `double_bass` |
-| `keyboards` | `piano`, `electric_piano`, `organ`, `harpsichord`, `celesta` |
+| `keyboards` | `piano`, `electric_piano`, `organ`, `harpsichord`, `celesta`, `clavinet` |
 | `woodwinds` | `flute`, `clarinet`, `saxophone`, `oboe`, `bassoon`, `recorder` |
 | `brass` | `trumpet`, `trombone`, `french_horn`, `tuba` |
-| `percussion` | `kick`, `snare`, `hat`, `toms`, `cymbal`, `congas`, `bongos`, `tambourine` |
+| `percussion` | `kick`, `snare`, `hat`, `toms`, `cymbal`, `congas`, `bongos`, `tambourine`, `kick_808`, `kick_909`, `clap`, `electronic_snare`, `metal_hat`, `open_hat`, `electronic_ride`, `fm_percussion` |
 | `pitched_percussion` | `marimba`, `xylophone`, `vibraphone`, `glockenspiel`, `bell`, `timpani`, `kalimba` |
-| `electronic` | `sine`, `triangle`, `pluck`, `bass`, `pad`, `synthesizer`, `drum_machine`, `theremin` |
+| `electronic` | `sine`, `triangle`, `pluck`, `bass`, `pad`, `synthesizer`, `drum_machine`, `theremin`, `acid_bass`, `supersaw`, `reese_bass`, `fm_bass`, `string_machine`, `disco_bass`, `trance_pluck`, `fm_bell`, `wavetable_pad`, `sync_lead`, `hoover`, `sub_bass` |
 
 `bass` remains the original synth bass; `bass_guitar` is a modal string/pickup approximation. `guitar` remains the original damped-string model. Existing IDs retain their meanings.
+
+Version 0.3.0 adds 21 [electronic voices](electronic-instruments.md), including
+designed harmonic/unison/FM voices and oscillator/noise drums. The same guide
+covers bass/guitar gestures and dance effects. Version 0.2.0 has 49 entries;
+always inspect the installed catalog before composing.
 
 The [extended instrument models](extended-instruments.md) add paired mandolin
 strings, kalimba lamellae, celesta bars, and a recorder jet-spectrum approximation.
@@ -47,7 +52,7 @@ uv run aac instruments --engine modal
 uv run aac instruments --all
 ```
 
-Discovery defaults to available entries. `--all` also includes any future planned entries; none remain in the current 49-entry catalog. Family and engine filters can be combined. The JSON response includes:
+Discovery defaults to available entries. `--all` also includes any future planned entries; none remain in the current 70-entry catalog. Family and engine filters can be combined. The JSON response includes:
 
 - `catalog_version`, `synthesis_policy` (`code_only`), families, and engine definitions.
 - Instrument IDs, names, availability, and truthful descriptions.
@@ -76,7 +81,9 @@ Metadata records are immutable. Catalog dictionaries are independent JSON-serial
 implements the additional modal and source/filter models, including the
 [piano and bowed strings](synthesis.md#piano-and-bowed-strings); its immutable
 coefficients live in `_orchestra_profiles.py`. `extended.py` implements mandolin,
-kalimba, celesta and recorder. `_voices.py` dispatches these engines, routes the
+kalimba, celesta and recorder. `electronic.py` implements the dance voices and
+clavinet using `_electronic_dsp.py` and `_electronic_drums.py`.
+`_voices.py` dispatches these engines, routes the
 generated kit, and applies note envelopes. `render.py` schedules note gates and
 handles velocity/gain/pan and mixing. `model.py` validates instrument-specific
 controls and kit pitches.

@@ -34,7 +34,7 @@ either render as a sampled recording.
 In an existing uv project, install the released engine and discover its contract:
 
 ```sh
-uv add "audio-as-code==0.2.0"
+uv add "audio-as-code==0.3.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
@@ -118,13 +118,13 @@ Run in the project where the package is installed (see the [quickstart](quicksta
 
 | Step | Command | stdout on success |
 | --- | --- | --- |
-| Installed version | `aac --version` | `{"version": "0.2.0"}` |
+| Installed version | `aac --version` | `{"version": "0.3.0"}` |
 | New project | `aac init "my music"` | Output directory, created filenames and next steps |
 | Runtime check | `aac doctor` | `ok`, individual checks and recovery hints |
 | Playable voices | `aac instruments` | `catalog_version`, `synthesis_policy`, `families`, `engines`, `instruments`, `counts` |
 | One family | `aac instruments --family woodwinds` | Same, filtered |
 | One engine | `aac instruments --engine modal` | Same, filtered |
-| Include planned | `aac instruments --all` | Same; today all 49 entries are available and `counts.planned` is 0 |
+| Include planned | `aac instruments --all` | Same; today all 70 entries are available and `counts.planned` is 0 |
 | Schema | `aac schema` or `aac schema -o schema.json` | The JSON Schema, or `{"output": ..., "schema_version": "1"}` |
 | Starter score | `aac demo -o demo.json` | `{"output": ..., "title": ...}` |
 | Validate | `aac validate score.json` | `valid`, `schema_version`, `title`, `bpm`, `beats`, `duration_seconds`, `render_duration_seconds`, `tracks`, `notes` |
@@ -248,7 +248,7 @@ Things worth knowing when you parse issues:
 
 - Tempo changes are ordered steps, with no continuous tempo ramps or meter/swing fields. `beat_at_seconds`, named `Section` revisions and repeated `LoopRegion` previews are Python helpers; section names do not become score JSON fields. See [arrangement](arrangement.md). Piano supports binary `Track.pedal` events; see the [pedal rules](piano-sustain.md) before targeting an exact duration.
 - Track gain/pan and song master gain support linear/step automation with **absolute** point values. Delay and generated reverb can run on tracks or the master; optional note releases extend past note-off. MIDI exports tempo changes but omits these audio controls. Stems omit master effects.
-- Thirteen bowed-string and wind voices accept `soft` and `accented` track or note articulations; other voices reject them. MIDI omits these gestures. See [articulations](articulations.md).
+- Thirteen bowed-string and wind voices accept `soft` and `accented` track or note articulations. Version 0.3.0 adds bass/guitar and acid gestures; discover supported values from each catalog entry. MIDI omits these gestures. See [articulations](articulations.md) and [electronic instruments](electronic-instruments.md).
 - Default WAV is 16-bit PCM; `pcm24` and `float32`, optional LUFS targeting, JSONL progress and cooperative cancellation are available. An exact excerpt preview still renders the whole song. See [production output](production-output.md).
 - 1–64 tracks, up to 100,000 notes, `beats` up to 65,536, WAV renders up to 300 seconds including tails. Long renders use hundreds of MB of RAM; keep iteration renders short.
 - Rendering is offline and takes real CPU time; orchestral voices are slower than the electronic ones.

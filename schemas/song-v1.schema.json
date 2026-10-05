@@ -60,6 +60,48 @@
       "title": "AutomationPoint",
       "type": "object"
     },
+    "Chorus": {
+      "additionalProperties": false,
+      "description": "Stereo modulated fractional delay; no feedback or recorded response.",
+      "properties": {
+        "type": {
+          "const": "chorus",
+          "default": "chorus",
+          "title": "Type",
+          "type": "string"
+        },
+        "rate_hz": {
+          "default": 0.7,
+          "maximum": 8,
+          "minimum": 0.05,
+          "title": "Rate Hz",
+          "type": "number"
+        },
+        "depth_ms": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Depth Ms",
+          "type": "number"
+        },
+        "delay_ms": {
+          "default": 18,
+          "maximum": 40,
+          "minimum": 11,
+          "title": "Delay Ms",
+          "type": "number"
+        },
+        "mix": {
+          "default": 0.35,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "title": "Chorus",
+      "type": "object"
+    },
     "Delay": {
       "additionalProperties": false,
       "description": "Finite echo train: first echo at full wet gain, successive echoes decay.",
@@ -100,6 +142,154 @@
         }
       },
       "title": "Delay",
+      "type": "object"
+    },
+    "Distortion": {
+      "additionalProperties": false,
+      "description": "Symmetric tanh saturation with four-times oversampling.",
+      "properties": {
+        "type": {
+          "const": "distortion",
+          "default": "distortion",
+          "title": "Type",
+          "type": "string"
+        },
+        "drive": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Drive",
+          "type": "number"
+        },
+        "mix": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "title": "Distortion",
+      "type": "object"
+    },
+    "Ducker": {
+      "additionalProperties": false,
+      "description": "Beat-triggered gain dips; a scheduled envelope, not an audio sidechain compressor.",
+      "properties": {
+        "type": {
+          "const": "ducker",
+          "default": "ducker",
+          "title": "Type",
+          "type": "string"
+        },
+        "trigger_beats": {
+          "items": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxItems": 4096,
+          "title": "Trigger Beats",
+          "type": "array"
+        },
+        "depth": {
+          "default": 0.75,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Depth",
+          "type": "number"
+        },
+        "attack_seconds": {
+          "default": 0.005,
+          "maximum": 0.1,
+          "minimum": 0.001,
+          "title": "Attack Seconds",
+          "type": "number"
+        },
+        "release_seconds": {
+          "default": 0.18,
+          "maximum": 2,
+          "minimum": 0.01,
+          "title": "Release Seconds",
+          "type": "number"
+        },
+        "mix": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "required": [
+        "trigger_beats"
+      ],
+      "title": "Ducker",
+      "type": "object"
+    },
+    "Filter": {
+      "additionalProperties": false,
+      "description": "Resonant state-variable filter with an optional whole-track frequency sweep.",
+      "properties": {
+        "type": {
+          "const": "filter",
+          "default": "filter",
+          "title": "Type",
+          "type": "string"
+        },
+        "mode": {
+          "default": "lowpass",
+          "enum": [
+            "lowpass",
+            "highpass",
+            "bandpass"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "cutoff_hz": {
+          "default": 2000,
+          "maximum": 20000,
+          "minimum": 30,
+          "title": "Cutoff Hz",
+          "type": "number"
+        },
+        "resonance": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Resonance",
+          "type": "number"
+        },
+        "end_cutoff_hz": {
+          "anyOf": [
+            {
+              "maximum": 20000,
+              "minimum": 30,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Cutoff Hz"
+        },
+        "sweep_seconds": {
+          "default": 1,
+          "maximum": 300,
+          "minimum": 0.01,
+          "title": "Sweep Seconds",
+          "type": "number"
+        },
+        "mix": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "title": "Filter",
       "type": "object"
     },
     "Note": {
@@ -158,7 +348,10 @@
             {
               "enum": [
                 "soft",
-                "accented"
+                "accented",
+                "slap",
+                "pop",
+                "muted"
               ],
               "type": "string"
             },
@@ -192,6 +385,41 @@
         "down"
       ],
       "title": "PedalEvent",
+      "type": "object"
+    },
+    "Phaser": {
+      "additionalProperties": false,
+      "description": "Four moving first-order all-pass stages, without feedback.",
+      "properties": {
+        "type": {
+          "const": "phaser",
+          "default": "phaser",
+          "title": "Type",
+          "type": "string"
+        },
+        "rate_hz": {
+          "default": 0.4,
+          "maximum": 8,
+          "minimum": 0.05,
+          "title": "Rate Hz",
+          "type": "number"
+        },
+        "depth": {
+          "default": 0.7,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Depth",
+          "type": "number"
+        },
+        "mix": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "title": "Phaser",
       "type": "object"
     },
     "Reverb": {
@@ -352,6 +580,132 @@
           ],
           "default": null,
           "title": "Detune Cents"
+        },
+        "cutoff_hz": {
+          "anyOf": [
+            {
+              "maximum": 20000,
+              "minimum": 20,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cutoff Hz"
+        },
+        "resonance": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resonance"
+        },
+        "filter_decay_seconds": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0.01,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filter Decay Seconds"
+        },
+        "filter_env_octaves": {
+          "anyOf": [
+            {
+              "maximum": 6,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filter Env Octaves"
+        },
+        "glide_seconds": {
+          "anyOf": [
+            {
+              "maximum": 2,
+              "minimum": 0.005,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Glide Seconds"
+        },
+        "fm_index": {
+          "anyOf": [
+            {
+              "maximum": 12,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fm Index"
+        },
+        "fm_ratio": {
+          "anyOf": [
+            {
+              "maximum": 8,
+              "minimum": 0.25,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fm Ratio"
+        },
+        "modulation_rate_hz": {
+          "anyOf": [
+            {
+              "maximum": 20,
+              "minimum": 0.05,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Modulation Rate Hz"
+        },
+        "tuning_semitones": {
+          "anyOf": [
+            {
+              "maximum": 24,
+              "minimum": -24,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tuning Semitones"
         }
       },
       "title": "Tone",
@@ -417,7 +771,28 @@
             "mandolin",
             "kalimba",
             "celesta",
-            "recorder"
+            "recorder",
+            "acid_bass",
+            "supersaw",
+            "reese_bass",
+            "fm_bass",
+            "clavinet",
+            "string_machine",
+            "disco_bass",
+            "trance_pluck",
+            "fm_bell",
+            "wavetable_pad",
+            "sync_lead",
+            "hoover",
+            "sub_bass",
+            "kick_808",
+            "kick_909",
+            "clap",
+            "electronic_snare",
+            "metal_hat",
+            "open_hat",
+            "electronic_ride",
+            "fm_percussion"
           ],
           "title": "Instrument",
           "type": "string"
@@ -467,7 +842,10 @@
             {
               "enum": [
                 "soft",
-                "accented"
+                "accented",
+                "slap",
+                "pop",
+                "muted"
               ],
               "type": "string"
             },
@@ -492,8 +870,14 @@
           "items": {
             "discriminator": {
               "mapping": {
+                "chorus": "#/$defs/Chorus",
                 "delay": "#/$defs/Delay",
-                "reverb": "#/$defs/Reverb"
+                "distortion": "#/$defs/Distortion",
+                "ducker": "#/$defs/Ducker",
+                "filter": "#/$defs/Filter",
+                "phaser": "#/$defs/Phaser",
+                "reverb": "#/$defs/Reverb",
+                "tremolo": "#/$defs/Tremolo"
               },
               "propertyName": "type"
             },
@@ -503,6 +887,24 @@
               },
               {
                 "$ref": "#/$defs/Reverb"
+              },
+              {
+                "$ref": "#/$defs/Filter"
+              },
+              {
+                "$ref": "#/$defs/Distortion"
+              },
+              {
+                "$ref": "#/$defs/Chorus"
+              },
+              {
+                "$ref": "#/$defs/Phaser"
+              },
+              {
+                "$ref": "#/$defs/Tremolo"
+              },
+              {
+                "$ref": "#/$defs/Ducker"
               }
             ]
           },
@@ -524,6 +926,50 @@
         "name"
       ],
       "title": "Track",
+      "type": "object"
+    },
+    "Tremolo": {
+      "additionalProperties": false,
+      "description": "Tempo-synced gain modulation; period is measured in quarter-note beats.",
+      "properties": {
+        "type": {
+          "const": "tremolo",
+          "default": "tremolo",
+          "title": "Type",
+          "type": "string"
+        },
+        "period_beats": {
+          "default": 0.5,
+          "maximum": 32,
+          "minimum": 0.125,
+          "title": "Period Beats",
+          "type": "number"
+        },
+        "depth": {
+          "default": 0.7,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Depth",
+          "type": "number"
+        },
+        "shape": {
+          "default": "sine",
+          "enum": [
+            "sine",
+            "gate"
+          ],
+          "title": "Shape",
+          "type": "string"
+        },
+        "mix": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mix",
+          "type": "number"
+        }
+      },
+      "title": "Tremolo",
       "type": "object"
     }
   },
@@ -612,8 +1058,14 @@
       "items": {
         "discriminator": {
           "mapping": {
+            "chorus": "#/$defs/Chorus",
             "delay": "#/$defs/Delay",
-            "reverb": "#/$defs/Reverb"
+            "distortion": "#/$defs/Distortion",
+            "ducker": "#/$defs/Ducker",
+            "filter": "#/$defs/Filter",
+            "phaser": "#/$defs/Phaser",
+            "reverb": "#/$defs/Reverb",
+            "tremolo": "#/$defs/Tremolo"
           },
           "propertyName": "type"
         },
@@ -623,6 +1075,24 @@
           },
           {
             "$ref": "#/$defs/Reverb"
+          },
+          {
+            "$ref": "#/$defs/Filter"
+          },
+          {
+            "$ref": "#/$defs/Distortion"
+          },
+          {
+            "$ref": "#/$defs/Chorus"
+          },
+          {
+            "$ref": "#/$defs/Phaser"
+          },
+          {
+            "$ref": "#/$defs/Tremolo"
+          },
+          {
+            "$ref": "#/$defs/Ducker"
           }
         ]
       },

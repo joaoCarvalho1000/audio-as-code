@@ -32,8 +32,8 @@ then offline. The framework has no bundled AI model and needs no provider API ke
 Prefer to work directly? The rest of this page walks through the same local
 framework. Audio as Code synthesizes instruments entirely from code: no recorded
 samples or SoundFonts. The website plays pre-rendered examples; Python does not
-run in your browser. Install version 0.2.0 from
-[PyPI](https://pypi.org/project/audio-as-code/0.2.0/) in your Python project, or use
+run in your browser. Install version 0.3.0 from
+[PyPI](https://pypi.org/project/audio-as-code/0.3.0/) in your Python project, or use
 the [source download](../source.html) for a workspace with the complete examples.
 
 ## Start a new music project
@@ -42,7 +42,7 @@ With uv, run the installed CLI once to scaffold a separate composition project,
 then install its pinned dependency:
 
 ```sh
-uvx --from audio-as-code==0.2.0 aac init "my music"
+uvx --from audio-as-code==0.3.0 aac init "my music"
 cd "my music"
 uv sync
 uv run --locked aac doctor
@@ -60,7 +60,7 @@ generated README also explains a venv/pip route. See [project setup](project-set
 From an existing project managed by uv:
 
 ```sh
-uv add "audio-as-code==0.2.0"
+uv add "audio-as-code==0.3.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
@@ -69,11 +69,11 @@ uv run --locked aac schema
 Keep `pyproject.toml` and `uv.lock` with your project. The lock records the package
 and dependency versions; `uv run --locked` reuses that environment. To inspect the
 CLI without adding a project dependency, use
-`uvx --from audio-as-code==0.2.0 aac --help`.
+`uvx --from audio-as-code==0.3.0 aac --help`.
 
 Without uv, create a local environment with `python -m venv .venv`. On Windows,
-run `.venv/Scripts/python.exe -m pip install audio-as-code==0.2.0`; on macOS/Linux,
-run `.venv/bin/python -m pip install audio-as-code==0.2.0`. No activation is needed.
+run `.venv/Scripts/python.exe -m pip install audio-as-code==0.3.0`; on macOS/Linux,
+run `.venv/bin/python -m pip install audio-as-code==0.3.0`. No activation is needed.
 Use that interpreter with `-m audio_as_code` for the CLI, and to run composer
 scripts. For example, on Windows the version command is
 `.venv/Scripts/python.exe -m audio_as_code --version`.

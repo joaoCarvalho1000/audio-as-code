@@ -9,6 +9,33 @@ import pytest
 from examples._site_discovery import canonical_url, metadata, write_discovery
 from examples.build_site import Site
 
+
+def test_electronic_page_publishes_only_declared_assets_and_checks_engine(tmp_path, monkeypatch):
+    from examples import build_site
+
+    source = tmp_path / "electronic-input"
+    source.mkdir()
+    monkeypatch.setattr(build_site, "ELECTRONIC", source)
+    (source / "index.html").write_text("<title>Listen</title><main></main>", encoding="utf-8")
+    report = {
+        "example": {"engine_version": "old", "audio": {"silent": False, "clipped_samples": 0}}
+    }
+    (source / "measurements.json").write_text(json.dumps(report), encoding="utf-8")
+    for suffix in ("wav", "json", "mid"):
+        (source / f"example.{suffix}").write_bytes(b"fixture")
+    (source / "private.json").write_text('{"private":true}', encoding="utf-8")
+    site = Site(tmp_path / "site")
+    assert site.electronic() == 1
+    assert not (site.out / "electronic/private.json").exists()
+    assert site.warnings == ["electronic preview example uses an older engine"]
+    page = (site.out / "electronic/index.html").read_text(encoding="utf-8")
+    assert "https://audioascode.com/electronic/" in page
+    assert "../instruments/index.html" in page
+    (source / "measurements.json").write_text(json.dumps({"../outside": report["example"]}))
+    with pytest.raises(ValueError, match="invalid electronic preview ID"):
+        site.electronic()
+
+
 ORIGIN = "https://audioascode.com"
 
 

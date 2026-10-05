@@ -52,6 +52,7 @@ DEFAULT_PIECE = "classic-fur-elise"
 # Repository docs published verbatim beside the guides: classic credits, the reimagining notes
 # and the analytics notice.
 RAW_DOCS = {
+    "electronic-instruments.md": "docs/electronic-instruments.md",
     "classic-showcase.md": "docs/classic-showcase.md",
     "classic-reimaginations.md": "docs/classic-reimaginations.md",
     "analytics.md": "docs/analytics.md",
@@ -89,6 +90,7 @@ PROVENANCE = (
 LOOP_SNIPPET = WEB / "snippets" / "loop.py"
 DOCS = ROOT / "docs" / "site"
 INSTRUMENTS = ROOT / "output" / "instruments"
+ELECTRONIC = ROOT / "output" / "electronic-music"
 SKILLS = ROOT / "skills"
 IDENTITY = json.loads((WEB / "identity.json").read_text(encoding="utf-8"))
 
@@ -1152,7 +1154,7 @@ class Site:
                     depth = relative.count("/")
                     text = (self.out / relative).read_text(encoding="utf-8")
                     block = analytics_html(self.analytics, "../" * depth)
-                    title = "Listen to 49 code-generated instruments | Audio as Code"
+                    title = "Listen to code-generated instruments | Audio as Code"
                     description = (
                         "Compare piano, strings, brass, woodwinds and percussion synthesized "
                         "entirely from code. Listen to musical examples and download editable "
@@ -1177,6 +1179,51 @@ class Site:
                     if "</head>" in text:
                         self.write(relative, text.replace("</head>", block + "\n</head>", 1))
         return count
+
+    def electronic(self) -> int:
+        """Publish the generated dance arrangements and dry voice auditions."""
+        if not (ELECTRONIC / "index.html").is_file():
+            self.warnings.append(
+                "output/electronic-music is missing; run examples/electronic_music.py"
+            )
+            return 0
+        if ELECTRONIC.is_symlink() or any(parent.is_symlink() for parent in ELECTRONIC.parents):
+            raise ValueError("electronic preview input must not be a symlink")
+        manifest = ELECTRONIC / "measurements.json"
+        if manifest.is_symlink():
+            raise ValueError("electronic preview manifest must not be a symlink")
+        reports = json.loads(manifest.read_text(encoding="utf-8"))
+        names = {"index.html", "measurements.json"}
+        for key, report in reports.items():
+            if not re.fullmatch(r"[a-z0-9_-]+", key):
+                raise ValueError(f"invalid electronic preview ID: {key!r}")
+            if report["engine_version"] != __version__:
+                self.warnings.append(f"electronic preview {key} uses an older engine")
+            if report["audio"]["silent"] or report["audio"]["clipped_samples"]:
+                self.warnings.append(f"electronic preview {key} is silent or clipped")
+            names.update(f"{key}.{extension}" for extension in ("wav", "json", "mid"))
+        for name in sorted(names):
+            source = ELECTRONIC / name
+            if source.is_symlink() or not source.is_file():
+                raise ValueError(f"missing or symlinked electronic preview: {name}")
+            self.copy(source, f"electronic/{name}")
+        page = (self.out / "electronic/index.html").read_text(encoding="utf-8")
+        canonical = canonical_url(IDENTITY["canonical_origin"], "electronic/index.html")
+        additions = (
+            f'<link rel="canonical" href="{canonical}">'
+            '<meta name="description" content="Hear procedural disco, techno, trance and '
+            'drum and bass. Download complete classical arrangements and editable scores.">'
+            + analytics_html(self.analytics, "../")
+        )
+        page = page.replace("</title>", "</title>" + additions, 1)
+        page = page.replace(
+            "<main>",
+            '<main><p><a href="../index.html">Audio as Code</a> / '
+            '<a href="../instruments/index.html">Instrument library</a></p>',
+            1,
+        )
+        self.write("electronic/index.html", page)
+        return len(reports)
 
     def source_archive(self) -> dict:
         files = _source_files()
@@ -1313,6 +1360,7 @@ def preflight(
         *([classics] if classics is not None else []),
         *([reimaginations] if reimaginations is not None else []),
         INSTRUMENTS,
+        ELECTRONIC,
         WEB,
         DOCS,
         ROOT / "src",
@@ -1354,6 +1402,7 @@ def build(
     site.machine(scripts, guide_pages)
     skills = site.skills()
     clips = site.instruments()
+    electronic_clips = site.electronic()
     archive = site.source_archive()
     catalog = instrument_catalog()
     playable = (
@@ -1427,6 +1476,7 @@ def build(
         "raw_docs": raw_docs,
         "analytics": {"enabled": bool(analytics), **(analytics or {})},
         "instrument_clips": clips,
+        "electronic_clips": electronic_clips,
         "archive": archive,
         "warnings": site.warnings,
         "broken_links": problems,

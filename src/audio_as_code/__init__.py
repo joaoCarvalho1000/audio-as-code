@@ -15,14 +15,20 @@ from .midi import export_midi
 from .model import (
     Automation,
     AutomationPoint,
+    Chorus,
     Delay,
+    Distortion,
+    Ducker,
+    Filter,
     Note,
     PedalEvent,
+    Phaser,
     Reverb,
     Song,
     TempoChange,
     Tone,
     Track,
+    Tremolo,
     midi_pitch,
 )
 from .pattern import Pattern
@@ -37,16 +43,21 @@ from .render import (
     render_preview_audio,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     "Arrangement",
     "Automation",
     "AutomationPoint",
+    "Chorus",
     "Delay",
+    "Distortion",
+    "Ducker",
+    "Filter",
     "LoopRegion",
     "Note",
     "Pattern",
     "PedalEvent",
+    "Phaser",
     "Reverb",
     "RenderCancelled",
     "RenderProgress",
@@ -55,6 +66,7 @@ __all__ = [
     "TempoChange",
     "Tone",
     "Track",
+    "Tremolo",
     "analyze_wav",
     "beat_at_seconds",
     "doctor",

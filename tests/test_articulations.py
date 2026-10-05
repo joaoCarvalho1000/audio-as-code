@@ -37,7 +37,7 @@ def centroid(audio, rate):
 
 
 def test_capabilities_are_explicit_and_reject_every_unimplemented_instrument():
-    assert {i.id for i in list_instruments() if i.articulations} == set(SUPPORTED)
+    assert {i.id for i in list_instruments() if "soft" in i.articulations} == set(SUPPORTED)
     assert set(HELD_RELEASE) == set(SUPPORTED)
     for info in list_instruments():
         if info.id in SUPPORTED:
@@ -45,7 +45,7 @@ def test_capabilities_are_explicit_and_reject_every_unimplemented_instrument():
             for articulation in info.articulations:
                 Track(name="Gesture", instrument=info.id, articulation=articulation)
                 Track(name="Gesture", instrument=info.id, notes=[Note(articulation=articulation)])
-        else:
+        elif not info.articulations:
             with pytest.raises(ValidationError, match="articulation.*not supported"):
                 Track(name="No fallback", instrument=info.id, articulation="soft")
             with pytest.raises(ValidationError, match="note 0: articulation.*not supported"):
@@ -82,7 +82,7 @@ def test_attack_changes_spectrum_and_timing_without_changing_sustained_tone(inst
 
 
 @pytest.mark.parametrize("instrument", SUPPORTED)
-@pytest.mark.parametrize("articulation", ["soft", "accented"])
+@pytest.mark.parametrize("articulation", [None, "soft", "accented"])
 def test_note_off_changes_partial_decay_and_preserves_the_held_interval(instrument, articulation):
     rate = 22050
     frequency = 440 * 2 ** ((get_instrument(instrument).preview_pitch - 69) / 12)
@@ -90,13 +90,22 @@ def test_note_off_changes_partial_decay_and_preserves_the_held_interval(instrume
     args = (instrument, frequency, rate * 2, rate, 52, 0.8, tone)
     ongoing = synthesize(*args, articulation=articulation)
     released = synthesize(*args, articulation=articulation, held_frames=rate)
-    # Equal lengths keep the FFT-shaped seeded noise identical in this comparison.
+    # Note-off must not change the preceding source trajectory.
     np.testing.assert_array_equal(ongoing[: rate + 1], released[: rate + 1])
     near = slice(rate + rate // 50, rate + rate // 10)
     late = slice(rate + rate // 3, rate + rate // 2)
     assert centroid(released[near], rate) < centroid(ongoing[near], rate)
     assert rms(released[late]) < 0.06 * rms(ongoing[late])
     assert np.max(abs(np.diff(released[rate - 20 : rate + 20]))) < 0.5
+
+
+@pytest.mark.parametrize("instrument", SUPPORTED + ("recorder",))
+def test_longer_gate_preserves_the_same_attack_and_held_noise(instrument):
+    rate = 22050
+    pitch = get_instrument(instrument).preview_pitch
+    short = _voice(instrument, pitch, rate, rate, 84, held_frames=rate // 2)
+    long = _voice(instrument, pitch, rate * 2, rate, 84, held_frames=rate // 2)
+    np.testing.assert_allclose(short[: rate // 2], long[: rate // 2], atol=1e-8, rtol=0)
 
 
 @pytest.mark.parametrize("instrument", SUPPORTED)

@@ -136,7 +136,7 @@ def _expressive_track_audio(
     del mono
     if control is not None:
         control.notify("track_effects", 0, 1, track.name)
-    result = apply_effects(result, track.effects, song.sample_rate)
+    result = apply_effects(result, track.effects, song.sample_rate, song)
     for start in range(0, frames, 65536):
         stop = min(frames, start + 65536)
         if song.automation:
@@ -154,6 +154,20 @@ def _canonical_score(song: Song) -> dict:
         if not data[key]:
             del data[key]
     for track in data["tracks"]:
+        if track["tone"] is not None:
+            for key in (
+                "cutoff_hz",
+                "resonance",
+                "filter_decay_seconds",
+                "filter_env_octaves",
+                "glide_seconds",
+                "fm_index",
+                "fm_ratio",
+                "modulation_rate_hz",
+                "tuning_semitones",
+            ):
+                if track["tone"][key] is None:
+                    del track["tone"][key]
         if track["articulation"] is None:
             del track["articulation"]
         for key in ("automation", "effects", "release_seconds", "pedal"):
@@ -216,7 +230,7 @@ def _render_audio(
         mix += _track_audio(song, track, frames, control)
         control.notify("tracks", index + 1, len(song.tracks), track.name)
     control.notify("master_effects", 0, 1)
-    mix = apply_effects(mix, song.effects, song.sample_rate)
+    mix = apply_effects(mix, song.effects, song.sample_rate, song)
     control.notify("analysis", 0, 1)
     if not np.all(np.isfinite(mix)):
         raise ValueError("render produced non-finite samples; lower score gains or effect levels")

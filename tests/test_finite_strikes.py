@@ -37,7 +37,17 @@ def test_strike_is_bounded_and_independent_of_sample_rate_and_duration():
 
 
 @pytest.mark.parametrize(
-    "instrument", ["piano", "marimba", "electric_piano", "xylophone", "vibraphone", "glockenspiel"]
+    "instrument",
+    [
+        "piano",
+        "marimba",
+        "bell",
+        "clavinet",
+        "electric_piano",
+        "xylophone",
+        "vibraphone",
+        "glockenspiel",
+    ],
 )
 def test_struck_voice_tuning_brightness_and_velocity(instrument):
     rate = 22050

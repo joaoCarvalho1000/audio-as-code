@@ -38,7 +38,7 @@ mode(t) = amplitude * sin(2*pi*frequency*t) * exp(-ln(1000)*t/decay_seconds)
 
 The output sums several modes with different frequencies and lifetimes. Marimba's higher resonances disappear quickly; bell uses non-integer ratios, weakly split resonances, and longer decay. Modes fade smoothly as they approach Nyquist. Brightness and strike velocity control upper-mode amplitudes. These presets are modal approximations rather than spatial finite-element simulations.
 
-Marimba drives each damped mode with a finite raised-cosine force, `F(t) = (1 - cos(2*pi*t/T))/T` for `0 <= t <= T`, zero otherwise. The response is the analytic convolution of this unit-area force with the damped sinusoid above. Longer, softer contact suppresses upper resonances and changes their phase; shorter, harder contact admits more high-frequency energy. Contact ends completely, after which each mode rings freely. Integration happens before sampling, preserving even sub-sample strikes. Contact is capped at 0.65 fundamental periods to retain the treble fundamental. Bell retains its exponential onset ramp. Neither model solves nonlinear mallet/bar feedback.
+Marimba and bell drive each damped mode with a finite raised-cosine force, `F(t) = (1 - cos(2*pi*t/T))/T` for `0 <= t <= T`, zero otherwise. The response is the analytic convolution of this unit-area force with the damped sinusoid above. Longer, softer contact suppresses upper resonances and changes their phase; shorter, harder contact admits more high-frequency energy. Contact ends completely, after which each mode rings freely. Integration happens before sampling, preserving even sub-sample strikes. Contact is capped at 0.65 fundamental periods for marimba and 0.45 for bell to retain their treble fundamentals. Bell uses a shorter designed strike and retains weakly split metal resonances. Its finite contact is new in 0.3.0; 0.2.0 uses an exponential onset ramp. Neither model solves nonlinear mallet/bar feedback.
 
 ## Piano and bowed strings
 
@@ -111,9 +111,9 @@ setting alone does not extend a short note. Optional track/note `release_seconds
 continues the generated voice under a cosine fade after note-off, and the renderer
 allocates its tail automatically. Gain/pan automation, tempo changes, generated
 delay and algorithmic reverb are described in [the expressive engine guide](expressive-engine.md).
-This renderer release is not a physical damper or excitation transition. The optional
-[bowed/wind articulations](articulations.md) add designed harmonic and noise decay
-at note-off while retaining that renderer fade. Sustain
+This renderer release is not a physical damper or excitation transition. The
+[bowed/wind models](articulations.md) add designed harmonic and noise decay
+at note-off while retaining that renderer fade (default gestures too in 0.3.0). Sustain
 pedal, continuous tone/pitch expression and sympathetic-string coupling remain
 outside these models.
 

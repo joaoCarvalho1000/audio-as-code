@@ -1,8 +1,8 @@
 # Orchestra prototypes
 
-The catalog has 49 playable entries. The original 11 voices remain available, and the added models provide distinct generated sound behaviors for the other catalog instruments. Every excitation, partial, noise burst, and resonance comes from code. None of the parameters are fitted to a recorded instrument.
+The catalog has 70 playable entries. The original 11 voices remain available, and the added models provide distinct generated sound behaviors for the other catalog instruments. Every excitation, partial, noise burst, and resonance comes from code. None of the parameters are fitted to a recorded instrument.
 
-Generate 147 listening previews with:
+Generate 210 listening previews with:
 
 ```sh
 uv run python examples/instrument_browser.py
@@ -36,7 +36,7 @@ The clarinet profile emphasizes odd harmonics while retaining weaker even compon
 
 ## Controls
 
-Piano, electric piano, xylophone, vibraphone and glockenspiel drive their modes with an analytically integrated, finite raised-cosine strike (also used by [marimba](synthesis.md)). The force starts and ends at zero, has unit area, and lets each resonance ring freely after contact; it alters excitation amplitude and phase without retuning the modal frequency. Piano's unison strings share the force from rest. At and above 65 Hz, intrinsic and shared bridge damping produce different decay rates for common and differential string motion; the lower single-string register retains its prescribed two-component decay. Instrument-specific contact lengths distinguish soft mallets from hard bar strikes. Brightness/velocity shorten contact, with a pitch-relative cap preserving high-register fundamentals. There is no new score control or nonlinear hammer/rebound solver. Drumhead and bell attacks retain their previous models. See the [piano and bowed-string models](synthesis.md#piano-and-bowed-strings) and the four [extended instrument models](extended-instruments.md) for implementation details and limits.
+Piano, electric piano, xylophone, vibraphone and glockenspiel drive their modes with an analytically integrated, finite raised-cosine strike (also used by [marimba](synthesis.md)). The force starts and ends at zero, has unit area, and lets each resonance ring freely after contact; it alters excitation amplitude and phase without retuning the modal frequency. Piano's unison strings share the force from rest. At and above 65 Hz, intrinsic and shared bridge damping produce different decay rates for common and differential string motion; the lower single-string register retains its prescribed two-component decay. Instrument-specific contact lengths distinguish soft mallets from hard bar strikes. Brightness/velocity shorten contact, with a pitch-relative cap preserving high-register fundamentals. There is no new score control or nonlinear hammer/rebound solver. Bell and clavinet now use this finite contact too, with shorter strike profiles; drumhead attacks retain their pitch-relaxation model. See the [piano and bowed-string models](synthesis.md#piano-and-bowed-strings) and the four [extended instrument models](extended-instruments.md) for implementation details and limits.
 
 Only pass controls listed by the instrument's `tone_controls`. The model rejects unsupported settings. For optional fields, `null` selects the catalog/default profile value; brightness is a required finite number when present.
 
@@ -53,7 +53,7 @@ Only pass controls listed by the instrument's `tone_controls`. The model rejects
 
 The catalog exposes per-instrument defaults; the browser displays those used in each preview. Decay is not universally an exact measured T60: individual modes and register-dependent damping alter it. By default, note duration contains the release gate. A six-second natural decay on a half-second note does not create a six-second tail. Use track/note `release_seconds` to extend the gate after note-off; this extends audio only, not MIDI note duration. Piano also supports [binary pedal events](piano-sustain.md) and MIDI CC64. Other instruments have no shared pedal or articulation state.
 
-The realism polish adds instrument-specific smooth releases, seeded pressure and onset variation, and velocity-sensitive kick/snare/hat excitation. Analytic body responses are sums of damped modes generated in code and driven by the string or membrane signal; they are not measured impulse responses and do not feed energy back into the source. Partial and noise-sideband tapers reduce aliasing near Nyquist. These algorithm changes preserve score IDs and deterministic rendering within a fixed build, but intentionally change the output from earlier builds.
+The 0.3.0 polish makes generated noise independent of requested note length, using causal generated filters with deterministic prehistory. Normal bowed-string and wind notes now share the separate harmonic/noise release laws of articulated notes. Bell and clavinet use finite strike contact; electronic hats and ride have evolving decay spectra. Earlier refinements added seeded pressure and onset variation, and velocity-sensitive kick/snare/hat excitation. Analytic body responses are sums of damped modes generated in code and driven by the string or membrane signal; they are not measured impulse responses and do not feed energy back into the source. Partial and noise-sideband tapers reduce aliasing near Nyquist. These algorithm changes preserve score IDs and deterministic rendering within a fixed build, but intentionally change the output from earlier builds.
 
 ```python
 from audio_as_code import Note, Song, Tone, Track, render

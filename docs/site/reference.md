@@ -1,7 +1,7 @@
 # Reference
 
-Audio as Code 0.2.0. Python distribution `audio-as-code`, import `audio_as_code`,
-command `aac`. Install `audio-as-code==0.2.0` from PyPI for the engine and CLI;
+Audio as Code 0.3.0. Python distribution `audio-as-code`, import `audio_as_code`,
+command `aac`. Install `audio-as-code==0.3.0` from PyPI for the engine and CLI;
 use the source workspace for the complete examples and portable skill. See the
 [quickstart](quickstart.md) for both routes. The 0.2 API may change; breaking score
 format changes will use a new `schema_version`. Expression fields are optional
@@ -19,7 +19,7 @@ Also runnable as `python -m audio_as_code`. With uv, prefix with `uv run`.
 
 | Command | Arguments | Does |
 | --- | --- | --- |
-| `aac --version` | | Print `{"version": "0.2.0"}` |
+| `aac --version` | | Print `{"version": "0.3.0"}` |
 | `aac init` | `DIRECTORY` | Create a starter in a new or empty folder; never install dependencies |
 | `aac doctor` | | Check the imported runtime and short synthesis path |
 | `aac instruments` | `[--all] [--family F] [--engine E]` | Print the catalog. Without `--all`, only playable voices |
@@ -70,7 +70,7 @@ Unknown fields are rejected everywhere. Numbers must be finite. Times are quarte
 | `tracks` | array of Track | required | 1–64, unique names, ≤ 100,000 notes in total |
 | `tempo_map` | array of TempoChange | `[]` | At most 1024; strictly increasing beats before song end |
 | `automation` | array of Automation | `[]` | At most one lane, targeting `master_gain` |
-| `effects` | array of Delay or Reverb | `[]` | Ordered chain, at most 4 effects |
+| `effects` | array of tagged effects | `[]` | Ordered chain, at most 4 effects; see below |
 
 ### Track
 
@@ -81,7 +81,7 @@ Unknown fields are rejected everywhere. Numbers must be finite. Times are quarte
 | `gain` | number | 0.6 | 0–1, linear |
 | `pan` | number | 0 | −1 (left) to 1 (right), equal-power |
 | `tone` | Tone or null | null | Only fields in the instrument's `tone_controls` |
-| `articulation` | `"soft"`, `"accented"`, or null | null | Only values in the instrument's `articulations`; null preserves original sound |
+| `articulation` | string or null | null | Only values in the instrument's `articulations`; null selects the default gesture |
 | `notes` | array of Note | `[]` | `drum_machine` pitches must be 36, 38, 42, 45, 49, 54, 60, or 64 |
 | `release_seconds` | number | 0 | 0–10; inherited by notes without an override |
 | `pedal` | array of PedalEvent | `[]` | Piano only when nonempty; at most 1,024 ordered alternating down/up events within the song |
@@ -105,10 +105,11 @@ under the pedal ring until lift; an open pedal lifts at score end. A default
 | `velocity` | number | 0.8 | > 0, ≤ 1 |
 | `release_seconds` | number or null | null | 0–10; null inherits the track; zero keeps the original gate |
 
-| `articulation` | `"soft"`, `"accented"`, or null | null | Null inherits the track; a value overrides it |
+| `articulation` | string or null | null | Null inherits the track; a supported value overrides it |
 
 Read [articulations](articulations.md) for the 13 supported bowed-string and wind
 voices, note inheritance, designed attack/release gestures and MIDI limitations.
+For bass/guitar and acid gestures, see [electronic instruments](electronic-instruments.md).
 
 ### Tempo, automation, and effects
 
@@ -136,7 +137,11 @@ and `pan`. Each parameter can appear only once per owner.
 | Reverb `decay_seconds` | 1.2 | 0.1–5 |
 | Reverb `mix` | 0.2 | 0–1 dry/wet mix |
 
-Effects use generated delay/comb/diffusion processing, not measured impulse
+Version 0.3.0 also accepts `Filter`, `Distortion`, `Chorus`, `Phaser`,
+`Tremolo` and `Ducker`. See [electronic instruments](electronic-instruments.md)
+for exact JSON tags, ranges, timing and limitations.
+
+Effects use generated processing, not measured impulse
 responses. Track effects precede master gain; song effects process the summed
 mix. Effects and note releases reserve automatic, bounded tails. Releases use a
 cosine fade after note-off; zero preserves the old duration-gated sound. Note
@@ -268,7 +273,7 @@ Type 1, 480 ticks per quarter note, one tempo track plus one track per score tra
 
 ## Synthesis scope
 
-All 49 catalog instruments are generated from code across five engine groups: vibrating strings, air columns, bars/bells/plates, membranes, and electronic synthesis. There are no recorded samples, SoundFonts, or measured impulse responses. The models are designed approximations. Bowed strings and winds use harmonic source/filter models without bow-friction or reed/bore physics. Piano supports binary damper-pedal gates; half-pedaling, sympathetic resonance and note-to-note articulations are not modeled. Each catalog `description` states that instrument's scope.
+All 70 catalog instruments are generated from code across five engine groups: vibrating strings, air columns, bars/bells/plates, membranes, and electronic synthesis. There are no recorded samples, SoundFonts, or measured impulse responses. The models are designed approximations. Bowed strings and winds use harmonic source/filter models without bow-friction or reed/bore physics. Piano supports binary damper-pedal gates; half-pedaling, sympathetic resonance and note-to-note articulations are not modeled. Each catalog `description` states that instrument's scope.
 
 ## Reproducibility
 

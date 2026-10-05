@@ -5,7 +5,7 @@ It covers setup, interpreting a musical brief, composing, rendering, checking,
 delivering files, and revisions. Add the released library to an existing uv project:
 
 ```sh
-uv add "audio-as-code==0.2.0"
+uv add "audio-as-code==0.3.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
@@ -198,7 +198,7 @@ Use normal model construction or `model_validate()` to check revisions. Pydantic
 
 ## Current constraints
 
-All 49 catalog entries have generated prototypes. Read each entry's `description`, `tone_controls`, `default_tone`, and `default_decay_seconds` before composing. For example, a decaying string accepts `"tone": {"brightness": 0.6, "decay_seconds": 3}`; violin accepts `"tone": {"vibrato_depth_cents": 14, "vibrato_rate_hz": 5.5}`. Unsupported controls are rejected. Longer tone decay alone does not extend a note. Optional note/track `release_seconds` adds an audible release after note-off; zero preserves the original gate behavior. See the [orchestra guide](orchestra.md) for model boundaries, control ranges, and the `drum_machine` pitch map.
+All 70 catalog entries have generated prototypes. Read each entry's `description`, `tone_controls`, `default_tone`, and `default_decay_seconds` before composing. For example, a decaying string accepts `"tone": {"brightness": 0.6, "decay_seconds": 3}`; violin accepts `"tone": {"vibrato_depth_cents": 14, "vibrato_rate_hz": 5.5}`. Unsupported controls are rejected. Longer tone decay alone does not extend a note. Optional note/track `release_seconds` adds an audible release after note-off; zero preserves the original gate behavior. See the [orchestra guide](orchestra.md) for model boundaries, control ranges, and the `drum_machine` pitch map.
 
 The schema accepts no arbitrary extra fields and rejects unsupported versions, non-finite numbers, duplicate track names, out-of-range pitches, and notes extending beyond the arrangement. Names must be unique within a score. All score timing is in quarter-note beats. Optional `tempo_map` entries change BPM at ordered beat positions. Track gain/pan and song master-gain automation use ordered points with linear or step interpolation. Track/song effects support generated delay and reverb. There is no meter metadata, swing field, clip graph or sample loading. Swing can be expressed by placing individual notes at explicit beat positions.
 

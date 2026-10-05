@@ -24,7 +24,7 @@ Number = Annotated[float, Field(strict=True, allow_inf_nan=False)]
 MidiPitch = Annotated[StrictInt, Field(ge=0, le=127)]
 NoteName = Annotated[str, Field(strict=True, pattern=r"^[A-Ga-g](?:#|b)?-?[0-9]$")]
 Pitch = MidiPitch | NoteName
-Articulation = Literal["soft", "accented"]
+Articulation = Literal["soft", "accented", "slap", "pop", "muted"]
 
 
 def midi_pitch(value: int | str) -> int:
@@ -101,7 +101,76 @@ class Reverb(ScoreModel):
     mix: Annotated[Number, Field(ge=0, le=1)] = 0.2
 
 
-Effect = Annotated[Delay | Reverb, Field(discriminator="type")]
+class Filter(ScoreModel):
+    """Resonant state-variable filter with an optional whole-track frequency sweep."""
+
+    type: Literal["filter"] = "filter"
+    mode: Literal["lowpass", "highpass", "bandpass"] = "lowpass"
+    cutoff_hz: Annotated[Number, Field(ge=30, le=20000)] = 2000
+    resonance: Annotated[Number, Field(ge=0, le=1)] = 0.2
+    end_cutoff_hz: Annotated[Number, Field(ge=30, le=20000)] | None = None
+    sweep_seconds: Annotated[Number, Field(ge=0.01, le=300)] = 1
+    mix: Annotated[Number, Field(ge=0, le=1)] = 1
+
+
+class Distortion(ScoreModel):
+    """Symmetric tanh saturation with four-times oversampling."""
+
+    type: Literal["distortion"] = "distortion"
+    drive: Annotated[Number, Field(ge=1, le=20)] = 2
+    mix: Annotated[Number, Field(ge=0, le=1)] = 0.5
+
+
+class Chorus(ScoreModel):
+    """Stereo modulated fractional delay; no feedback or recorded response."""
+
+    type: Literal["chorus"] = "chorus"
+    rate_hz: Annotated[Number, Field(ge=0.05, le=8)] = 0.7
+    depth_ms: Annotated[Number, Field(ge=0, le=10)] = 3
+    delay_ms: Annotated[Number, Field(ge=11, le=40)] = 18
+    mix: Annotated[Number, Field(ge=0, le=1)] = 0.35
+
+
+class Phaser(ScoreModel):
+    """Four moving first-order all-pass stages, without feedback."""
+
+    type: Literal["phaser"] = "phaser"
+    rate_hz: Annotated[Number, Field(ge=0.05, le=8)] = 0.4
+    depth: Annotated[Number, Field(ge=0, le=1)] = 0.7
+    mix: Annotated[Number, Field(ge=0, le=1)] = 0.5
+
+
+class Tremolo(ScoreModel):
+    """Tempo-synced gain modulation; period is measured in quarter-note beats."""
+
+    type: Literal["tremolo"] = "tremolo"
+    period_beats: Annotated[Number, Field(ge=0.125, le=32)] = 0.5
+    depth: Annotated[Number, Field(ge=0, le=1)] = 0.7
+    shape: Literal["sine", "gate"] = "sine"
+    mix: Annotated[Number, Field(ge=0, le=1)] = 1
+
+
+class Ducker(ScoreModel):
+    """Beat-triggered gain dips; a scheduled envelope, not an audio sidechain compressor."""
+
+    type: Literal["ducker"] = "ducker"
+    trigger_beats: Annotated[tuple[Annotated[Number, Field(ge=0)], ...], Field(max_length=4096)]
+    depth: Annotated[Number, Field(ge=0, le=1)] = 0.75
+    attack_seconds: Annotated[Number, Field(ge=0.001, le=0.1)] = 0.005
+    release_seconds: Annotated[Number, Field(ge=0.01, le=2)] = 0.18
+    mix: Annotated[Number, Field(ge=0, le=1)] = 1
+
+    @model_validator(mode="after")
+    def ordered_triggers(self) -> Ducker:
+        if any(a >= b for a, b in zip(self.trigger_beats, self.trigger_beats[1:], strict=False)):
+            raise ValueError("ducker trigger_beats must be strictly increasing")
+        return self
+
+
+Effect = Annotated[
+    Delay | Reverb | Filter | Distortion | Chorus | Phaser | Tremolo | Ducker,
+    Field(discriminator="type"),
+]
 
 
 def _validate_lanes(lanes: tuple[Automation, ...], allowed: set[str]) -> None:
@@ -136,6 +205,15 @@ class Tone(ScoreModel):
     vibrato_rate_hz: Annotated[Number, Field(ge=0.1, le=12)] | None = None
     glide_semitones: Annotated[Number, Field(ge=-24, le=24)] | None = None
     detune_cents: Annotated[Number, Field(ge=0, le=40)] | None = None
+    cutoff_hz: Annotated[Number, Field(ge=20, le=20000)] | None = None
+    resonance: Annotated[Number, Field(ge=0, le=1)] | None = None
+    filter_decay_seconds: Annotated[Number, Field(ge=0.01, le=10)] | None = None
+    filter_env_octaves: Annotated[Number, Field(ge=0, le=6)] | None = None
+    glide_seconds: Annotated[Number, Field(ge=0.005, le=2)] | None = None
+    fm_index: Annotated[Number, Field(ge=0, le=12)] | None = None
+    fm_ratio: Annotated[Number, Field(ge=0.25, le=8)] | None = None
+    modulation_rate_hz: Annotated[Number, Field(ge=0.05, le=20)] | None = None
+    tuning_semitones: Annotated[Number, Field(ge=-24, le=24)] | None = None
 
 
 class Track(ScoreModel):
@@ -222,6 +300,11 @@ class Song(ScoreModel):
         if any(change.beat >= self.beats for change in self.tempo_map):
             raise ValueError("tempo changes must occur before the song ends")
         for owner in (self, *self.tracks):
+            for effect in owner.effects:
+                if isinstance(effect, Ducker) and any(
+                    b >= self.beats for b in effect.trigger_beats
+                ):
+                    raise ValueError("ducker trigger_beats must occur before the song ends")
             for lane in owner.automation:
                 if lane.points[-1].beat > self.beats:
                     raise ValueError("automation points must not exceed the song's beats")

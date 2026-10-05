@@ -21,21 +21,21 @@ To add the library to an existing Python project managed by uv, run from that
 project's root:
 
 ```sh
-uv add "audio-as-code==0.2.0"
+uv add "audio-as-code==0.3.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
-This installs version 0.2.0 from PyPI. Keep the project's `pyproject.toml` and
+This installs version 0.3.0 from PyPI. Keep the project's `pyproject.toml` and
 `uv.lock` to record package and dependency versions. Use `uv run --locked` for
 composition and rendering. Do not replace an existing application's lockfile
 with the framework's lock. The wheel contains the engine and CLI; the portable
 skill and bundled example scripts are available separately in the source project.
 
 Without uv, create `.venv` with `python -m venv .venv`, then use
-`.venv/Scripts/python.exe -m pip install audio-as-code==0.2.0` on Windows or
-`.venv/bin/python -m pip install audio-as-code==0.2.0` on macOS/Linux. Invoke that
+`.venv/Scripts/python.exe -m pip install audio-as-code==0.3.0` on Windows or
+`.venv/bin/python -m pip install audio-as-code==0.3.0` on macOS/Linux. Invoke that
 interpreter with `-m audio_as_code` and use it for composer scripts. No activation
 is needed. Reuse an existing project environment rather than a global Python.
 
@@ -114,9 +114,16 @@ Score essentials:
   sound after note-off; a note inherits its track release unless overridden.
 - Thirteen bowed-string and wind voices accept optional `soft` or `accented`
   `articulation` on a track or note; the note overrides its track. Check each
-  catalog entry's `articulations` list. Other instruments reject this field.
+  catalog entry's `articulations` list. Version 0.3.0 also adds
+  acid-bass accent, bass-guitar slap/pop/muted and electric-guitar muted gestures;
+  unsupported instrument/value pairs are rejected.
   These are designed source gestures, not recorded samples; MIDI omits them.
   See [articulations](../../docs/articulations.md).
+- For disco, techno, trance or drum & bass, discover the installed catalog first.
+  Version 0.3.0 adds electronic voices and effects documented in
+  [electronic instruments](../../docs/electronic-instruments.md).
+  Tone glide is explicit and note-local, not automatic legato.
+  `Ducker` uses beat triggers, not an audio sidechain. Open hats need explicit gates.
 - Tracks have unique `name`, playable `instrument`, `notes`, and optional `gain`,
   `pan`, `tone`. Gain and master gain are 0–1; pan is -1 to 1. Tone is per track
   and accepts only that voice's supported controls. Omit it for basic voices.

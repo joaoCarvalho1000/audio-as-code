@@ -261,7 +261,9 @@ def _held(
     soft = articulation == "soft"
     transient = np.exp(-t / (3 * profile.attack)) if articulation else None
     release_age = (
-        np.maximum(0, t - held_frames / rate) if articulation and held_frames is not None else None
+        np.maximum(0, t - held_frames / rate)
+        if instrument in HELD_RELEASE and held_frames is not None
+        else None
     )
     for n, base in enumerate(partials, start=1):
         if bowed:
@@ -291,10 +293,10 @@ def _held(
             # it. The nominal sustained spectrum and oscillator pitch survive.
             color = (1 - 1 / n) * transient
             onset *= np.exp(-1.4 * color) if soft else 1 + 0.7 * color
-            if release_age is not None:
-                loss = HELD_RELEASE[instrument]
-                tau = loss.fundamental / (1 + loss.upper_loss * (n - 1))
-                onset *= np.exp(-release_age / tau)
+        if release_age is not None:
+            loss = HELD_RELEASE[instrument]
+            tau = loss.fundamental / (1 + loss.upper_loss * (n - 1))
+            onset *= np.exp(-release_age / tau)
         evolution = pressure ** (1 + 0.12 * n) if n < 12 else upper_evolution
         signal += (
             amplitude
@@ -317,8 +319,8 @@ def _held(
             noise_attack = profile.attack * 0.75 if soft else 0.004
             noise_envelope = (1 - np.exp(-t / noise_attack)) * pressure
             noise_envelope *= 1 + (0.1 if soft else 1.1) * transient
-            if release_age is not None:
-                noise_envelope *= np.exp(-release_age / HELD_RELEASE[instrument].noise)
+        if release_age is not None:
+            noise_envelope *= np.exp(-release_age / HELD_RELEASE[instrument].noise)
         if instrument == "organ":
             noise_envelope *= np.exp(-t / 0.08)
         # Bow friction and breath are colored by the evolving excitation,
@@ -326,7 +328,9 @@ def _held(
         textured_noise = modulate_noise(
             noise,
             phase + 0.4 * motion,
-            float(np.max(frequencies)) + 2,
+            frequency
+            * 2 ** ((depth + 0.9 + max(0, settings.get("glide_semitones", 0)) * 100) / 1200)
+            + 2,
             rate,
             0.25 if bowed else 0.12,
         )
@@ -500,9 +504,32 @@ def synthesize(
     decay = settings.get("decay_seconds", info.default_decay_seconds)
     t = np.arange(frames, dtype=np.float64) / rate
     if instrument in STRINGS:
-        return _plucked(
+        if articulation == "muted":
+            decay = min(decay, 0.28)
+            brightness *= 0.55
+        elif articulation in {"slap", "pop"}:
+            brightness = min(1, brightness + (0.2 if articulation == "slap" else 0.35))
+        signal = _plucked(
             instrument, frequency, t, rate, brightness, decay, tone.pluck_position, seed
         )
+        if articulation in {"slap", "pop"}:
+            # Generated fret collision and an excited upper string polarization.
+            contact = colored_noise(frames, rate, seed + 7, 900, 8000)
+            lifetime = 0.009 if articulation == "slap" else 0.004
+            signal += (0.22 if articulation == "slap" else 0.32) * contact * np.exp(-t / lifetime)
+            signal += (
+                (0.10 if articulation == "slap" else 0.17)
+                * np.sin(4 * np.pi * frequency * t)
+                * np.exp(-t / 0.055)
+                * nyquist_gain(2 * frequency, rate)
+            )
+            signal += (
+                (0.10 if articulation == "slap" else 0.15)
+                * np.sin(6 * np.pi * frequency * t)
+                * np.exp(-t / 0.1)
+                * nyquist_gain(3 * frequency, rate)
+            )
+        return signal
     if instrument == "piano":
         return _piano(frequency, t, rate, brightness, decay, seed)
     if instrument in HELD:

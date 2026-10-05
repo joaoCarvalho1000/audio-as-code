@@ -48,6 +48,19 @@ SOLOS = {
     "pad": ("ode_to_joy", 0, ("melody", "alto", "tenor", "bass")),
     "synthesizer": ("turkish_march", -12, ("melody",)),
     "theremin": ("greensleeves", 0, ("melody",)),
+    "acid_bass": ("cello_prelude", -12, ("melody",)),
+    "supersaw": ("ode_to_joy", 0, ("melody",)),
+    "reese_bass": ("cello_prelude", -12, ("melody",)),
+    "fm_bass": ("cello_prelude", -12, ("melody",)),
+    "clavinet": ("turkish_march", -12, ("melody",)),
+    "string_machine": ("ode_to_joy", 0, ("melody", "alto", "tenor", "bass")),
+    "disco_bass": ("cello_prelude", -12, ("melody",)),
+    "trance_pluck": ("turkish_march", 0, ("melody",)),
+    "fm_bell": ("fur_elise", 0, ("melody",)),
+    "wavetable_pad": ("ode_to_joy", 0, ("melody", "alto", "tenor", "bass")),
+    "sync_lead": ("turkish_march", -12, ("melody",)),
+    "hoover": ("ode_to_joy", -12, ("melody",)),
+    "sub_bass": ("cello_prelude", -12, ("melody",)),
 }
 
 # (source part, instrument, transposition, gain, pan)
@@ -109,6 +122,14 @@ PERCUSSION = {
     "bongos",
     "tambourine",
     "drum_machine",
+    "kick_808",
+    "kick_909",
+    "clap",
+    "electronic_snare",
+    "metal_hat",
+    "open_hat",
+    "electronic_ride",
+    "fm_percussion",
 }
 RINGING = {
     "guitar",
@@ -221,10 +242,24 @@ def percussion_notes(instrument: str, beats: int) -> list[Note]:
             (note for voice in ("kick", "snare", "hat") for note in percussion_notes(voice, beats)),
             key=lambda n: n.start,
         )
+    patterns.update(
+        {
+            "kick_808": [(0, 0.9), (2, 0.78)],
+            "kick_909": [(i, 0.85) for i in range(4)],
+            "clap": [(1, 0.85), (3, 0.9)],
+            "electronic_snare": [(1, 0.85), (2.75, 0.32), (3, 0.9)],
+            "metal_hat": [(i / 2, 0.8 if i % 2 == 0 else 0.48) for i in range(8)],
+            "open_hat": [(0.5, 0.8), (2.5, 0.7)],
+            "electronic_ride": [(0, 0.8), (2, 0.6)],
+            "fm_percussion": [(0, 0.8), (1.5, 0.55), (2.75, 0.7)],
+        }
+    )
     pitch = get_instrument(instrument).midi_note
     duration = {"kick": 0.7, "snare": 0.35, "hat": 0.17, "cymbal": 3.8, "tambourine": 0.8}.get(
         instrument, 0.4
     )
+    if instrument == "electronic_snare":
+        duration = 0.2  # Leave room for the added ghost-note pickup before beat three.
     return [
         Note(pitch=pitch, start=bar + offset, duration=duration, velocity=velocity)
         for bar in range(0, beats, 4)

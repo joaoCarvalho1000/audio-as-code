@@ -142,13 +142,13 @@ def _modes(
                 t, frequency * ratio, math.log(1000) / (decay * lifetime), contact
             )
         else:
-            envelope = np.exp(-math.log(1000) * t / (decay * lifetime))
-            partial = np.sin(2 * np.pi * frequency * ratio * t)
+            contact = min(0.45 / frequency, 0.0014 * (1.25 - 0.8 * brightness))
+            damping = math.log(1000) / (decay * lifetime)
+            partial = struck_mode(t, frequency * ratio, damping, contact)
             split = frequency * ratio * (1 + 0.0006 * (index + 1))
-            partial = 0.8 * partial + 0.2 * np.sin(2 * np.pi * split * t) * nyquist_gain(
+            response = 0.8 * partial + 0.2 * struck_mode(t, split, damping, contact) * nyquist_gain(
                 split, rate
             )
-            response = partial * envelope * (1 - np.exp(-t / 0.001))
         signal += amplitude * response * nyquist_gain(frequency * ratio, rate)
     return signal * (0.9 / total_weight) if total_weight else signal
 

@@ -7,6 +7,8 @@ from numpy.typing import NDArray
 
 from ._audio import Audio
 from .acoustics import colored_noise, nyquist_gain
+from .electronic import ELECTRONIC_INSTRUMENTS
+from .electronic import synthesize as synthesize_electronic
 from .extended import EXTENDED_INSTRUMENTS
 from .extended import synthesize as synthesize_extended
 from .instruments import KIT_NOTES, PHYSICAL_INSTRUMENTS, get_instrument
@@ -33,6 +35,8 @@ _ATTACK_SECONDS = {
     "mandolin": 0.001,
     "kalimba": 0.0005,
     "celesta": 0.0005,
+    "bell": 0.0005,
+    "clavinet": 0.0005,
     "recorder": 0.003,
 }
 
@@ -120,13 +124,17 @@ def _electronic_voice(
         signal = np.zeros(frames)
         weight = 0.0
         for harmonic, amplitude in harmonics:
-            if frequency * harmonic >= rate / 2:
+            # Keep gain independent of modes leaving the audible band. A smooth
+            # shoulder avoids sudden spectral/level jumps in high registers.
+            weight += abs(amplitude)
+            if frequency * harmonic >= rate * 0.49:
                 continue
-            partial = np.sin(phase * harmonic) * amplitude
+            partial = (
+                np.sin(phase * harmonic) * amplitude * nyquist_gain(frequency * harmonic, rate)
+            )
             if instrument == "pluck":
                 partial *= np.exp(-t * (2.5 + harmonic * 0.8))
             signal += partial
-            weight += abs(amplitude)
         if weight:
             signal /= weight
         if instrument == "bass":
@@ -152,7 +160,11 @@ def _voice(
             KIT_NOTES[pitch], pitch, frames, rate, seed, velocity, held_frames=held_frames
         )
     frequency = 440 * 2 ** ((pitch - 69) / 12)
-    if instrument in EXTENDED_INSTRUMENTS:
+    if instrument in ELECTRONIC_INSTRUMENTS:
+        signal = synthesize_electronic(
+            instrument, frequency, frames, rate, seed, velocity, tone, articulation
+        )
+    elif instrument in EXTENDED_INSTRUMENTS:
         signal = synthesize_extended(instrument, frequency, frames, rate, seed, velocity, tone)
     elif instrument in EXTRA_INSTRUMENTS:
         signal = synthesize_orchestra(
@@ -173,6 +185,7 @@ def _voice(
         else min(max(1, round(release_seconds * rate)), max(1, frames // 3))
     )
     signal[:attack] *= np.linspace(0, 1, attack)
-    release_curve = 0.5 + 0.5 * np.cos(np.linspace(0, np.pi, release)) if release > 1 else 0
-    signal[-release:] *= release_curve
+    if release > 0:
+        release_curve = 0.5 + 0.5 * np.cos(np.linspace(0, np.pi, release)) if release > 1 else 0
+        signal[-release:] *= release_curve
     return signal.astype(np.float32)

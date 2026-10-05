@@ -6,7 +6,7 @@ in scores. The metadata also supplies tone capabilities and MIDI mappings.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from types import MappingProxyType
 from typing import Literal
 
@@ -60,6 +60,27 @@ Instrument = Literal[
     "kalimba",
     "celesta",
     "recorder",
+    "acid_bass",
+    "supersaw",
+    "reese_bass",
+    "fm_bass",
+    "clavinet",
+    "string_machine",
+    "disco_bass",
+    "trance_pluck",
+    "fm_bell",
+    "wavetable_pad",
+    "sync_lead",
+    "hoover",
+    "sub_bass",
+    "kick_808",
+    "kick_909",
+    "clap",
+    "electronic_snare",
+    "metal_hat",
+    "open_hat",
+    "electronic_ride",
+    "fm_percussion",
 ]
 Status = Literal["available", "planned"]
 FamilyId = Literal[
@@ -671,7 +692,8 @@ INSTRUMENTS = (
         "pitched_percussion",
         "modal",
         "available",
-        "Designed inharmonic chime modes; not fitted to a particular bell.",
+        "Finite strike contact driving split inharmonic chime modes; "
+        "not fitted to a particular bell.",
         _DECAY_CONTROLS,
         5.0,
         midi_program=14,
@@ -844,6 +866,308 @@ INSTRUMENTS += (
         preview_pitch=79,
         default_tone=(("breath", 0.08), ("vibrato_depth_cents", 0), ("vibrato_rate_hz", 5)),
     ),
+)
+
+_FILTER_CONTROLS = (
+    "brightness",
+    "cutoff_hz",
+    "resonance",
+    "filter_env_octaves",
+    "filter_decay_seconds",
+)
+_GLIDE_CONTROLS = ("glide_semitones", "glide_seconds")
+_UNISON_CONTROLS = (*_FILTER_CONTROLS, *_GLIDE_CONTROLS, "detune_cents")
+_PERCUSSION_CONTROLS = ("brightness", "decay_seconds", "tuning_semitones")
+
+INSTRUMENTS += (
+    InstrumentInfo(
+        "acid_bass",
+        "Acid bass",
+        "electronic",
+        "electronic",
+        "available",
+        "Band-limited saw with a resonant spectral low-pass envelope, explicit pitch glide "
+        "and accent. Designed acid tone; no analog ladder circuit or inter-note legato state.",
+        (*_FILTER_CONTROLS, *_GLIDE_CONTROLS),
+        midi_program=38,
+        preview_pitch=36,
+        default_tone=(
+            ("cutoff_hz", 450),
+            ("resonance", 0.65),
+            ("filter_env_octaves", 3),
+            ("filter_decay_seconds", 0.18),
+        ),
+        articulations=("accented",),
+    ),
+    InstrumentInfo(
+        "supersaw",
+        "Supersaw",
+        "electronic",
+        "electronic",
+        "available",
+        "Seven seeded, symmetrically detuned finite-Fourier saws with a spectral filter. "
+        "Mono source; add chorus or paired panned tracks for stereo width.",
+        _UNISON_CONTROLS,
+        midi_program=81,
+        preview_pitch=60,
+        default_tone=(("detune_cents", 24), ("filter_env_octaves", 0)),
+    ),
+    InstrumentInfo(
+        "reese_bass",
+        "Reese bass",
+        "electronic",
+        "electronic",
+        "available",
+        "Two detuned saw spectra with seeded phase, beating and a centered sine foundation; "
+        "spectral filtering, no sampled bass or analog circuit model.",
+        _UNISON_CONTROLS,
+        midi_program=38,
+        preview_pitch=33,
+        default_tone=(("detune_cents", 16), ("cutoff_hz", 1600), ("filter_env_octaves", 0)),
+    ),
+    InstrumentInfo(
+        "fm_bass",
+        "FM growl bass",
+        "electronic",
+        "electronic",
+        "available",
+        "Four-times-oversampled two-operator phase modulation with moving index and a sine "
+        "foundation. Bandwidth guard reduces modulation in high registers; no vocal samples.",
+        ("brightness", "fm_index", "fm_ratio", "modulation_rate_hz", *_GLIDE_CONTROLS),
+        midi_program=39,
+        preview_pitch=33,
+        default_tone=(("fm_index", 4), ("fm_ratio", 2), ("modulation_rate_hz", 2)),
+    ),
+    InstrumentInfo(
+        "clavinet",
+        "Clavinet",
+        "keyboards",
+        "string",
+        "available",
+        "Finite hammer contact driving damped strings with dual pickup weighting and generated "
+        "noise; no electromechanical circuit or calibrated pickup model.",
+        ("brightness", "decay_seconds", "pluck_position"),
+        1.4,
+        midi_program=7,
+        default_tone=(("pluck_position", 0.2),),
+    ),
+    InstrumentInfo(
+        "string_machine",
+        "String-machine ensemble",
+        "electronic",
+        "electronic",
+        "available",
+        "Five detuned pulse spectra with independent slow width modulation and soft onset. "
+        "An electronic ensemble, distinct from the bowed-string models.",
+        _UNISON_CONTROLS,
+        midi_program=50,
+        preview_pitch=60,
+        default_tone=(("detune_cents", 9), ("filter_env_octaves", 0)),
+    ),
+    InstrumentInfo(
+        "disco_bass",
+        "Disco synth bass",
+        "electronic",
+        "electronic",
+        "available",
+        "Decaying saw with a resonant spectral envelope and explicit pitch glide; "
+        "a designed subtractive-style tone, distinct from bass guitar.",
+        (*_FILTER_CONTROLS, *_GLIDE_CONTROLS, "decay_seconds"),
+        1.6,
+        midi_program=38,
+        preview_pitch=36,
+        default_tone=(("cutoff_hz", 650), ("resonance", 0.3), ("filter_env_octaves", 2.5)),
+    ),
+    InstrumentInfo(
+        "trance_pluck",
+        "Trance pluck",
+        "electronic",
+        "electronic",
+        "available",
+        "Fast-decaying saw with a bright resonant spectral sweep; no sampled pluck.",
+        (*_FILTER_CONTROLS, *_GLIDE_CONTROLS, "decay_seconds"),
+        1.2,
+        midi_program=81,
+        preview_pitch=72,
+        default_tone=(("cutoff_hz", 900), ("resonance", 0.4), ("filter_decay_seconds", 0.09)),
+    ),
+    InstrumentInfo(
+        "fm_bell",
+        "FM bell",
+        "electronic",
+        "electronic",
+        "available",
+        "Four-times-oversampled phase modulation with independently decaying modulation "
+        "index and amplitude. Noninteger ratios create inharmonic electronic bells.",
+        ("brightness", "decay_seconds", "fm_index", "fm_ratio", *_GLIDE_CONTROLS),
+        3.0,
+        midi_program=14,
+        preview_pitch=72,
+        default_tone=(("fm_index", 2.5), ("fm_ratio", 2.01)),
+    ),
+    InstrumentInfo(
+        "wavetable_pad",
+        "Evolving harmonic pad",
+        "electronic",
+        "electronic",
+        "available",
+        "Analytic interpolation of pulse-family harmonic tables with five detuned voices "
+        "and slow onset; no external wavetable files or arbitrary table loading.",
+        _UNISON_CONTROLS,
+        midi_program=89,
+        preview_pitch=60,
+        default_tone=(("detune_cents", 12), ("filter_env_octaves", 0)),
+    ),
+    InstrumentInfo(
+        "sync_lead",
+        "Sync-style lead",
+        "electronic",
+        "electronic",
+        "available",
+        "Master-periodic harmonic spectrum with a sweeping formant. Spectral hard-sync "
+        "approximation, not a discontinuous slave-oscillator reset simulation.",
+        (*_FILTER_CONTROLS, *_GLIDE_CONTROLS),
+        midi_program=84,
+        preview_pitch=60,
+    ),
+    InstrumentInfo(
+        "hoover",
+        "Hoover lead",
+        "electronic",
+        "electronic",
+        "available",
+        "Five detuned pulse-width-modulated spectra and a sub-octave sine; explicit "
+        "glide provides pitch swoops. No vintage-synth circuit emulation.",
+        _UNISON_CONTROLS,
+        midi_program=81,
+        preview_pitch=48,
+        default_tone=(("detune_cents", 30), ("filter_env_octaves", 0)),
+    ),
+    InstrumentInfo(
+        "sub_bass",
+        "Sub bass",
+        "electronic",
+        "electronic",
+        "available",
+        "Phase-continuous exponential pitch glide inside each note, sine fundamental "
+        "and a brightness-controlled second harmonic; separate notes retrigger phase.",
+        ("brightness", *_GLIDE_CONTROLS),
+        midi_program=38,
+        preview_pitch=33,
+    ),
+    InstrumentInfo(
+        "kick_808",
+        "Deep electronic kick",
+        "percussion",
+        "electronic",
+        "available",
+        "808-style decaying sine with an integrated pitch sweep and generated click. "
+        "Designed approximation, not a circuit replica; pitch is set by tuning_semitones.",
+        _PERCUSSION_CONTROLS,
+        1.6,
+        midi_note=36,
+        preview_pitch=36,
+    ),
+    InstrumentInfo(
+        "kick_909",
+        "Punch electronic kick",
+        "percussion",
+        "electronic",
+        "available",
+        "909-style sine pitch sweep, short second-harmonic body and generated noise attack. "
+        "Designed approximation, not a circuit replica.",
+        _PERCUSSION_CONTROLS,
+        0.75,
+        midi_note=36,
+        preview_pitch=36,
+    ),
+    InstrumentInfo(
+        "clap",
+        "Electronic handclap",
+        "percussion",
+        "electronic",
+        "available",
+        "Three generated noise collisions and a diffuse decaying noise tail; no recorded hands.",
+        ("brightness", "decay_seconds"),
+        0.35,
+        midi_note=39,
+        preview_pitch=39,
+    ),
+    InstrumentInfo(
+        "electronic_snare",
+        "Electronic snare",
+        "percussion",
+        "electronic",
+        "available",
+        "Three tuned oscillator bodies plus modulated band-shaped noise; "
+        "brightness, tuning and decay control the designed hit.",
+        _PERCUSSION_CONTROLS,
+        0.32,
+        midi_note=38,
+        preview_pitch=38,
+    ),
+    InstrumentInfo(
+        "metal_hat",
+        "Metallic closed hat",
+        "percussion",
+        "electronic",
+        "available",
+        "Six inharmonic odd-harmonic oscillators with high-pass weighting, noise "
+        "and frequency-dependent decay.",
+        _PERCUSSION_CONTROLS,
+        0.11,
+        midi_note=42,
+        preview_pitch=42,
+    ),
+    InstrumentInfo(
+        "open_hat",
+        "Metallic open hat",
+        "percussion",
+        "electronic",
+        "available",
+        "Sustained-decay variant of the generated metallic hat. Choking is explicit note "
+        "duration, not automatic inter-track voice stealing.",
+        _PERCUSSION_CONTROLS,
+        0.8,
+        midi_note=46,
+        preview_pitch=46,
+    ),
+    InstrumentInfo(
+        "electronic_ride",
+        "Electronic ride",
+        "percussion",
+        "electronic",
+        "available",
+        "Inharmonic oscillator/noise wash with three bell-like modes and long decay; "
+        "no sampled cymbal or plate-physics solver.",
+        _PERCUSSION_CONTROLS,
+        2.2,
+        midi_note=51,
+        preview_pitch=51,
+    ),
+    InstrumentInfo(
+        "fm_percussion",
+        "FM metallic percussion",
+        "percussion",
+        "electronic",
+        "available",
+        "Oversampled two-operator inharmonic phase modulation with decaying index; "
+        "tuning is explicit and MIDI exports to a fixed percussion note.",
+        (*_PERCUSSION_CONTROLS, "fm_index", "fm_ratio"),
+        0.55,
+        midi_note=56,
+        preview_pitch=56,
+        default_tone=(("fm_index", 3), ("fm_ratio", 3.41)),
+    ),
+)
+
+INSTRUMENTS = tuple(
+    replace(item, articulations=("slap", "pop", "muted"))
+    if item.id == "bass_guitar"
+    else replace(item, articulations=("muted",))
+    if item.id == "electric_guitar"
+    else item
+    for item in INSTRUMENTS
 )
 
 _BY_ID = MappingProxyType({instrument.id: instrument for instrument in INSTRUMENTS})

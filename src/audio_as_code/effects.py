@@ -7,7 +7,8 @@ import math
 import numpy as np
 from numpy.typing import NDArray
 
-from .model import Delay, Effect, Reverb
+from ._modulation_effects import process, processing_tail
+from .model import Delay, Effect, Reverb, Song
 
 Audio = NDArray[np.float32]
 
@@ -18,6 +19,8 @@ def effects_tail(effects: tuple[Effect, ...]) -> float:
             effect.time_seconds * (effect.repeats if effect.feedback else 1)
             if isinstance(effect, Delay)
             else effect.decay_seconds + 0.1
+            if isinstance(effect, Reverb)
+            else processing_tail(effect)
         )
         for effect in effects
         if effect.mix
@@ -62,7 +65,9 @@ def _convolve(source: Audio, kernel: NDArray[np.float64]) -> Audio:
     return result
 
 
-def apply_effects(audio: Audio, effects: tuple[Effect, ...], rate: int) -> Audio:
+def apply_effects(
+    audio: Audio, effects: tuple[Effect, ...], rate: int, song: Song | None = None
+) -> Audio:
     """Apply a serial chain to an already tail-padded stereo buffer."""
     for effect in effects:
         if effect.mix == 0:
@@ -76,10 +81,12 @@ def apply_effects(audio: Audio, effects: tuple[Effect, ...], rate: int) -> Audio
                 if offset >= len(audio):
                     break
                 wet[offset:] += audio[:-offset] * effect.feedback ** (repeat - 1)
-        else:
+        elif isinstance(effect, Reverb):
             for channel in range(2):
                 wet[:, channel] = _convolve(
                     audio[:, channel], _reverb_kernel(effect, rate, channel)
                 )
+        else:
+            wet = process(audio, effect, rate, song)
         audio = audio * (1 - effect.mix) + wet * effect.mix
     return audio

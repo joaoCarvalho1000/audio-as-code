@@ -12,9 +12,12 @@ from pathlib import Path
 
 import audio_as_code
 from audio_as_code import (
+    Distortion,
+    Ducker,
     Note,
     Pattern,
     Song,
+    Tone,
     Track,
     analyze_wav,
     export_midi,
@@ -141,7 +144,17 @@ def main() -> None:
             check=True,
         )
         assert json.loads(validation.stdout)["valid"]
-        for voice in ("mandolin", "kalimba", "celesta", "recorder"):
+        for voice in (
+            "mandolin",
+            "kalimba",
+            "celesta",
+            "recorder",
+            "acid_bass",
+            "supersaw",
+            "fm_bass",
+            "clavinet",
+            "clap",
+        ):
             info = get_instrument(voice)
             probe = Song(
                 bpm=120,
@@ -151,6 +164,10 @@ def main() -> None:
                     Track(
                         name=voice,
                         instrument=voice,
+                        tone=Tone(cutoff_hz=700, resonance=0.6) if voice == "acid_bass" else None,
+                        effects=[Distortion(), Ducker(trigger_beats=(0,))]
+                        if voice == "acid_bass"
+                        else [],
                         notes=[Note(pitch=info.preview_pitch, duration=1)],
                     )
                 ],

@@ -13,6 +13,7 @@ uv sync --locked
 uv run python examples/classic_showcase.py --ffmpeg ffmpeg
 uv run python examples/classic_reimaginations.py --ffmpeg ffmpeg
 uv run python examples/instrument_browser.py
+uv run --extra loudness python examples/electronic_music.py
 uv run python examples/build_site.py --strict
 ```
 
@@ -39,12 +40,16 @@ into the published `music/manifest.json`, the selected-piece credit line and
 the homepage's score credits. A Reimagined version that omits a credit inherits
 the one from its classic.
 
-The instrument script renders 147 short audition clips: a music excerpt, a
-phrase, and a single note or hit for each of the 49 playable voices. It writes
+The instrument script renders 210 short audition clips: a music excerpt, a
+phrase, and a single note or hit for each of the 70 playable voices. It writes
 the listening library to `output/instruments/`. These clips are labelled there
 as auditions; the homepage comparisons are the whole-work demos. Rendering steps
 can take several minutes. They use procedural instrument sources and need no
 sample downloads or network services.
+
+The electronic listening page adds 32 auditions, including four complete dance
+arrangements of the Ode to Joy hymn edition beside its original setting. The
+builder publishes it at `electronic/index.html` with editable scores and MIDI.
 
 For instrument work, render a subset or resume an interrupted batch:
 
@@ -176,9 +181,9 @@ Useful paths relative to the built site root:
 | `index.html` | Listening homepage |
 | `docs/quickstart.html` | Getting started guide |
 | `docs/integrations.html` | Codex, Claude Code, Hyperframes, game and slide recipes |
-| `instruments/index.html` | 147-clip instrument library |
+| `instruments/index.html` | 210-clip instrument library |
 | `source.html` | Source download, size, and SHA-256 |
-| `download/audio-as-code-0.2.0-source.zip` | Portable source snapshot; version follows the package |
+| `download/audio-as-code-0.3.0-source.zip` | Portable source snapshot; version follows the package |
 | `llms.txt` | Agent documentation index |
 | `schemas/song-v1.schema.json` | Versioned score contract |
 | `instruments.json` | Live catalog with explicit availability and controls |
@@ -189,8 +194,8 @@ Useful paths relative to the built site root:
 The source archive excludes generated media and operational files through a
 source allowlist and filters; it includes `.github/FUNDING.yml`. Its recipient
 installs from the extracted checkout to run the complete examples and site tools.
-For the engine and CLI in an existing project, install `audio-as-code==0.2.0`
-from [PyPI](https://pypi.org/project/audio-as-code/0.2.0/). The website source ZIP is
+For the engine and CLI in an existing project, install `audio-as-code==0.3.0`
+from [PyPI](https://pypi.org/project/audio-as-code/0.3.0/). The website source ZIP is
 a separately built snapshot; its published hash identifies its contents, which can
 include documentation updates made after the registry release. The
 public source repository is [joaoCarvalho1000/audio-as-code](https://github.com/joaoCarvalho1000/audio-as-code).
