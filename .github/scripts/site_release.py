@@ -13,7 +13,7 @@ import sys
 import time
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 ROOT = Path(__file__).resolve().parents[2]
 ACCOUNT = "52b57879a0260045efcd7a51b2bbdfdb"
@@ -21,6 +21,14 @@ SITES = {
     "audio-as-code": ("audioascode.com", "web/cloudflare", "output/site"),
     "open-world-clock": ("openworldclock.com", "cloudflare", "site"),
 }
+
+
+class NoCredentialRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise RuntimeError("Authenticated API redirects are refused")
+
+
+api_urlopen = build_opener(NoCredentialRedirect()).open
 
 
 def require(condition, message):
@@ -86,7 +94,7 @@ def api(path, data=None):
         },
         method="GET" if data is None else "POST",
     )
-    with urlopen(request, timeout=60) as response:
+    with api_urlopen(request, timeout=60) as response:
         result = json.load(response)
     require(result.get("success"), "Cloudflare API did not report success")
     return result["result"]
@@ -116,7 +124,7 @@ def latest_main(kind, sha):
             "Accept": "application/vnd.github+json",
         },
     )
-    with urlopen(request, timeout=30) as response:
+    with api_urlopen(request, timeout=30) as response:
         require(
             json.load(response)["object"]["sha"] == sha,
             "A newer main commit exists; refusing stale deployment",
@@ -125,8 +133,13 @@ def latest_main(kind, sha):
 
 def wrangler(kind, *args):
     executable = ROOT / SITES[kind][1] / "node_modules/wrangler/bin/wrangler.js"
+    child_env = dict(os.environ)
+    child_env.pop("GH_TOKEN", None)
     subprocess.run(
-        ["node", str(executable), *map(str, args)], cwd=ROOT / SITES[kind][1], check=True
+        ["node", str(executable), *map(str, args)],
+        cwd=ROOT / SITES[kind][1],
+        check=True,
+        env=child_env,
     )
 
 
@@ -185,9 +198,11 @@ def get(url, *, headers=None, method="GET"):
     )
     try:
         with urlopen(request, timeout=45) as response:
-            return response.status, response.headers, response.read()
+            body = response.read(1024 * 1024 + 1)
+            require(len(body) <= 1024 * 1024, "Unexpectedly large smoke-test response")
+            return response.status, response.headers, body
     except HTTPError as error:
-        return error.code, error.headers, error.read()
+        return error.code, error.headers, error.read(1024 * 1024)
 
 
 def smoke(kind, sha, target):
@@ -198,7 +213,7 @@ def smoke(kind, sha, target):
         "Production commit marker differs",
     )
     routes = (
-        ["/", "/source", "/instruments", "/electronic"]
+        ["/", "/source", "/instruments/", "/electronic/"]
         if kind == "audio-as-code"
         else [
             "/",

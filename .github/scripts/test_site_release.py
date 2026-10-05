@@ -62,7 +62,7 @@ class ReleaseTests(unittest.TestCase):
             patch.dict(os.environ, env),
             patch.object(
                 release,
-                "urlopen",
+                "api_urlopen",
                 return_value=io.BytesIO(json.dumps({"object": {"sha": "b" * 40}}).encode()),
             ),
         ):
@@ -122,6 +122,19 @@ class ReleaseTests(unittest.TestCase):
         with patch.object(release, "get", side_effect=[(200, {}, marker), (404, {}, b"missing")]):
             with self.assertRaisesRegex(RuntimeError, "Page failed"):
                 release.smoke("open-world-clock", self.sha, self.target)
+
+    def test_authenticated_redirects_cannot_forward_credentials(self):
+        handler = release.NoCredentialRedirect()
+        with self.assertRaisesRegex(RuntimeError, "redirects are refused"):
+            handler.redirect_request(None, None, 302, "Found", {}, "https://attacker.example/")
+
+    def test_wrangler_does_not_inherit_github_credentials(self):
+        with (
+            patch.dict(os.environ, {"GH_TOKEN": "not-for-wrangler"}),
+            patch.object(release.subprocess, "run") as run,
+        ):
+            release.wrangler("open-world-clock", "--version")
+        self.assertNotIn("GH_TOKEN", run.call_args.kwargs["env"])
 
     def test_deployment_evidence_excludes_cloudflare_environment_values(self):
         remote = {
