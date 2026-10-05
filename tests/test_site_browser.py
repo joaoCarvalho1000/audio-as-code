@@ -44,6 +44,10 @@ def test_generated_pages_load_without_script_errors(browser, site_url, width):
             assert response.status == 200, route
             assert page.title(), route
             assert not errors, f"{route}: {errors}"
+            if route == "source.html":
+                page.locator('nav [data-key="listen"]').click()
+                page.wait_for_url(f"{site_url}/#listen")
+                assert page.locator("[data-console]").count() == 1
             if route in {"index.html", "instruments/index.html", "electronic/index.html"}:
                 page.screenshot(path=str(artifacts / f"{route.replace('/', '-')}-{width}.png"))
     finally:

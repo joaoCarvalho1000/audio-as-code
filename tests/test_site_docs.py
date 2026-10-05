@@ -84,3 +84,24 @@ def test_website_copy_rejects_literal_and_encoded_em_dashes(tmp_path):
     problems = builder.check_website_copy(tmp_path)
     assert {problem.split(":", 1)[0] for problem in problems} == set(cases)
     assert any(problem.startswith("index.html:2:") for problem in problems)
+
+
+def test_link_check_matches_clean_urls_and_rejects_missing_or_escaping_targets(tmp_path):
+    site = tmp_path / "site"
+    docs = site / "docs"
+    docs.mkdir(parents=True)
+    (site / "index.html").write_text('<a href="/docs/quickstart?from=home#start">Start</a>')
+    (site / "source.html").write_text("Source")
+    (site / "source").mkdir()  # Downloads may share a basename with an HTML route.
+    guide = docs / "quickstart.html"
+    guide.write_text(
+        '<h1 id="start">Start</h1><a href="/">Home</a>'
+        '<a href="../source">Source</a><a href="?from=guide#start">Here</a>'
+    )
+    assert builder.check_links(site) == []
+    (tmp_path / "private.html").write_text("Outside the website")
+    guide.write_text('<a href="../../private">Escape</a><a href="/missing">Missing</a>')
+    problems = builder.check_links(site)
+    assert len(problems) == 2
+    assert any("leaves the site" in problem for problem in problems)
+    assert any("not found" in problem for problem in problems)

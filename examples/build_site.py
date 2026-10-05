@@ -30,6 +30,7 @@ import sys
 import wave
 import zipfile
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import numpy as np
 
@@ -778,6 +779,7 @@ class Site:
                 IDENTITY["canonical_origin"], relative, title, description, __version__
             ),
             "ROOT": prefix,
+            "HOME": prefix or "./",
             "NAV": nav,
             "BODY": body.replace("{{ROOT}}", prefix),
             "HEAD": extra_head.replace("{{ROOT}}", prefix),
@@ -1373,7 +1375,7 @@ def source_name(slug: str) -> str:
 
 
 def check_links(out: Path) -> list[str]:
-    """Every relative href/src in built HTML must resolve inside the output folder."""
+    """Local URLs must resolve inside the site, including clean HTML routes."""
     problems = []
     for page in out.rglob("*.html"):
         if page.is_relative_to(out / "instruments"):
@@ -1385,12 +1387,22 @@ def check_links(out: Path) -> list[str]:
                 page.name == "404.html" and target.startswith("/")
             ):
                 continue
-            path, _, anchor = target.partition("#")
+            parts = urlsplit(html.unescape(target))
+            path, anchor = unquote(parts.path), unquote(parts.fragment)
             if not path:
                 if anchor and anchor not in ids:
                     problems.append(f"{page.relative_to(out)}: missing anchor #{anchor}")
                 continue
-            resolved = (page.parent / path).resolve()
+            resolved = (
+                out / path.lstrip("/") if path.startswith("/") else page.parent / path
+            ).resolve()
+            if (
+                not resolved.is_file()
+                and not (resolved / "index.html").is_file()
+                and not resolved.suffix
+                and not path.endswith("/")
+            ):
+                resolved = resolved.with_suffix(".html").resolve()
             if not resolved.is_relative_to(out.resolve()):
                 problems.append(f"{page.relative_to(out)}: {target} leaves the site")
             elif not (resolved.is_file() or (resolved / "index.html").is_file()):

@@ -26,6 +26,19 @@ class SiteHandler(SimpleHTTPRequestHandler):
         if not path.is_relative_to(root):
             self.send_error(403, "Path is outside the preview directory")
             return None
+        # Match the extensionless HTML routes used by the production host.
+        if (
+            not path.is_file()
+            and not (path / "index.html").is_file()
+            and not path.suffix
+            and not urlsplit(self.path).path.endswith("/")
+        ):
+            html_path = path.with_suffix(".html").resolve()
+            if not html_path.is_relative_to(root):
+                self.send_error(403, "Path is outside the preview directory")
+                return None
+            if html_path.is_file():
+                path = html_path
         if path.is_dir():
             parts = urlsplit(self.path)
             if not parts.path.endswith("/"):
