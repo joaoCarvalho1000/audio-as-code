@@ -110,12 +110,16 @@ def write_discovery(out: Path, origin: str, guides: list[str]) -> None:
     namespace = "http://www.sitemaps.org/schemas/sitemap/0.9"
     ElementTree.register_namespace("", namespace)
     root = ElementTree.Element(f"{{{namespace}}}urlset")
+    from datetime import date
+
+    today = date.today().isoformat()
     for path in sorted(out.rglob("*.html")):
         relative = path.relative_to(out).as_posix()
         if relative == "404.html":
             continue
         node = ElementTree.SubElement(root, f"{{{namespace}}}url")
         ElementTree.SubElement(node, f"{{{namespace}}}loc").text = canonical_url(origin, relative)
+        ElementTree.SubElement(node, f"{{{namespace}}}lastmod").text = today
     ElementTree.indent(root)
     ElementTree.ElementTree(root).write(out / "sitemap.xml", encoding="utf-8", xml_declaration=True)
     (out / "robots.txt").write_text(
