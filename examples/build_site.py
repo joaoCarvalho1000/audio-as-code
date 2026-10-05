@@ -30,6 +30,7 @@ import sys
 import wave
 import zipfile
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import numpy as np
 
@@ -778,6 +779,7 @@ class Site:
                 IDENTITY["canonical_origin"], relative, title, description, __version__
             ),
             "ROOT": prefix,
+            "HOME": prefix or "./",
             "NAV": nav,
             "BODY": body.replace("{{ROOT}}", prefix),
             "HEAD": extra_head.replace("{{ROOT}}", prefix),
@@ -1209,17 +1211,73 @@ class Site:
             self.copy(source, f"electronic/{name}")
         page = (self.out / "electronic/index.html").read_text(encoding="utf-8")
         canonical = canonical_url(IDENTITY["canonical_origin"], "electronic/index.html")
+        title = "Procedural Electronic Music in Python · Audio as Code"
+        description = (
+            "Ode to Joy as procedural disco, techno, trance and drum and bass, "
+            "plus 27 electronic voices synthesized from code. "
+            "Download WAV, MIDI and editable scores."
+        )
+        image = IDENTITY["canonical_origin"].rstrip("/") + "/assets/social.png"
+        image_alt = (
+            "Audio as Code Electronic Lab: Ode to Joy rearranged as disco, techno, "
+            "trance and drum and bass, all synthesized from code"
+        )
+        og_twitter = "".join(
+            [
+                '<meta name="robots" content="index,follow,max-image-preview:large">',
+                '<meta property="og:type" content="website">',
+                '<meta property="og:site_name" content="Audio as Code">',
+                f'<meta property="og:title" content="{html.escape(title)}">',
+                f'<meta property="og:description" content="{html.escape(description)}">',
+                f'<meta property="og:url" content="{html.escape(canonical)}">',
+                f'<meta property="og:image" content="{html.escape(image)}">',
+                '<meta property="og:image:width" content="1200">',
+                '<meta property="og:image:height" content="630">',
+                '<meta property="og:image:type" content="image/png">',
+                f'<meta property="og:image:alt" content="{html.escape(image_alt)}">',
+                '<meta property="og:locale" content="en_US">',
+                '<meta name="twitter:card" content="summary_large_image">',
+                f'<meta name="twitter:title" content="{html.escape(title)}">',
+                f'<meta name="twitter:description" content="{html.escape(description)}">',
+                f'<meta name="twitter:image" content="{html.escape(image)}">',
+                f'<meta name="twitter:image:alt" content="{html.escape(image_alt)}">',
+                '<meta name="theme-color" content="#f9fbfd">',
+                '<link rel="icon" href="/assets/icon.svg">',
+            ]
+        )
+        json_ld = json.dumps(
+            {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "WebPage",
+                        "@id": canonical + "#webpage",
+                        "url": canonical,
+                        "name": title,
+                        "description": description,
+                        "inLanguage": "en",
+                        "isPartOf": {"@id": IDENTITY["canonical_origin"].rstrip("/") + "/#website"},
+                        "about": {"@id": IDENTITY["canonical_origin"].rstrip("/") + "/#software"},
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ).replace("<", "\\u003c")
+        page = re.sub(r"<title>.*?</title>", f"<title>{html.escape(title)}</title>", page, count=1)
         additions = (
-            f'<link rel="canonical" href="{canonical}">'
-            '<meta name="description" content="Hear procedural disco, techno, trance and '
-            'drum and bass. Download complete classical arrangements and editable scores.">'
+            f'<meta name="description" content="{html.escape(description)}">'
+            f'<link rel="canonical" href="{html.escape(canonical)}">'
+            + og_twitter
+            + f'<script type="application/ld+json">{json_ld}</script>'
             + analytics_html(self.analytics, "../")
         )
         page = page.replace("</title>", "</title>" + additions, 1)
         page = page.replace(
             "<main>",
-            '<main><p><a href="../index.html">Audio as Code</a> / '
-            '<a href="../instruments/index.html">Instrument library</a></p>',
+            '<main><p><a href="/">Audio as Code</a> / '
+            '<a href="/instruments/">Instrument library</a> · '
+            '<a href="/docs/composition">Composition</a> · '
+            '<a href="/docs/quickstart">Quickstart</a></p>',
             1,
         )
         self.write("electronic/index.html", page)
@@ -1317,7 +1375,7 @@ def source_name(slug: str) -> str:
 
 
 def check_links(out: Path) -> list[str]:
-    """Every relative href/src in built HTML must resolve inside the output folder."""
+    """Local URLs must resolve inside the site, including clean HTML routes."""
     problems = []
     for page in out.rglob("*.html"):
         if page.is_relative_to(out / "instruments"):
@@ -1329,12 +1387,22 @@ def check_links(out: Path) -> list[str]:
                 page.name == "404.html" and target.startswith("/")
             ):
                 continue
-            path, _, anchor = target.partition("#")
+            parts = urlsplit(html.unescape(target))
+            path, anchor = unquote(parts.path), unquote(parts.fragment)
             if not path:
                 if anchor and anchor not in ids:
                     problems.append(f"{page.relative_to(out)}: missing anchor #{anchor}")
                 continue
-            resolved = (page.parent / path).resolve()
+            resolved = (
+                out / path.lstrip("/") if path.startswith("/") else page.parent / path
+            ).resolve()
+            if (
+                not resolved.is_file()
+                and not (resolved / "index.html").is_file()
+                and not resolved.suffix
+                and not path.endswith("/")
+            ):
+                resolved = resolved.with_suffix(".html").resolve()
             if not resolved.is_relative_to(out.resolve()):
                 problems.append(f"{page.relative_to(out)}: {target} leaves the site")
             elif not (resolved.is_file() or (resolved / "index.html").is_file()):
@@ -1372,6 +1440,23 @@ def preflight(
         if resolved == path or path.is_relative_to(resolved) or resolved.is_relative_to(path):
             raise SystemExit(f"refusing to build at {resolved}: it overlaps input {path}")
     return resolved
+
+
+def check_website_copy(out: Path) -> list[str]:
+    """Check published copy, including entity-encoded HTML and escaped asset strings."""
+    problems = []
+    text_types = {".html", ".js", ".css", ".json", ".md", ".txt", ".svg", ".xml"}
+    em_dash = re.compile(r"\u2014|\\(?:u2014|U00002014)|\\2014\b", re.IGNORECASE)
+    for path in sorted(out.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in text_types:
+            continue
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if em_dash.search(html.unescape(line)):
+                problems.append(
+                    f"{path.relative_to(out).as_posix()}:{line_number}: "
+                    "website copy contains an em dash; rewrite its punctuation"
+                )
+    return problems
 
 
 def build(
@@ -1472,6 +1557,7 @@ def build(
         [f"docs/{source_name(slug)}" for slug, *_ in guide_pages] + raw_docs,
     )
     problems = check_links(out)
+    site.warnings.extend(check_website_copy(out))
     summary = {
         "output": str(out),
         "pieces": [p["id"] for p in pieces],

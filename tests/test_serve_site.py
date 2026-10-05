@@ -54,6 +54,19 @@ def test_media_ranges(site, range_header, expected, content_range):
     assert "Content-Encoding" not in headers
 
 
+def test_extensionless_html_routes_keep_queries_out_of_file_resolution(site):
+    request, root = site
+    (root / "docs").mkdir()
+    (root / "docs/quickstart.html").write_text("A quickstart")
+    (root / "docs/quickstart").mkdir()
+    status, headers, body = request("/docs/quickstart?from=home")
+    assert status == 200
+    assert headers["Content-Type"].startswith("text/html")
+    assert body == b"A quickstart"
+    assert request("/docs/missing")[0] == 404
+    assert request("/clip")[0] == 404  # Do not guess an arbitrary asset extension.
+
+
 @pytest.mark.parametrize("value", ["bytes=25600-", "bytes=-0", "bytes=8-2"])
 def test_unsatisfiable_ranges(site, value):
     status, headers, body = site[0](headers={"Range": value})

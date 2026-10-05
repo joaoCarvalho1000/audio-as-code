@@ -1,8 +1,8 @@
-<!-- title: AI Agent Soundtrack with Python — Editable Game & Video Music | description: Let your coding agent compose a soundtrack in Python: game cues, video beds and slide music rendered locally to WAV and MIDI, with a score you can revise. -->
+<!-- title: AI Agent Soundtrack with Python: Editable Game & Video Music | description: Let your coding agent compose a soundtrack in Python: game cues, video beds and slide music rendered locally to WAV and MIDI, with a score you can revise. -->
 <section class="stock stock-paper sheet guide-like" id="soundtrack">
   <p class="crumbs"><a href="/">Audio as Code</a> / AI agent soundtrack</p>
   <h1>Give your AI agent a soundtrack it can write in Python</h1>
-  <p class="section-lede">Describe the scene. Your coding agent writes an editable score with Audio as Code, renders WAV and MIDI locally, and keeps every note revisable—no API key to synthesize.</p>
+  <p class="section-lede">Describe the scene. Your coding agent writes an editable score with Audio as Code, renders WAV and MIDI locally, and keeps every note revisable. No API key to synthesize.</p>
   <p class="actions">
     <a class="tag tag-ink" href="/#handoff">Copy the agent prompt</a>
     <a class="tag" href="/docs/quickstart">Developer quickstart</a>
@@ -13,7 +13,7 @@
   <ul>
     <li><strong>WAV</strong> ready for your game, video timeline or slides.</li>
     <li><strong>MIDI</strong> for your DAW.</li>
-    <li><strong>score.json</strong> — the editable score your agent can keep revising.</li>
+    <li><strong>score.json</strong>, the editable score your agent can keep revising.</li>
     <li><strong>Python source</strong> beside the audio so the next change is a revision, not a rewrite.</li>
     <li><strong>Render report</strong> with duration and level checks.</li>
   </ul>
@@ -29,7 +29,7 @@
   <h2 id="example">Example: a 16-second boss-fight cue for a game</h2>
   <p>Brief your agent roughly like this:</p>
   <blockquote>
-    <p>“A tiny dragon thinks this is the final boss fight. Give me a 16-second battle cue around 150 BPM—timpani, low brass, string ostinato—and a separate 2-second victory sting.”</p>
+    <p>“A tiny dragon thinks this is the final boss fight. Give me a 16-second battle cue around 150 BPM, with timpani, low brass, string ostinato, and a separate 2-second victory sting.”</p>
   </blockquote>
   <p>What you get back: two WAV assets for the game’s audio folder, plus editable scores and Python sources so you can thin the drums or move the sting without starting over. Recipes for Hyperframes, Codex and Claude Code live in the <a href="/docs/integrations">integrations guide</a>.</p>
 
@@ -52,11 +52,11 @@ aac analyze output/cue.wav</code></pre></figure>
   <p>“Keep the melody, give it to the marimba, calm the drums, land the last note on the reveal.” Named sections, motifs, instrument swaps, gain/pan automation and stems (without master effects) are all fair game. See <a href="/docs/composition">composition</a> and the <a href="/docs/agents">agent guide</a>.</p>
 
   <h2 id="instruments">70 instruments, all synthesized from code</h2>
-  <p>Orchestra plus electronics (acid bass, supersaw, Reese, 808/909-style kicks, and more)—no recorded samples. Browse the <a href="/instruments/">instrument library</a>, or hear Ode to Joy as disco, techno, trance and drum &amp; bass in the <a href="/electronic/">electronic lab</a>.</p>
+  <p>Orchestra plus electronics (acid bass, supersaw, Reese, 808/909-style kicks, and more), all without recorded samples. Browse the <a href="/instruments/">instrument library</a>, or hear Ode to Joy as disco, techno, trance and drum &amp; bass in the <a href="/electronic/">electronic lab</a>.</p>
 
   <h2 id="limits">Limits worth knowing</h2>
   <ul>
-    <li>Instrumental music and cues only—not speech or everyday sound effects.</li>
+    <li>Instrumental music and cues only, without speech or everyday sound effects.</li>
     <li>WAV renders up to 300 seconds (tails included). Rendering is offline and uses real CPU time; orchestral voices are slower than electronic ones.</li>
     <li>Instruments are code-generated approximations, not recordings.</li>
     <li>MIDI keeps notes and tempo; audio controls (gain/pan automation, effects, articulations) do not carry over.</li>

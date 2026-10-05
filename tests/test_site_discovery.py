@@ -30,7 +30,8 @@ def test_electronic_page_publishes_only_declared_assets_and_checks_engine(tmp_pa
     assert site.warnings == ["electronic preview example uses an older engine"]
     page = (site.out / "electronic/index.html").read_text(encoding="utf-8")
     assert "https://audioascode.com/electronic/" in page
-    assert "../instruments/index.html" in page
+    assert '<a href="/instruments/">Instrument library</a>' in page
+    assert "../instruments/index.html" not in page
     (source / "measurements.json").write_text(json.dumps({"../outside": report["example"]}))
     with pytest.raises(ValueError, match="invalid electronic preview ID"):
         site.electronic()

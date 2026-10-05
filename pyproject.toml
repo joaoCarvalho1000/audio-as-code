@@ -38,6 +38,9 @@ Issues = "https://github.com/joaoCarvalho1000/audio-as-code/issues"
 aac = "audio_as_code.cli:main"
 
 [dependency-groups]
+browser = [
+    "playwright==1.58.0",
+]
 dev = ["pytest>=8,<10", "ruff>=0.11,<1", "jsonschema>=4.23,<5"]
 
 [tool.hatch.build]
