@@ -171,8 +171,9 @@ After the complete CI gate passes on `main`, the website job preserves the teste
 site with a commit marker and SHA-256 file manifest. The deployment job downloads
 that exact artifact, verifies it, stages assets without credentials, then publishes
 through the `website-production` environment. That environment must permit only
-`main` and hold a restricted `CLOUDFLARE_API_TOKEN`, scoped to this account's
-Workers deployment and R2 upload permissions. Do not store a workstation OAuth
+`main` and hold a restricted `CLOUDFLARE_API_TOKEN`, scoped to the `audioascode` Worker (Editor), the
+`audioascode-media` R2 bucket (object Write), and `audioascode.com`
+(Workers Routes Write and Zone Read). Do not store a workstation OAuth
 token. Set the repository variable `WEBSITE_DEPLOY_ENABLED=true` after setup.
 
 Deployments are serialized and refuse stale commits. Large media uploads finish
