@@ -37,7 +37,9 @@ __sdkOptions.loaded(instance);
 
 
 def page_for(browser, *, config=None, init="", sdk=SDK, host="site.example", path="index.html"):
-    context = browser.new_context()
+    # These tests assert event semantics. Keep the pulsing playback buttons
+    # stable so an animation cannot block Playwright's pointer actionability.
+    context = browser.new_context(reduced_motion="reduce")
     if init:
         context.add_init_script(init)
     requests = []

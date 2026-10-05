@@ -72,6 +72,10 @@ uv run --no-sync python -m playwright install chromium
 uv run --no-sync pytest tests/test_site_analytics.py tests/test_site_browser.py
 ```
 
+CI can reuse rendered demos only when their sources, lockfile and render runtime
+match exactly. Pages are rebuilt and browser-tested on every run. Cache reuse
+does not skip validation or approve a deployment.
+
 CI sets `AAC_REQUIRE_BROWSER=1`, making a missing browser dependency or built
 site a failure. The `CI gate` check fails if any prerequisite fails, is cancelled,
 or is skipped. Configure it as a required GitHub check after it has run on the

@@ -63,7 +63,7 @@ def test_generated_pages_load_without_script_errors(browser, site_url, width):
     ],
 )
 def test_players_decode_and_pause_real_audio(browser, site_url, route, selector):
-    context = browser.new_context()
+    context = browser.new_context(reduced_motion="reduce")
     context.route("https://**", lambda route: route.abort())
     # Observe the actual media element, including the homepage's detached Audio.
     # Playback and decoding still use Chromium's unmodified implementation.

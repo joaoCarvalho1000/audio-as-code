@@ -103,7 +103,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
           uv run --no-sync python -m playwright install --with-deps chromium
+      - name: Identify the render runtime
+        id: runtime
+        run: |
+          uv run --no-sync python - <<'PY'
+          import hashlib
+          import os
+          import platform
+          import subprocess
+          import sys
+
+          runtime = sys.version + platform.platform() + subprocess.check_output(
+              ["ffmpeg", "-version"], text=True
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("fingerprint=" + hashlib.sha256(runtime.encode()).hexdigest() + "\n")
+          PY
+      - name: Reuse demos only for identical render inputs
+        id: media
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            output/classic-showcase
+            output/classic-reimaginations
+            output/instruments
+            output/electronic-music
+          key: media-v1-${{ runner.os }}-${{ steps.runtime.outputs.fingerprint }}-${{ hashFiles('src/**', 'examples/**', 'schemas/**', 'web/instrument-browser.html', 'pyproject.toml', 'uv.lock') }}
       - name: Render the complete public demo inputs
+        if: steps.media.outputs.cache-hit != 'true'
         run: |
           uv run --no-sync python examples/classic_showcase.py --ffmpeg ffmpeg
           uv run --no-sync python examples/classic_reimaginations.py --ffmpeg ffmpeg
