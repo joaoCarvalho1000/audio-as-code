@@ -1212,7 +1212,8 @@ class Site:
         title = "Procedural Electronic Music in Python · Audio as Code"
         description = (
             "Ode to Joy as procedural disco, techno, trance and drum and bass, "
-            "plus 27 electronic voices synthesized from code. Download WAV, MIDI and editable scores."
+            "plus 27 electronic voices synthesized from code. "
+            "Download WAV, MIDI and editable scores."
         )
         image = IDENTITY["canonical_origin"].rstrip("/") + "/assets/social.png"
         image_alt = (
