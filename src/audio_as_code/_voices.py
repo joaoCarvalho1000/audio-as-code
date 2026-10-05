@@ -6,6 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ._audio import Audio
+from ._instrument_levels import SOURCE_GAINS
 from .acoustics import colored_noise, nyquist_gain
 from .electronic import ELECTRONIC_INSTRUMENTS
 from .electronic import synthesize as synthesize_electronic
@@ -188,4 +189,7 @@ def _voice(
     if release > 0:
         release_curve = 0.5 + 0.5 * np.cos(np.linspace(0, np.pi, release)) if release > 1 else 0
         signal[-release:] *= release_curve
+    # One fixed instrument trim preserves register, touch and envelope dynamics.
+    # User velocity/gain and mix normalization are still applied by the renderer.
+    signal *= SOURCE_GAINS.get(instrument, 1.0)
     return signal.astype(np.float32)

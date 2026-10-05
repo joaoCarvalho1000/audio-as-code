@@ -14,14 +14,18 @@ import audio_as_code
 from audio_as_code import (
     Distortion,
     Ducker,
+    MixEdit,
     Note,
     Pattern,
     Song,
     Tone,
     Track,
     analyze_wav,
+    apply_mix,
+    audition_song,
     export_midi,
     get_instrument,
+    inspect_mix,
     inspect_score,
     render,
 )
@@ -90,6 +94,19 @@ def main() -> None:
             check=True,
         )
         assert json.loads(inspected.stdout) == inspection
+        edited = apply_mix(song, [MixEdit(tracks=("Lead",), trim_db=-6, pan=-0.25)])
+        edits_file, revised_file = work / "edits.json", work / "revised.json"
+        edits_file.write_text('[{"tracks":["Lead"],"trim_db":-6,"pan":-0.25}]', encoding="utf-8")
+        mixed = subprocess.run(
+            [str(console), "mix", str(score), "--edits", str(edits_file), "-o", str(revised_file)],
+            cwd=work,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert Song.load(revised_file) == edited.song
+        assert json.loads(mixed.stdout)["after"] == inspect_mix(edited.song)
+        assert audition_song(edited.song, mute=("Lead",)).tracks[0].gain == 0
         report = render(song, work / "score.wav")
         export_midi(song, work / "score.mid")
         assert report["wav"] == analyze_wav(work / "score.wav")

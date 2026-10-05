@@ -78,6 +78,11 @@ paired version not marked `complete: true`, a WAV whose length does not match
 its score, and an MP3 preview older than its WAV. A stale or short render
 therefore cannot pass a strict build.
 
+Website copy uses periods, commas, colons, or parentheses instead of em dashes.
+The build checks published pages, metadata, documentation and text assets for
+literal em dashes, HTML entities and Unicode escapes. Any occurrence fails a
+strict build so generated copy follows the same rule as the templates.
+
 For an already installed checkout, `uv run python` can be replaced with
 `.venv/Scripts/python.exe` in Windows PowerShell or `.venv/bin/python` on
 macOS/Linux. Neither requires environment activation. See the
@@ -183,7 +188,7 @@ Useful paths relative to the built site root:
 | `docs/integrations.html` | Codex, Claude Code, Hyperframes, game and slide recipes |
 | `instruments/index.html` | 210-clip instrument library |
 | `source.html` | Source download, size, and SHA-256 |
-| `download/audio-as-code-0.3.0-source.zip` | Portable source snapshot; version follows the package |
+| `download/audio-as-code-0.4.0-source.zip` | Portable source snapshot; version follows the package |
 | `llms.txt` | Agent documentation index |
 | `schemas/song-v1.schema.json` | Versioned score contract |
 | `instruments.json` | Live catalog with explicit availability and controls |
@@ -194,8 +199,8 @@ Useful paths relative to the built site root:
 The source archive excludes generated media and operational files through a
 source allowlist and filters; it includes `.github/FUNDING.yml`. Its recipient
 installs from the extracted checkout to run the complete examples and site tools.
-For the engine and CLI in an existing project, install `audio-as-code==0.3.0`
-from [PyPI](https://pypi.org/project/audio-as-code/0.3.0/). The website source ZIP is
+For the engine and CLI in an existing project, install `audio-as-code==0.4.0`
+from [PyPI](https://pypi.org/project/audio-as-code/). The website source ZIP is
 a separately built snapshot; its published hash identifies its contents, which can
 include documentation updates made after the registry release. The
 public source repository is [joaoCarvalho1000/audio-as-code](https://github.com/joaoCarvalho1000/audio-as-code).

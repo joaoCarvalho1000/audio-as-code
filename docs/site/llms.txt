@@ -1,6 +1,6 @@
 # Audio as Code
 
-> An open-source Python framework (MIT) for AI agents and developers to compose editable music for videos, games and presentations, render it offline to WAV with instruments synthesized entirely from code, export MIDI, and read back signal measurements. Version 0.3.0, early prototype. Distribution `audio-as-code`, import `audio_as_code`, command `aac`.
+> An open-source Python framework (MIT) for AI agents and developers to compose editable music for videos, games and presentations, render it offline to WAV with instruments synthesized entirely from code, export MIDI, and read back signal measurements. Version 0.4.0, early prototype. Distribution `audio-as-code`, import `audio_as_code`, command `aac`.
 
 ## Start here
 
@@ -12,12 +12,12 @@
 
 Facts an agent should rely on:
 
-- Install version 0.3.0 from PyPI in an existing uv project: `uv add audio-as-code==0.3.0`, then prefix commands with `uv run --locked`. Without uv, create `.venv` and use its Python to `-m pip install audio-as-code==0.3.0` and `-m audio_as_code`; activation is optional. The wheel contains the engine and CLI. For a source workspace with the complete examples, run `uv sync --locked` from the extracted source root.
-- For a new project: `uvx --from audio-as-code==0.3.0 aac init soundtrack`, then `cd soundtrack`, `uv sync`, `uv run aac doctor` and `uv run python compose.py`. Init only writes to a new or empty directory; doctor checks the imported runtime.
+- Install version 0.4.0 from PyPI in an existing uv project: `uv add audio-as-code==0.4.0`, then prefix commands with `uv run --locked`. Without uv, create `.venv` and use its Python to `-m pip install audio-as-code==0.4.0` and `-m audio_as_code`; activation is optional. The wheel contains the engine and CLI. For a source workspace with the complete examples, run `uv sync --locked` from the extracted source root.
+- For a new project: `uvx --from audio-as-code==0.4.0 aac init soundtrack`, then `cd soundtrack`, `uv sync`, `uv run aac doctor` and `uv run python compose.py`. Init only writes to a new or empty directory; doctor checks the imported runtime.
 - Export PCM16 (default), PCM24 or float32 WAV with `aac render --format`. `aac preview --start SECONDS --duration SECONDS` preserves full-render context but costs a full render. `--progress-file PATH` writes JSON Lines separately from the single JSON result.
 - Optional `audio-as-code[loudness]` enables `--target-lufs` and `--peak-ceiling-dbfs` (sample peak, not true peak). Python rendering also supports progress callbacks and cooperative cancellation.
 - There is no hosted API, MCP server, in-browser renderer, bundled AI model or required provider API key. Audio on the website was pre-rendered locally by the Python synthesizers. To hear an edit, render locally.
-- Every `aac` command (except `--help`, which prints plain text) prints one JSON object: stdout and exit 0 on success, stderr and exit 2 on failure (`invalid_score` with `issues[].path`, or `operation_failed` with `message`).
+- Every `aac` command (except `--help`, which prints plain text) prints one JSON object: stdout and exit 0 on success, stderr and exit 2 on failure (`invalid_score` with `issues[].path`, `invalid_mix_edits` with edit-array issue paths, or `operation_failed` with `message`).
 - Scores are JSON, `"schema_version": "1"`. Time is in quarter-note beats; without a tempo map, seconds = beats * 60 / bpm; optional `tempo_map` entries are ordered `{beat,bpm}` steps. Pitch is MIDI 0-127 or a name such as "C4" (= 60). Notes must end by `beats`. No extra fields.
 - 70 playable instruments, all code-generated approximations (no recorded samples, SoundFonts, or measured impulse responses). Tone controls are per track and only those listed in each instrument's `tone_controls` are accepted.
 - Optional expression: ordered step tempo changes; track gain/pan and song master_gain automation with linear/step points; note/track release_seconds; ordered track/song delay and generated reverb effects. Read the installed schema for parameters.
@@ -32,7 +32,7 @@ A score is the editable recipe for music: instruments, notes, timing, dynamics a
 For an existing uv project with Python 3.10+:
 
 ```sh
-uv add "audio-as-code==0.3.0"
+uv add "audio-as-code==0.4.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 uv run --locked aac demo -o output/song.json
@@ -56,6 +56,7 @@ Keep the package and dependency versions in the project's uv.lock. The quickstar
 - [Articulations](docs/articulations.md): supported voices, soft/accented gestures and synthesis limits
 - [Electronic instruments](docs/electronic-instruments.md): dance voices, funk gestures, filters, modulation and complete classical genre demos; inspect the installed version before use
 - [Production output](docs/production-output.md): WAV encodings, excerpt boundaries, optional loudness, progress and cancellation
+- [Mix revisions](docs/mixing.md): group dB trims, pan, automation and mute/solo auditions (requires 0.4.0 or later)
 
 ## Machine-readable
 

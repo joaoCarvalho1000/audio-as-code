@@ -5,6 +5,25 @@ are separate.
 
 ## Unreleased
 
+## 0.4.0 - 2026-10-05
+
+### Added
+
+- Validated `MixEdit`/`apply_mix` helpers and `aac mix` JSON batches for exact-name
+  group gain/pan edits, automation-preserving dB trims, and disposable mute/solo
+  auditions. Settings reports distinguish authored controls from audio measurements.
+  See `docs/mixing.md` and the complete `examples/ensemble_mixing.py` workflow.
+
+### Changed
+
+- Conservative fixed source-level trims reduce loud sustained and quiet struck/plucked
+  outliers across the instrument catalog. Thirteen voices change level; user gains,
+  velocity response, register variation and envelopes retain their behavior. Existing
+  score IDs are unchanged, but rendered audio and some mix balances intentionally differ.
+- Added `examples/instrument_balance.py` for dry register/velocity measurements and
+  fixed-gain A/B auditions of all 70 entries and representative arrangements. These
+  numerical checks do not establish perceived balance or acoustic realism.
+
 ## 0.3.0 — 2026-10-05
 
 Published on [PyPI](https://pypi.org/project/audio-as-code/0.3.0/).

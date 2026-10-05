@@ -8,7 +8,7 @@ import sys
 import wave
 from pathlib import Path
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from . import __version__
 from ._cli_progress import progress_file
@@ -17,6 +17,7 @@ from .demo import demo_song
 from .inspection import inspect_score
 from .instruments import ENGINES, FAMILIES, instrument_catalog
 from .midi import export_midi
+from .mixing import MixEdit, apply_mix, audition_song, inspect_mix
 from .model import Song
 from .project_setup import doctor, init_project
 from .render import analyze_wav, render, render_preview
@@ -29,6 +30,21 @@ class Parser(argparse.ArgumentParser):
 
 class ArgumentError(ValueError):
     """An invalid CLI invocation, with the existing operation_failed contract."""
+
+
+class MixInputError(ValueError):
+    """Invalid edit data, with locations in the edit file rather than the score."""
+
+    def __init__(self, error: ValidationError) -> None:
+        super().__init__("Invalid mix edits")
+        self.issues = [
+            {
+                "path": ["edits", *item["loc"]],
+                "message": item["msg"],
+                "type": item["type"],
+            }
+            for item in error.errors(include_url=False)
+        ]
 
 
 def _render_arguments(parser: argparse.ArgumentParser, *, stems: bool) -> None:
@@ -100,6 +116,17 @@ def _parser() -> argparse.ArgumentParser:
     validate.add_argument("score", help="Path to a UTF-8 JSON score")
     inspect = commands.add_parser("inspect", help="Inspect score facts and static export readiness")
     inspect.add_argument("score", help="Path to a UTF-8 JSON score; does not render or write files")
+    mix = commands.add_parser("mix", help="Inspect or revise score mix settings without rendering")
+    mix.add_argument("score", help="Path to a UTF-8 JSON score")
+    mix.add_argument("--edits", help="UTF-8 JSON array of ordered MixEdit objects")
+    mix.add_argument("-o", "--output", help="Revised score path; required for edits or audition")
+    mix.add_argument(
+        "--solo", action="append", default=[], help="Exact track name; repeat for a group"
+    )
+    mix.add_argument(
+        "--mute", action="append", default=[], help="Exact track name; mute wins over solo"
+    )
+    mix.add_argument("--report", help="Also save the JSON settings/change report")
     wav = commands.add_parser("render", help="Render a score to stereo WAV")
     _render_arguments(wav, stems=True)
     preview = commands.add_parser(
@@ -197,6 +224,40 @@ def main(argv: list[str] | None = None) -> int:
                 }
             elif args.command == "inspect":
                 result = inspect_score(song)
+            elif args.command == "mix":
+                if (args.edits or args.solo or args.mute) and not args.output:
+                    raise ArgumentError("mix edits and auditions require --output")
+                paths = [args.score]
+                paths.extend(p for p in (args.edits, args.output, args.report) if p)
+                _check_paths(paths)
+                if args.output:
+                    edits = []
+                    if args.edits:
+                        payload = json.loads(Path(args.edits).read_text(encoding="utf-8"))
+                        try:
+                            edits = TypeAdapter(list[MixEdit]).validate_python(payload)
+                        except ValidationError as error:
+                            raise MixInputError(error) from error
+                    revision = apply_mix(song, edits)
+                    revised = audition_song(revision.song, solo=args.solo, mute=args.mute)
+                    result = {
+                        **revision.report,
+                        "output": args.output,
+                        "after": inspect_mix(revised),
+                    }
+                    if args.solo or args.mute:
+                        result["audition"] = {
+                            "solo": args.solo,
+                            "mute": args.mute,
+                            "precedence": "mute wins; empty solo includes all tracks",
+                            "before": inspect_mix(revision.song),
+                            "after": inspect_mix(revised),
+                        }
+                    revised.save(args.output)
+                else:
+                    result = inspect_mix(song)
+                if args.report:
+                    _write_json(args.report, result)
             elif args.command == "midi":
                 _check_paths([args.score, args.output])
                 result = export_midi(song, args.output)
@@ -242,6 +303,19 @@ def main(argv: list[str] | None = None) -> int:
                     "error": "operation_failed",
                     "message": "Operation interrupted",
                     "hint": "Retry the command when ready.",
+                }
+            ),
+            file=sys.stderr,
+        )
+        return 2
+    except MixInputError as error:
+        print(
+            json.dumps(
+                {
+                    "error": "invalid_mix_edits",
+                    "issues": error.issues,
+                    "hint": "Correct the indicated entries in the --edits JSON array; "
+                    "gain is absolute, trim_db is relative, and track names must match exactly.",
                 }
             ),
             file=sys.stderr,

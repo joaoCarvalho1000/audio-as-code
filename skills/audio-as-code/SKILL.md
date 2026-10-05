@@ -21,21 +21,21 @@ To add the library to an existing Python project managed by uv, run from that
 project's root:
 
 ```sh
-uv add "audio-as-code==0.3.0"
+uv add "audio-as-code==0.4.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
-This installs version 0.3.0 from PyPI. Keep the project's `pyproject.toml` and
+This installs version 0.4.0 from PyPI. Keep the project's `pyproject.toml` and
 `uv.lock` to record package and dependency versions. Use `uv run --locked` for
 composition and rendering. Do not replace an existing application's lockfile
 with the framework's lock. The wheel contains the engine and CLI; the portable
 skill and bundled example scripts are available separately in the source project.
 
 Without uv, create `.venv` with `python -m venv .venv`, then use
-`.venv/Scripts/python.exe -m pip install audio-as-code==0.3.0` on Windows or
-`.venv/bin/python -m pip install audio-as-code==0.3.0` on macOS/Linux. Invoke that
+`.venv/Scripts/python.exe -m pip install audio-as-code==0.4.0` on Windows or
+`.venv/bin/python -m pip install audio-as-code==0.4.0` on macOS/Linux. Invoke that
 interpreter with `-m audio_as_code` and use it for composer scripts. No activation
 is needed. Reuse an existing project environment rather than a global Python.
 
@@ -207,6 +207,26 @@ report. Correct unintended silence, clipping, timing errors and inaudible parts.
 Attenuation below 1 is not itself a failure; balance gains when it obscures the
 intended arrangement. Listen if audio perception is available. Measurements do
 not establish musical quality, acoustic realism or a good loop seam.
+
+Instrument source trims only reduce selected level outliers; they do not make
+every voice equally loud. Balance the arrangement with track gains before choosing
+master peak attenuation or LUFS targeting. Compare dry notes in useful registers
+and short mixes, preserving velocity and transient differences. The contributor
+audit is `examples/instrument_balance.py`; see
+[instrument balance](../../docs/production-output.md#instrument-and-mix-balance).
+
+With Audio as Code 0.4.0 or later, use `MixEdit`/`apply_mix` or `aac mix` for precise
+group level/pan revisions. `trim_db` preserves gain envelopes; absolute automated
+controls require `replace_automation`. Mute wins over solo. Keep the original
+audition source. See [mix revisions](../../docs/mixing.md).
+
+For fast bowed-string or brass figures, audition a short phrase first: normal
+attacks can occupy much of a 60–110 ms note. Use supported `accented` articulation,
+change the rhythm, or assign rapid figures to faster-speaking voices. Extra gain
+does not restore a missing onset. Give different sections distinct lead/support
+roles; reserve octave/unison doubling for deliberate emphasis. Compare stems
+within each section and during their entrances, not only by whole-song RMS or
+energy share. A sparse bell or cymbal can have low total energy and still be audible.
 
 Compose short candidate scores for expensive arrangements, then render the
 complete requested piece. An excerpt preview is useful to inspect a time range

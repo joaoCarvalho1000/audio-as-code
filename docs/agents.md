@@ -5,7 +5,7 @@ It covers setup, interpreting a musical brief, composing, rendering, checking,
 delivering files, and revisions. Add the released library to an existing uv project:
 
 ```sh
-uv add "audio-as-code==0.3.0"
+uv add "audio-as-code==0.4.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```

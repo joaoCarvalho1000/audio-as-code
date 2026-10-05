@@ -9,7 +9,7 @@ dispatches it from `main`; pushes and tags do not trigger publication.
 ## Decide the scope
 
 Review `CHANGELOG.md`, the supported Python range and all compatibility changes.
-The current package version is `0.3.0`, while the JSON score schema is version
+The current package version is `0.4.0`, while the JSON score schema is version
 `"1"`. Do not change the schema version solely because the package version changes.
 
 For an actual future version change, update `pyproject.toml` and
@@ -112,7 +112,7 @@ repositories. No PyPI API token or GitHub repository secret is needed.
 
 Once the publisher is configured and the reviewed commit is on `main`, use
 Actions → **Publish to PyPI** → **Run workflow**, choose `main`, and enter the exact
-version in `pyproject.toml`, such as `0.3.0`. This dispatch authorizes a real PyPI
+version in `pyproject.toml`, such as `0.4.0`. This dispatch authorizes a real PyPI
 upload. Confirm the workflow run's commit matches the reviewed commit.
 Confirm that the full CI matrix also passes on that exact commit; the publishing
 workflow runs its own checks on Linux with Python 3.13.
@@ -132,8 +132,8 @@ SHA and create an annotated version tag at that exact commit. For example, repla
 `REVIEWED_COMMIT_SHA` below with the verified run's SHA before running the command:
 
 ```sh
-git tag -a v0.3.0 REVIEWED_COMMIT_SHA -m "Audio as Code 0.3.0"
-git push origin refs/tags/v0.3.0
+git tag -a v0.4.0 REVIEWED_COMMIT_SHA -m "Audio as Code 0.4.0"
+git push origin refs/tags/v0.4.0
 ```
 
 Use the actual release version for future tags. Create the GitHub Release from that

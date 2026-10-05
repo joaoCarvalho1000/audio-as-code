@@ -1,9 +1,9 @@
 # Reference
 
-Audio as Code 0.3.0. Python distribution `audio-as-code`, import `audio_as_code`,
-command `aac`. Install `audio-as-code==0.3.0` from PyPI for the engine and CLI;
+Audio as Code 0.4.0. Python distribution `audio-as-code`, import `audio_as_code`,
+command `aac`. Install `audio-as-code==0.4.0` from PyPI for the engine and CLI;
 use the source workspace for the complete examples and portable skill. See the
-[quickstart](quickstart.md) for both routes. The 0.2 API may change; breaking score
+[quickstart](quickstart.md) for both routes. The early API may change; breaking score
 format changes will use a new `schema_version`. Expression fields are optional
 additions to version 1.
 
@@ -12,14 +12,14 @@ Machine-readable versions of this page: the score schema at [`../schemas/song-v1
 ## Command line
 
 ```text
-aac [-h] [--version] {init,doctor,instruments,demo,schema,validate,inspect,render,preview,midi,analyze} ...
+aac [-h] [--version] {init,doctor,instruments,demo,schema,validate,inspect,mix,render,preview,midi,analyze} ...
 ```
 
 Also runnable as `python -m audio_as_code`. With uv, prefix with `uv run`.
 
 | Command | Arguments | Does |
 | --- | --- | --- |
-| `aac --version` | | Print `{"version": "0.3.0"}` |
+| `aac --version` | | Print `{"version": "0.4.0"}` |
 | `aac init` | `DIRECTORY` | Create a starter in a new or empty folder; never install dependencies |
 | `aac doctor` | | Check the imported runtime and short synthesis path |
 | `aac instruments` | `[--all] [--family F] [--engine E]` | Print the catalog. Without `--all`, only playable voices |
@@ -27,6 +27,7 @@ Also runnable as `python -m audio_as_code`. With uv, prefix with `uv run`.
 | `aac schema` | `[-o OUTPUT]` | Print the JSON Schema, or write it to a file |
 | `aac validate` | `score` | Check a JSON score; print a summary |
 | `aac inspect` | `score` | Inspect tracks and WAV/MIDI readiness without rendering or writing files |
+| `aac mix` | `score [--edits JSON] [-o OUTPUT] [--solo NAME] [--mute NAME] [--report REPORT]` | Inspect or revise gain/pan settings and create auditions |
 | `aac render` | `score -o OUTPUT [--stems DIRECTORY] [--format pcm16\|pcm24\|float32] [--report REPORT]` | Render stereo WAV; PCM16 by default |
 | `aac preview` | `score -o OUTPUT --start SECONDS --duration SECONDS` | Export an excerpt after a full-context render |
 | `aac midi` | `score -o OUTPUT` | Export a type-1 MIDI file |
@@ -34,7 +35,7 @@ Also runnable as `python -m audio_as_code`. With uv, prefix with `uv run`.
 
 `--family` choices: `plucked_strings`, `bowed_strings`, `keyboards`, `woodwinds`, `brass`, `percussion`, `pitched_percussion`, `electronic`. `--engine` choices: `string`, `air_column`, `modal`, `membrane`, `electronic`.
 
-**Exit status and output.** Success: exit 0, one JSON object on stdout. Failure: exit 2, one JSON object on stderr, either `{"error": "invalid_score", "issues": [{"path", "message", "type"}]}` or `{"error": "operation_failed", "message": "..."}`, optionally with a `hint` string. `-h`/`--help` prints plain text, not JSON.
+**Exit status and output.** Success: exit 0, one JSON object on stdout. Failure: exit 2, one JSON object on stderr, either `{"error": "invalid_score", "issues": [{"path", "message", "type"}]}` or `{"error": "operation_failed", "message": "..."}`, optionally with a `hint` string. Invalid mix edit objects use `invalid_mix_edits` with `issues[].path` pointing into the edit array. `-h`/`--help` prints plain text, not JSON.
 
 **Render options.** Both render commands accept `--format`, `--report`,
 `--progress-file PATH` (live JSON Lines), and either `--no-normalize` or
@@ -51,6 +52,12 @@ Each issue has `code`, `severity`, `target`, `path` and `message`. Only issues w
 `severity: "error"` block their export target. Readiness covers static score rules;
 it does not test output paths, runtime resources or audio quality. Polyphony counts
 written note intervals, including muted notes, and excludes releases and effects.
+
+**Mixing controls (0.4.0).** The Python API and CLI provide
+`MixEdit`, `MixResult`, `apply_mix`, `inspect_mix`, `audition_song` and `aac mix`.
+They revise existing gain/pan controls, preserve gain envelopes under dB trims,
+and report precise changes without adding score fields.
+Read [mix revisions](mixing.md) for the Python/JSON contract and edit diagnostics.
 
 ## Score format (schema version 1)
 
