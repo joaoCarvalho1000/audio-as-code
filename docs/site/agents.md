@@ -34,7 +34,7 @@ either render as a sampled recording.
 In an existing uv project, install the released engine and discover its contract:
 
 ```sh
-uv add "audio-as-code==0.3.0"
+uv add "audio-as-code==0.4.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
@@ -118,7 +118,7 @@ Run in the project where the package is installed (see the [quickstart](quicksta
 
 | Step | Command | stdout on success |
 | --- | --- | --- |
-| Installed version | `aac --version` | `{"version": "0.3.0"}` |
+| Installed version | `aac --version` | `{"version": "0.4.0"}` |
 | New project | `aac init "my music"` | Output directory, created filenames and next steps |
 | Runtime check | `aac doctor` | `ok`, individual checks and recovery hints |
 | Playable voices | `aac instruments` | `catalog_version`, `synthesis_policy`, `families`, `engines`, `instruments`, `counts` |

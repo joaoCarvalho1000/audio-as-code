@@ -17,7 +17,7 @@ def test_tuning_duration_and_envelope():
     spectrum = np.abs(np.fft.rfft(result.audio[:, 0]))
     assert np.argmax(spectrum) == 440
     assert np.all(result.audio[[0, -1]] == 0)
-    assert result.report["audio"]["rms"] > 0.1
+    assert result.report["audio"]["rms"] > 0.05
 
 
 def test_noise_is_repeatable_and_seeded():

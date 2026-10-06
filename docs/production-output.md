@@ -1,5 +1,51 @@
 # Production output
 
+## Instrument and mix balance
+
+Version 0.4.0 applies conservative fixed source trims to thirteen loud or
+quiet catalog outliers. They are internal synthesis coefficients, independent of
+pitch, velocity, duration and seed; no note is normalized to its own peak or RMS.
+All other voices retain their designed levels. User track/master gain, gain
+automation, envelopes and velocity-dependent timbre still work as before.
+Existing score IDs stay unchanged, but audio levels and relative mix balance can
+change; pin the engine revision when reproducing a render.
+
+This is partial calibration, not equal perceived loudness. Short percussion,
+plucked attacks and sub-bass have different musical roles and crest factors.
+Arrange with track gains, then use master attenuation or optional LUFS targeting
+for delivery. One master gain cannot repair an instrument imbalance. Tone changes,
+effects, polyphony and extreme registers can still require additional headroom.
+
+[Precise mix revisions](mixing.md) covers Python/JSON group trims, pan, auditions
+and measured preview checks. These controls require Audio as Code 0.4.0 or later;
+run `aac --version` to check your installed engine.
+
+Contributors can reproduce the dry audit before and after a synthesis change:
+
+```sh
+uv run --no-sync python examples/instrument_balance.py --label before
+# Apply the synthesis change, then:
+uv run --no-sync python examples/instrument_balance.py --label after --compare before
+```
+
+The ignored `output/instrument-balance/index.html` provides fixed-gain A/B files;
+each run also writes a JSON report. The audit covers low/middle/high useful
+registers at velocities 0.35, 0.65 and 1.0, fixed percussion pitches, and every
+drum-machine route. It uses one-second notes at 44.1 kHz, active 20 ms RMS windows
+(30 dB below the strongest window, with an absolute -60 dBFS floor), onset RMS,
+sample peak, crest factor and six mixes with individual stem measurements.
+Add `--loudness` when the optional extra is installed; LUFS is supplementary,
+especially for short percussion and low bass. This bounded default-tone audit is
+not an exhaustive control, articulation or register sweep. Listen to the exported
+comparisons before judging perceived balance; numbers alone cannot establish it.
+
+Preview levels also depend on their scores and export settings. The instrument
+browser uses authored gains and peak-only attenuation, with one shared player
+volume; its scaled waveforms are not level meters. Electronic-music auditions
+normally request -18 LUFS. Neither is a uniform dry instrument-level reference.
+
+## Export controls
+
 From an installed project, use the same options through the CLI:
 
 ```sh

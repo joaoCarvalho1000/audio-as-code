@@ -63,6 +63,7 @@ RAW_DOCS = {
     "arrangement.md": "docs/arrangement.md",
     "articulations.md": "docs/articulations.md",
     "production-output.md": "docs/production-output.md",
+    "mixing.md": "docs/mixing.md",
 }
 ANALYTICS_CONFIG = WEB / "analytics-config.json"
 POSTHOG_HOSTS = ("https://us.i.posthog.com", "https://eu.i.posthog.com")

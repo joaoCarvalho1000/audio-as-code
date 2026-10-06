@@ -12,6 +12,7 @@ from .inspection import inspect_score
 from .instruments import get_instrument, instrument_catalog, list_instruments
 from .loudness import measure_loudness
 from .midi import export_midi
+from .mixing import MixEdit, MixResult, apply_mix, audition_song, inspect_mix
 from .model import (
     Automation,
     AutomationPoint,
@@ -43,7 +44,7 @@ from .render import (
     render_preview_audio,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __all__ = [
     "Arrangement",
     "Automation",
@@ -54,6 +55,8 @@ __all__ = [
     "Ducker",
     "Filter",
     "LoopRegion",
+    "MixEdit",
+    "MixResult",
     "Note",
     "Pattern",
     "PedalEvent",
@@ -68,11 +71,14 @@ __all__ = [
     "Track",
     "Tremolo",
     "analyze_wav",
+    "apply_mix",
+    "audition_song",
     "beat_at_seconds",
     "doctor",
     "export_midi",
     "get_instrument",
     "inspect_score",
+    "inspect_mix",
     "init_project",
     "instrument_catalog",
     "list_instruments",

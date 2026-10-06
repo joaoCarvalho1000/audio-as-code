@@ -1,6 +1,6 @@
 # Instrument foundation
 
-Audio as Code generates instrument sounds from equations. No recordings, sample libraries, SoundFonts, measured impulse responses, or external synthesis services are used. All 70 catalog entries are playable prototypes, including the composite drum-machine kit. **Available means renderable, not calibrated or perceptually realistic.** See [orchestra models and limits](orchestra.md).
+Audio as Code generates instrument sounds from equations. No recordings, sample libraries, SoundFonts, measured impulse responses, or external synthesis services are used. All 70 catalog entries are playable prototypes, including the composite drum-machine kit. **Available means renderable, not fully calibrated or perceptually realistic.** See [orchestra models and limits](orchestra.md).
 
 ## Musical families
 
@@ -84,7 +84,9 @@ coefficients live in `_orchestra_profiles.py`. `extended.py` implements mandolin
 kalimba, celesta and recorder. `electronic.py` implements the dance voices and
 clavinet using `_electronic_dsp.py` and `_electronic_drums.py`.
 `_voices.py` dispatches these engines, routes the
-generated kit, and applies note envelopes. `render.py` schedules note gates and
+generated kit, applies note envelopes and the conservative fixed source trims in
+`_instrument_levels.py`. See [instrument balance](production-output.md#instrument-and-mix-balance)
+for their scope and reproducible audit. `render.py` schedules note gates and
 handles velocity/gain/pan and mixing. `model.py` validates instrument-specific
 controls and kit pitches.
 

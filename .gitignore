@@ -54,3 +54,6 @@ test-results/
 /%SystemDrive%/
 .DS_Store
 Thumbs.db
+
+# Authenticated browser inspection captures stay local.
+.playwright-mcp/
