@@ -176,6 +176,20 @@ through the `website-production` environment. That environment must permit only
 (Workers Routes Write and Zone Read). Do not store a workstation OAuth
 token. Set the repository variable `WEBSITE_DEPLOY_ENABLED=true` after setup.
 
+The production uploader uses the S3 API through AWS CLI v2, supplied by the
+GitHub Ubuntu runner and checked before credentials are exposed. Cloudflare's
+[bucket-scoped object permissions](https://developers.cloudflare.com/r2/api/tokens/#permissions)
+are supported by S3, not the REST API used by `wrangler r2 object put --remote`.
+The script verifies the active account token, uses its ID as the S3 access key,
+and derives the S3 secret as the SHA-256 of its value, as documented by Cloudflare.
+These values stay in the upload subprocess environment, with unrelated GitHub,
+Cloudflare and inherited AWS credentials removed. Each upload sends Content-MD5;
+the staged SHA-256 and production range checks still apply. No broader R2 account
+permission or additional stored credential is required. The earlier manual
+Wrangler examples require an OAuth session or a token with REST-compatible R2
+permissions. Jurisdiction-specific R2 buckets require their corresponding S3
+endpoint; this deployment uses the account's default-jurisdiction bucket.
+
 Deployments are serialized and refuse stale commits. Large media uploads finish
 before the Worker changes. `/release.json` identifies the deployed commit. Live
 checks cover core pages, discovery endpoints, missing routes and large-file
@@ -183,6 +197,8 @@ range/ETag behavior. A failed verification rolls back the observed deployment,
 provided production has not since changed outside the workflow. Ambiguous upload
 failures require reconciliation, not blind retries. The deployment artifact
 records the outcome and previous Cloudflare version. Old R2 objects are retained.
+An `upload_failed` record means the Worker publication was not started; uploaded
+content-addressed media can be retained safely while the upload failure is repaired.
 
 A rollback cannot reverse connected-resource changes. These checks do not replace
 listening tests or establish perceptual realism. PyPI publication stays separate.

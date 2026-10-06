@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -159,9 +160,80 @@ def wrangler(kind, *args):
     )
 
 
+def r2_environment():
+    """Derive S3 credentials for the existing bucket-scoped account token."""
+    token = api("/tokens/verify")
+    require(token.get("status") == "active", "R2 account token is not active")
+    token_id = token.get("id")
+    require(
+        isinstance(token_id, str) and re.fullmatch(r"[a-f0-9]{32}", token_id),
+        "Invalid R2 token ID",
+    )
+    child_env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("AWS_", "CLOUDFLARE_")) and key not in {"GH_TOKEN", "GITHUB_TOKEN"}
+    }
+    child_env.update(
+        AWS_ACCESS_KEY_ID=token["id"],
+        AWS_SECRET_ACCESS_KEY=hashlib.sha256(
+            os.environ["CLOUDFLARE_API_TOKEN"].encode()
+        ).hexdigest(),
+        AWS_CONFIG_FILE=os.devnull,
+        AWS_SHARED_CREDENTIALS_FILE=os.devnull,
+        AWS_EC2_METADATA_DISABLED="true",
+        AWS_CLI_AUTO_PROMPT="off",
+        AWS_PAGER="",
+        # R2 accepts Content-MD5; do not add the CLI's optional CRC64 checksum.
+        AWS_REQUEST_CHECKSUM_CALCULATION="when_required",
+        AWS_RESPONSE_CHECKSUM_VALIDATION="when_required",
+    )
+    return child_env
+
+
+def upload_r2(bucket, entry, source, environment):
+    """Use S3: bucket object permissions are not accepted by the REST uploader."""
+    checksum = hashlib.md5(usedforsecurity=False)
+    with source.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            checksum.update(block)
+    try:
+        result = subprocess.run(
+            [
+                "aws",
+                "s3api",
+                "put-object",
+                "--endpoint-url",
+                f"https://{ACCOUNT}.r2.cloudflarestorage.com",
+                "--region",
+                "auto",
+                "--bucket",
+                bucket,
+                "--key",
+                entry["key"],
+                "--body",
+                str(source),
+                "--content-type",
+                entry["content_type"],
+                "--content-md5",
+                base64.b64encode(checksum.digest()).decode("ascii"),
+            ],
+            env=environment,
+            capture_output=True,
+            timeout=300,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        raise RuntimeError(
+            "R2 S3 upload could not complete; Worker publication was not started"
+        ) from None
+    require(result.returncode == 0, "R2 S3 upload failed; Worker publication was not started")
+
+
 def prepare(kind, sha, target):
     verify(kind, sha, target)
     if kind == "audio-as-code":
+        # Provided by the GitHub Ubuntu runner; fail before exposing credentials.
+        subprocess.run(["aws", "--version"], check=True)
         subprocess.run(
             [
                 sys.executable,
@@ -310,23 +382,21 @@ def deploy(kind, sha, target):
     write_json(record_path, record)
     if kind == "audio-as-code":
         report = json.loads((target / "stage/staging-report.json").read_text(encoding="utf-8"))
-        for entry in report["large_files"]:
-            source = target / "site" / entry["site_path"]
-            require(digest(source) == entry["sha256"], "Media changed after staging")
-            wrangler(
-                kind,
-                "r2",
-                "object",
-                "put",
-                report["bucket"] + "/" + entry["key"],
-                "--file",
-                source,
-                "--content-type",
-                entry["content_type"],
-                "--remote",
-                "--config",
-                target / "stage/wrangler.jsonc",
-            )
+        record["state"] = "uploading"
+        write_json(record_path, record)
+        try:
+            environment = r2_environment() if report["large_files"] else None
+            for entry in report["large_files"]:
+                source = target / "site" / entry["site_path"]
+                require(digest(source) == entry["sha256"], "Media changed after staging")
+                upload_r2(report["bucket"], entry, source, environment)
+        except Exception:
+            # Uploads use content-addressed keys. The production Worker is untouched.
+            record["state"] = "upload_failed"
+            write_json(record_path, record)
+            raise
+        record["state"] = "uploaded"
+        write_json(record_path, record)
     latest_main(kind, sha)  # Uploads can take time; check again before replacing production.
     require(
         current(kind)["id"] == before["id"],
