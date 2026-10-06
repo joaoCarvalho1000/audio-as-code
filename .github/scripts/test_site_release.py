@@ -1,8 +1,11 @@
 """Release boundary tests. No external service is contacted."""
 
+import base64
+import hashlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -265,6 +268,103 @@ class ReleaseTests(unittest.TestCase):
         }
         with patch.object(release, "api", return_value=remote):
             self.assertEqual(release.current("open-world-clock"), {"id": "abc", "commit": self.sha})
+
+    def test_r2_s3_credentials_use_the_existing_token_without_inherited_credentials(self):
+        original = {
+            "CLOUDFLARE_API_TOKEN": "bucket-scoped-fixture",
+            "CLOUDFLARE_API_KEY": "unrelated",
+            "GH_TOKEN": "owner-token",
+            "GITHUB_TOKEN": "workflow-token",
+            "AWS_SESSION_TOKEN": "old-session",
+            "AWS_PROFILE": "unrelated-profile",
+            "AWS_ENDPOINT_URL": "https://untrusted.example",
+        }
+        with (
+            patch.dict(os.environ, original),
+            patch.object(release, "api", return_value={"id": "b" * 32, "status": "active"}) as api,
+        ):
+            environment = release.r2_environment()
+            self.assertEqual(os.environ["AWS_SESSION_TOKEN"], "old-session")
+        api.assert_called_once_with("/tokens/verify")
+        for key in original:
+            self.assertNotIn(key, environment)
+        self.assertEqual(environment["AWS_ACCESS_KEY_ID"], "b" * 32)
+        self.assertEqual(
+            environment["AWS_SECRET_ACCESS_KEY"],
+            hashlib.sha256(b"bucket-scoped-fixture").hexdigest(),
+        )
+        self.assertEqual(environment["AWS_CONFIG_FILE"], os.devnull)
+        self.assertEqual(environment["AWS_SHARED_CREDENTIALS_FILE"], os.devnull)
+
+    def test_r2_rejects_inactive_tokens_and_invalid_ids(self):
+        for token in ({"status": "disabled", "id": "b" * 32}, {"status": "active", "id": None}):
+            with patch.object(release, "api", return_value=token), self.assertRaises(RuntimeError):
+                release.r2_environment()
+
+    def test_s3_upload_has_fixed_endpoint_integrity_header_and_no_credentials_in_argv(self):
+        source = self.source / "audio file.wav"
+        source.write_bytes(b"procedural-audio")
+        entry = {"key": "sha256/hash/audio.wav", "content_type": "audio/wav"}
+        environment = {"AWS_SECRET_ACCESS_KEY": "private-fixture"}
+        with patch.object(
+            release.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)
+        ) as run:
+            release.upload_r2("audioascode-media", entry, source, environment)
+        command = run.call_args.args[0]
+        self.assertEqual(command[:3], ["aws", "s3api", "put-object"])
+        self.assertEqual(
+            command[command.index("--endpoint-url") + 1],
+            f"https://{release.ACCOUNT}.r2.cloudflarestorage.com",
+        )
+        self.assertEqual(command[command.index("--body") + 1], str(source))
+        self.assertEqual(command[command.index("--bucket") + 1], "audioascode-media")
+        self.assertEqual(
+            command[command.index("--content-md5") + 1],
+            base64.b64encode(
+                hashlib.md5(source.read_bytes(), usedforsecurity=False).digest()
+            ).decode(),
+        )
+        self.assertNotIn("private-fixture", command)
+        self.assertIs(run.call_args.kwargs["env"], environment)
+        with (
+            patch.object(
+                release.subprocess,
+                "run",
+                return_value=subprocess.CompletedProcess([], 1, stderr=b"private-fixture"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "S3 upload failed") as error,
+        ):
+            release.upload_r2("audioascode-media", entry, source, environment)
+        self.assertNotIn("private-fixture", str(error.exception))
+
+    def test_failed_media_upload_never_starts_worker_publication(self):
+        with patch.dict(
+            release.SITES, {"audio-as-code": ("audioascode.com", "web/cloudflare", "site")}
+        ):
+            release.package("audio-as-code", self.sha, self.target)
+        source = self.target / "site/index.html"
+        release.write_json(
+            self.target / "stage/staging-report.json",
+            {
+                "bucket": "audioascode-media",
+                "large_files": [{"site_path": "index.html", "sha256": release.digest(source)}],
+            },
+        )
+        with (
+            patch.object(release, "latest_main"),
+            patch.object(release, "current", return_value={"id": "original"}),
+            patch.object(release, "r2_environment", return_value={}),
+            patch.object(release, "upload_r2", side_effect=RuntimeError("upload rejected")),
+            patch.object(release, "wrangler") as wrangler,
+            patch.object(release, "rollback") as rollback,
+            self.assertRaisesRegex(RuntimeError, "upload rejected"),
+        ):
+            release.deploy("audio-as-code", self.sha, self.target)
+        wrangler.assert_not_called()
+        rollback.assert_not_called()
+        self.assertEqual(
+            json.loads((self.target / "deployment.json").read_text())["state"], "upload_failed"
+        )
 
 
 if __name__ == "__main__":
