@@ -5,7 +5,9 @@ are separate.
 
 ## Unreleased
 
-## 0.4.0 - 2026-10-05
+## 0.4.0 - 2026-10-06
+
+Published on [PyPI](https://pypi.org/project/audio-as-code/0.4.0/).
 
 ### Added
 
