@@ -167,6 +167,13 @@ analytics.
 
 ## Releases from GitHub
 
+The hosting lockfile overrides Miniflare `5.20261001.0-alpha`'s pinned `sharp`
+with patch version `0.35.5` to address
+[GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w).
+Keep the audit enabled; remove the scoped override when upgrading to a Miniflare
+release that already includes a patched version. Python runtime dependencies are
+independent of these hosting tools.
+
 After the complete CI gate passes on `main`, the website job preserves the tested
 site with a commit marker and SHA-256 file manifest. The deployment job downloads
 that exact artifact, verifies it, stages assets without credentials, then publishes
