@@ -7,7 +7,7 @@ import math
 from functools import lru_cache
 from pathlib import Path
 
-from audio_as_code import Note, Song, Tone, Track
+from audio_as_code import Note, Reverb, Song, Tone, Track
 from audio_as_code.instruments import InstrumentInfo, get_instrument
 
 # piece, octave transposition in semitones, source parts. These are arrangements,
@@ -203,23 +203,26 @@ def arranged_notes(rows: list, instrument: str, transpose: int, end: float) -> l
     next_onset: dict[int, float] = {}
     result = []
     for start, pitch, duration in reversed(events):
+        info = get_instrument(instrument)
         ringing = instrument in RINGING
-        # Short release envelopes supply the ring-out; long written gates would
-        # blur fast runs and hide the instrument's attack. Winds leave breath space.
-        gate = 1.10 if ringing else 0.94
-        if get_instrument(instrument).family == "bowed_strings":
-            gate = 0.985
+        # Ringing voices let the release supply the ring-out. Sustained winds,
+        # brass and bowed strings play legato: each note reaches the next onset
+        # so the line connects instead of sounding like separate blips.
+        gate = 1.10 if ringing else 1.0
         length = duration * gate
         length = min(length, next_onset.get(pitch, end) - start - 0.006, end - start)
         # Shaped dynamics are intentional arrangement decisions, not randomness.
         accent = 0.05 if start % 4 < 0.01 else 0
         phrase = 0.055 * math.sin(start * math.pi / 8) - 0.025 * (start / max(end, 1))
+        # Very short sustained-voice notes need a defined attack to speak clearly.
+        articulation = "accented" if duration <= 0.5 and "accented" in info.articulations else None
         result.append(
             Note(
                 pitch=pitch,
                 start=start,
                 duration=max(0.005, length),
                 velocity=0.72 + accent + phrase,
+                articulation=articulation,
             )
         )
         next_onset[pitch] = start
@@ -275,11 +278,11 @@ def music_score(instrument: InstrumentInfo) -> tuple[Song, dict]:
         setup = "Melody with featured percussion"
         # Keep the supporting bass from masking quieter, short metal/noise voices.
         # These levels were checked on these arrangements, not globally fitted.
-        piano_gain, bass_gain = 0.52, 0.22
+        piano_gain, bass_gain = 0.4, 0.18
         if instrument.id in {"hat", "tambourine"}:
             piano_gain, bass_gain = 0.12, 0.06
         elif instrument.id in {"snare", "cymbal"}:
-            piano_gain, bass_gain = 0.25, 0.18
+            piano_gain, bass_gain = 0.2, 0.14
         plans = [
             ("melody", "piano", 0, piano_gain, -0.20),
             ("bass", "bass_guitar", -12, bass_gain, 0.20),
@@ -314,6 +317,8 @@ def music_score(instrument: InstrumentInfo) -> tuple[Song, dict]:
                 pan=pan,
                 notes=arranged_notes(rows, voice, transpose, piece["beats"]),
                 **performance_settings(voice),
+                # A short procedural room so phrases end in a tail rather than a cut.
+                effects=[Reverb(mix=0.14, decay_seconds=1.4)],
             )
         )
     if instrument.id == "timpani":
@@ -338,7 +343,8 @@ def music_score(instrument: InstrumentInfo) -> tuple[Song, dict]:
         "excerpt": True,
         "complete": False,
         "source_beats": piece["beats"],
-        "performance_notes": "Dry procedural arrangement with shaped dynamics and short releases; "
-        "octaves and articulation are adapted for the featured voice.",
+        "performance_notes": "Procedural arrangement with shaped dynamics, legato phrasing for "
+        "sustained voices and a light procedural room reverb; octaves and articulation are "
+        "adapted for the featured voice.",
     }
     return song, metadata

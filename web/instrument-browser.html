@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>Instrument library · Audio as Code</title>
-  <meta name="description" content="Listen to every playable Audio as Code voice: 49 instruments synthesized from code, with music, phrase and single-note auditions.">
+  <meta name="description" content="Listen to every playable Audio as Code voice: every instrument synthesized from code, with music, phrase and single-note auditions.">
   <style>
     /* Paste-Up gallery: same three Riso drums + black on cool white stock as the homepage.
        Fonts resolve from the hosted site (../assets/fonts); a standalone copy falls back to system faces. */
@@ -58,6 +58,9 @@
     h1 { margin: 0; font: 900 clamp(48px, 9.4vw, 152px)/.84 var(--display); font-stretch: 100%; letter-spacing: -.02em; text-transform: uppercase; color: var(--blue); mix-blend-mode: multiply; transform: rotate(-1.4deg); transform-origin: 0 70%; }
     h1 .h1-band { display: inline; background: linear-gradient(transparent 58%, var(--yellow) 58%, var(--yellow) 92%, transparent 92%); padding: 0 .06em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
     h1 .h1-pink { color: var(--pink); }
+    .intro .intro-links { margin-top: 10px; font-size: 15px; font-weight: 700; }
+    .autoplay { display: flex; align-items: center; gap: 8px; font: 600 13px/1.2 var(--body); color: #dddcd3; white-space: nowrap; cursor: pointer; }
+    .autoplay input { width: 18px; height: 18px; accent-color: var(--pink); margin: 0; }
     .intro p { margin: 18px 0 0; max-width: 54ch; font-size: clamp(16px, 1.3vw, 19px); font-weight: 600; line-height: 1.4; }
     .catalog-note { justify-self: end; text-align: center; font: 800 13px/1.15 var(--display); text-transform: uppercase; letter-spacing: .03em; width: 150px; height: 150px; border-radius: 50%; background: var(--pink); color: var(--ink); display: grid; place-content: center; padding: 18px; transform: rotate(8deg); mix-blend-mode: multiply; }
     .catalog-note strong { display: block; font: 900 52px/.9 var(--display); font-stretch: 120%; }
@@ -171,7 +174,7 @@
 
     /* fixed player: black ink band */
     .player { position: fixed; bottom: 0; left: 0; right: 0; background: var(--ink); color: var(--paper); z-index: 5; border-top: 6px solid var(--pink); }
-    .player-inner { padding: 14px var(--gutter); display: grid; grid-template-columns: minmax(180px, 280px) minmax(240px, 1fr) 190px; align-items: center; gap: 32px; min-height: 84px; }
+    .player-inner { padding: 14px var(--gutter); display: grid; grid-template-columns: minmax(180px, 280px) minmax(240px, 1fr) auto 190px; align-items: center; gap: 32px; min-height: 84px; }
     .playing-label { min-width: 0; }
     .playing-label strong { font: 900 18px/1.1 var(--display); font-stretch: 100%; text-transform: uppercase; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--yellow); }
     .playing-label span { font-size: 13px; color: #dddcd3; }
@@ -194,7 +197,7 @@
       .workspace { grid-template-columns: 160px minmax(0, 1fr) 300px; }
       .row-wave { width: 72px; }
       .detail { padding: 18px; }
-      .player-inner { grid-template-columns: 200px minmax(200px, 1fr) 160px; gap: 18px; }
+      .player-inner { grid-template-columns: 200px minmax(200px, 1fr) auto 160px; gap: 18px; }
     }
     @media (max-width: 920px) {
       .workspace { grid-template-columns: minmax(0, 1fr) 300px; }
@@ -204,7 +207,7 @@
       .mobile-family select { flex: 1; max-width: 320px; background: var(--paper); border: 2px solid var(--ink); border-radius: 0; padding: 10px; min-height: 44px; font-weight: 600; }
       .catalog-note { width: 120px; height: 120px; }
       .catalog-note strong { font-size: 40px; }
-      .player-inner { grid-template-columns: 170px minmax(180px, 1fr); }
+      .player-inner { grid-template-columns: 170px minmax(180px, 1fr) auto; }
       .volume { display: none; }
     }
     @media (max-width: 650px) {
@@ -265,6 +268,7 @@
       <a href="../docs/quickstart.html" data-site-link data-key="docs">Guides</a>
       <a href="../index.html#handoff" data-site-link data-key="agents">Agents</a>
       <a href="index.html" data-key="instruments" aria-current="page">Instruments</a>
+      <a href="../electronic/" data-site-link data-key="electronic">Electronic lab</a>
       <a href="../source.html" data-site-link data-key="source">Source</a>
     </nav>
   </header>
@@ -273,9 +277,10 @@
       <div>
         <p class="kicker">the full line-up, synthesized from code</p>
         <h1><span class="h1-band">Instrument</span><br><span class="h1-pink">library</span></h1>
-        <p>Famous melodies, played by equations. Audition a music demo, a phrase or a single note, then hand the voice to your agent.</p>
+        <p>Famous melodies, played by equations. Audition a music demo, a phrase or a single note, then hand the voice to your agent. Every clip is rendered to the same loudness target, so switching voices does not jump in level.</p>
+        <p class="intro-links"><a href="../electronic/" data-site-link>Hear these voices in full dance arrangements in the Electronic lab</a></p>
       </div>
-      <div class="catalog-note" aria-hidden="true"><strong id="available-note">49</strong><span id="planned-note">playable voices</span></div>
+      <div class="catalog-note" aria-hidden="true"><strong id="available-note"></strong><span id="planned-note">playable voices</span></div>
     </div>
     <div class="toolbar">
       <div class="segments" role="group" aria-label="Instrument availability">
@@ -317,7 +322,7 @@
     <div class="player-inner">
       <div class="playing-label"><strong id="player-title">Choose an instrument</strong><span id="player-subtitle">Ready to listen</span></div>
       <div class="transport"><button type="button" class="round-button transport-play" id="player-play" aria-label="Play preview"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg></button><button type="button" class="transport-next" id="player-next" aria-label="Next playable instrument"><svg class="icon" aria-hidden="true"><use href="#i-next"/></svg></button><div class="timeline"><span class="time" id="elapsed" aria-hidden="true">0:00</span><label class="sr-only" for="seek">Playback position</label><input id="seek" type="range" min="0" max="1" step="0.01" value="0" aria-valuetext="0 seconds"><span class="time" id="duration" aria-hidden="true">0:00</span></div></div>
-      <div class="volume"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg><label class="sr-only" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.65"><output id="volume-value" for="volume">65%</output></div>
+      <label class="autoplay"><input type="checkbox" id="autoplay"> Keep playing</label><div class="volume"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg><label class="sr-only" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.65"><output id="volume-value" for="volume">65%</output></div>
     </div>
     <p class="player-error" id="player-error" role="alert" hidden></p>
   </section>
@@ -567,7 +572,17 @@ Track(
       $("volume").addEventListener("input", event => { audio.volume = Number(event.target.value); $("volume-value").textContent = `${Math.round(audio.volume * 100)}%`; });
       audio.addEventListener("play", updateButtons);
       audio.addEventListener("pause", updateButtons);
-      audio.addEventListener("ended", () => { updateButtons(); $("announcement").textContent = "Preview finished."; });
+      audio.addEventListener("ended", () => {
+        updateButtons();
+        if ($("autoplay").checked) { $("player-next").click(); return; }
+        $("announcement").textContent = "Preview finished.";
+      });
+      // Space toggles playback unless a control or text field has focus.
+      document.addEventListener("keydown", event => {
+        if (event.code !== "Space" || event.target.closest("input, select, textarea, button, a, summary")) return;
+        if (!preview()) return;
+        event.preventDefault(); togglePlay();
+      });
       audio.addEventListener("timeupdate", updateTimeline);
       audio.addEventListener("loadedmetadata", updateTimeline);
       audio.addEventListener("waiting", () => { $("player-subtitle").textContent = "Loading preview…"; });
