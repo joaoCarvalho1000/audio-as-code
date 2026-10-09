@@ -1,4 +1,4 @@
-# Put the music in your project
+# Integrations for Codex, Claude Code and Hyperframes
 
 For a full landing on agent soundtracks (games cues, video beds, slide music),
 see [AI agent soundtrack with Python](/ai-agent-soundtrack-python/).
