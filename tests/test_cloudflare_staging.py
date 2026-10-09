@@ -66,7 +66,9 @@ def test_html_headers_cover_file_clean_and_directory_urls_only(tmp_path):
     (site / "font.woff2").write_bytes(b"font")
     output = tmp_path / "staged"
     prepare(site, output, account_id=ACCOUNT)
-    lines = (output / "assets/_headers").read_text().splitlines()
+    policy = (output / "assets/_headers").read_text()
+    assert policy.startswith(STAGING.SECURITY_HEADERS)
+    lines = policy.removeprefix(STAGING.SECURITY_HEADERS).splitlines()
     routes = {line for line in lines if line.startswith("/")}
     assert routes == {
         "/",
