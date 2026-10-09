@@ -9,21 +9,21 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import math
 from pathlib import Path
 
 from audio_as_code import (
-    Automation,
     Chorus,
     Delay,
     Distortion,
     Ducker,
+    Filter,
     Note,
     Phaser,
     Reverb,
     Song,
     Tone,
     Track,
-    Tremolo,
     export_midi,
     get_instrument,
     render,
@@ -32,12 +32,58 @@ from audio_as_code.electronic import ELECTRONIC_INSTRUMENTS
 
 ROOT = Path(__file__).resolve().parents[1]
 STYLES = {
-    "disco": (118, ("clavinet", "string_machine", "electric_guitar", "bass_guitar")),
-    "techno": (132, ("acid_bass", "sync_lead", "disco_bass", "sub_bass")),
-    "trance": (138, ("supersaw", "trance_pluck", "string_machine", "disco_bass")),
+    "disco": (118, ("string_machine", "clavinet", "electric_guitar", "bass_guitar")),
+    "techno": (132, ("sync_lead", "wavetable_pad", "fm_bell", "sub_bass")),
+    "trance": (138, ("supersaw", "string_machine", "trance_pluck", "sub_bass")),
     "drum-and-bass": (174, ("fm_bell", "wavetable_pad", "hoover", "reese_bass")),
 }
 PARTS = ("soprano", "alto", "tenor", "bass")
+# Song form around the complete source: an 8-bar intro, then the 16-bar hymn
+# (bars 1-8 full groove, bars 9-12 a kick-free breakdown, bars 13-16 the drop),
+# then a 4-bar outro whose last chord rings out.
+INTRO_BEATS = 32
+OUTRO_BEATS = 16
+LOUDNESS_TARGET_LUFS = -16.0
+PEAK_CEILING_DBFS = -1.5
+# Dry noise-based drum hits overshoot between samples; a lower ceiling keeps them
+# under -1 dBTP.
+DRUM_PEAK_CEILING_DBFS = -3.5
+TONIC = 43  # G2: the hymn edition is in G major.
+
+# Per style and part: (octave transpose, gain, pan, release seconds).
+PART_MIX = {
+    "disco": {
+        "soprano": (12, 0.5, 0.0, 0.32),
+        "alto": (0, 0.3, -0.35, 0.12),
+        "tenor": (0, 0.26, 0.35, 0.1),
+        "bass": (-12, 0.42, 0.0, 0.1),
+    },
+    "techno": {
+        "soprano": (0, 0.42, 0.0, 0.22),
+        "alto": (0, 0.24, -0.3, 0.6),
+        "tenor": (12, 0.22, 0.3, 0.3),
+        "bass": (-24, 0.26, 0.0, 0.08),
+    },
+    "trance": {
+        "soprano": (12, 0.4, 0.0, 0.4),
+        "alto": (0, 0.24, -0.3, 0.7),
+        "tenor": (12, 0.3, 0.3, 0.3),
+        "bass": (-24, 0.22, 0.0, 0.1),
+    },
+    "drum-and-bass": {
+        "soprano": (12, 0.48, 0.0, 0.5),
+        "alto": (0, 0.24, -0.3, 0.8),
+        "tenor": (-12, 0.2, 0.3, 0.2),
+        "bass": (-12, 0.34, 0.0, 0.1),
+    },
+}
+# Short descriptions used on the listening page.
+STYLE_NOTES = {
+    "disco": "String-machine lead, slap bass, octave disco bass, clap and open hats.",
+    "techno": "Sync lead over a 16th-note acid line, sub bass and a driving 909 grid.",
+    "trance": "Supersaw lead with sidechain pump, offbeat bass and a snare-roll build.",
+    "drum-and-bass": "Two-step break at 174 BPM, reese and sub bass, FM bell lead.",
+}
 
 
 def source_piece() -> dict:
@@ -46,136 +92,337 @@ def source_piece() -> dict:
     ]
 
 
-def genre_song(style: str) -> Song:
-    """Preserve all four source parts and the complete 16-bar hymn arrangement.
+def song_sections(style: str) -> list[tuple[str, float, float]]:
+    """Named sections in beats, used for the page's section map."""
+    s0, n = INTRO_BEATS, source_piece()["beats"]
+    return [
+        ("Intro", 0, s0),
+        ("Theme", s0, s0 + 32),
+        ("Breakdown", s0 + 32, s0 + 48),
+        ("Drop", s0 + 48, s0 + n),
+        ("Outro", s0 + n, s0 + n + OUTRO_BEATS),
+    ]
 
-    Pitches may shift by octaves; note onsets and written durations are retained.
-    The added groove is original and does not contain a sampled breakbeat.
+
+def _bars(start: float, stop: float) -> range:
+    return range(int(start), int(stop), 4)
+
+
+def _hits(name: str, instrument: str, gain: float, rows, pan: float = 0.0, **extra) -> Track:
+    pitch = get_instrument(instrument).preview_pitch
+    unique = {}
+    for start, duration, velocity in rows:
+        unique.setdefault(round(start, 4), (start, duration, velocity))
+    ordered = sorted(unique.values())
+    notes = [
+        Note(
+            pitch=pitch,
+            start=s,
+            # Gate each hit before the next one so drum notes never overlap.
+            duration=min(d, ordered[i + 1][0] - s - 0.01) if i + 1 < len(ordered) else d,
+            velocity=round(v, 3),
+        )
+        for i, (s, d, v) in enumerate(ordered)
+    ]
+    return Track(name=name, instrument=instrument, gain=gain, pan=pan, notes=notes, **extra)
+
+
+def _bass_root(rows: list, source_beat: float) -> int:
+    """Lowest source bass pitch sounding at a source beat, folded into the G1 to F#2 octave."""
+    sounding = [p for p, s, d, _ in rows if s <= source_beat < s + d]
+    pitch = min(sounding) if sounding else TONIC
+    while pitch > 42:
+        pitch -= 12
+    while pitch < 31:
+        pitch += 12
+    return pitch
+
+
+def _velocity(source_beat: float, end: float) -> float:
+    """Downbeat accents and a phrase arc; the final phrase is the loudest."""
+    accent = 0.08 if source_beat % 4 == 0 else (0.03 if source_beat % 2 == 0 else 0)
+    arc = 0.05 * math.sin(math.pi * (source_beat % 16) / 16)
+    lift = 0.06 if source_beat >= end - 16 else 0
+    return round(min(0.95, 0.62 + accent + arc + lift), 3)
+
+
+def genre_song(style: str) -> Song:
+    """Wrap the complete four-part hymn in an intro, breakdown, drop and outro.
+
+    Every source note keeps its written duration and its onset (shifted by
+    INTRO_BEATS); pitches move only by octaves. Drum, groove-bass and pad parts
+    are original procedural parts, not sampled breakbeats or loops.
     """
     piece = source_piece()
     bpm, voices = STYLES[style]
-    end = piece["beats"]
-    tracks = []
-    kicks = [float(i) for i in range(int(end))]
-    if style == "drum-and-bass":
-        kicks = [bar + offset for bar in range(0, int(end), 4) for offset in (0, 1.75, 2.5)]
-    for index, (part, instrument) in enumerate(zip(PARTS, voices, strict=True)):
-        transpose = -12 if part == "bass" else 0
-        if style == "techno":
-            transpose = -24 if part == "soprano" else -12
-        if style == "drum-and-bass" and part == "tenor":
-            transpose = -12
-        articulation = None
-        if instrument == "electric_guitar":
-            articulation = "muted"
+    src_end = piece["beats"]
+    s0 = INTRO_BEATS
+    full_a = (s0, s0 + 32)
+    drop = (s0 + 48, s0 + src_end)
+    outro = (s0 + src_end, s0 + src_end + OUTRO_BEATS)
+    end = outro[1]
+    intro_groove = (0, s0) if style == "techno" else (16, s0)
+    groove_spans = [intro_groove, full_a, drop, (outro[0], outro[0] + 8)]
+    beat_seconds = 60 / bpm
+
+    def in_spans(beat: float, spans) -> bool:
+        return any(a <= beat < b for a, b in spans)
+
+    kick_bar = (0.0, 2.5) if style == "drum-and-bass" else (0.0, 1.0, 2.0, 3.0)
+    kicks = [
+        float(bar + o) for bar in _bars(0, end) for o in kick_bar if in_spans(bar + o, groove_spans)
+    ]
+    kicks.append(float(outro[0] + 8))
+    duck = Ducker(trigger_beats=kicks, depth=0.5, release_seconds=round(beat_seconds * 0.45, 3))
+
+    tracks: list[Track] = []
+    for part, instrument in zip(PARTS, voices, strict=True):
+        transpose, gain, pan, release = PART_MIX[style][part]
         notes = [
             Note(
                 pitch=pitch + transpose,
-                start=start,
+                start=start + s0,
                 duration=duration,
-                velocity=min(0.85, max(0.45, velocity)),
-                articulation=("pop" if int(start) % 4 == 3 else "slap")
+                velocity=_velocity(start, src_end),
+                articulation=("pop" if start % 2 == 1 else "slap")
                 if instrument == "bass_guitar"
-                else "accented"
-                if instrument == "acid_bass" and start % 4 == 0
                 else None,
             )
-            for pitch, start, duration, velocity in piece["parts"][part]
+            for pitch, start, duration, _ in piece["parts"][part]
         ]
-        effects = []
+        effects: list = []
         tone = None
-        if instrument == "clavinet":
-            effects = [Phaser(mix=0.28, depth=0.6, rate_hz=0.25)]
-        elif instrument in {"string_machine", "wavetable_pad"}:
-            effects = [Chorus(mix=0.3), Reverb(mix=0.12, decay_seconds=0.8)]
+        if instrument == "string_machine":
+            tone = Tone(brightness=0.55, detune_cents=14)
+            effects = [Chorus(mix=0.3), Reverb(mix=0.22, decay_seconds=1.8), duck]
+        elif instrument == "wavetable_pad":
+            effects = [Chorus(mix=0.3), Reverb(mix=0.3, decay_seconds=2.4), duck]
+        elif instrument == "clavinet":
+            effects = [Phaser(mix=0.3, depth=0.6, rate_hz=0.25), Reverb(mix=0.1)]
+        elif instrument == "electric_guitar":
+            effects = [Chorus(mix=0.2), Reverb(mix=0.1)]
         elif instrument == "supersaw":
-            effects = [Chorus(mix=0.23), Ducker(trigger_beats=kicks, depth=0.55)]
-            tone = Tone(brightness=0.6, detune_cents=19)
-        elif instrument == "trance_pluck":
-            effects = [Delay(time_seconds=60 / bpm * 0.75, mix=0.18, repeats=3)]
-        elif instrument in {"acid_bass", "reese_bass", "hoover"}:
-            effects = [Distortion(drive=2.4, mix=0.2), Ducker(trigger_beats=kicks, depth=0.4)]
+            tone = Tone(brightness=0.62, detune_cents=20)
+            effects = [
+                Chorus(mix=0.2),
+                Delay(time_seconds=beat_seconds * 0.75, mix=0.16, repeats=3),
+                Reverb(mix=0.22, decay_seconds=2.2),
+                duck,
+            ]
         elif instrument == "sync_lead":
-            effects = [Tremolo(period_beats=0.5, depth=0.6, shape="gate")]
+            tone = Tone(brightness=0.5, glide_seconds=0.04)
+            effects = [
+                Delay(time_seconds=beat_seconds * 0.75, mix=0.2, repeats=4),
+                Reverb(mix=0.16, decay_seconds=1.6),
+            ]
+        elif instrument == "trance_pluck":
+            effects = [Delay(time_seconds=beat_seconds * 0.75, mix=0.25, repeats=4), Reverb()]
         elif instrument == "fm_bell":
-            tone = Tone(fm_ratio=2, fm_index=1.5, decay_seconds=1.8)
-            effects = [Delay(time_seconds=60 / bpm * 0.75, repeats=3, mix=0.15)]
-        gain = (0.45, 0.19, 0.17, 0.55)[index]
+            tone = Tone(fm_ratio=2, fm_index=1.4, decay_seconds=1.6)
+            effects = [Delay(time_seconds=beat_seconds * 0.75, repeats=3, mix=0.18), Reverb()]
+        elif instrument == "hoover":
+            effects = [Distortion(drive=2.0, mix=0.15), duck]
+        elif instrument == "reese_bass":
+            effects = [Distortion(drive=2.4, mix=0.2), duck]
+        elif instrument == "sub_bass":
+            effects = [duck]
+        elif instrument == "bass_guitar":
+            tone = Tone(brightness=0.45)
         tracks.append(
             Track(
                 name=part,
                 instrument=instrument,
                 notes=notes,
                 gain=gain,
-                pan=(0, -0.25, 0.25, 0)[index],
-                release_seconds=0.08,
-                articulation=articulation,
+                pan=pan,
+                release_seconds=release,
                 tone=tone,
                 effects=effects,
             )
         )
-    kit = {
-        "disco": (("kick_909", kicks, 0.6), ("clap", None, 0.55)),
-        "techno": (("kick_909", kicks, 0.75), ("clap", None, 0.5)),
-        "trance": (("kick_909", kicks, 0.65), ("electronic_snare", None, 0.45)),
-        "drum-and-bass": (("kick_808", kicks, 0.65), ("electronic_snare", None, 0.6)),
-    }
-    for instrument, starts, gain in kit[style]:
-        starts = starts if starts is not None else list(range(1, int(end), 2))
-        notes = [
-            Note(
-                pitch=get_instrument(instrument).preview_pitch,
-                start=start,
-                duration=min(0.65, end - start),
-                velocity=0.85,
-            )
-            for start in starts
-        ]
-        if style == "drum-and-bass" and instrument == "electronic_snare":
-            notes += [
-                Note(pitch=38, start=bar + offset, duration=0.12, velocity=0.27)
-                for bar in range(0, int(end), 4)
-                for offset in (0.75, 2.75, 3.75)
-            ]
-            notes.sort(key=lambda n: n.start)
-        tracks.append(Track(name=instrument, instrument=instrument, gain=gain, notes=notes))
-    hats = [
-        Note(pitch=42, start=i * 0.5, duration=0.16, velocity=0.45 if i % 2 == 0 else 0.65)
-        for i in range(int(end * 2))
-    ]
-    tracks.append(Track(name="Pulse hats", instrument="metal_hat", gain=0.36, pan=0.18, notes=hats))
-    if style in {"disco", "trance"}:
-        tracks.append(
-            Track(
-                name="Offbeat open hats",
-                instrument="open_hat",
-                gain=0.24,
-                pan=-0.15,
-                notes=[
-                    Note(pitch=46, start=i + 0.5, duration=0.42, velocity=0.65)
-                    for i in range(int(end))
-                ],
-            )
+
+    # The drop doubles the melody on a second voice so the payoff is audibly bigger.
+    double_voice, double_shift, double_gain = {
+        "disco": ("clavinet", 0, 0.4),
+        "techno": ("supersaw", 0, 0.24),
+        "trance": ("trance_pluck", 12, 0.32),
+        "drum-and-bass": ("supersaw", -12, 0.28),
+    }[style]
+    tracks.append(
+        Track(
+            name="Drop lead double",
+            instrument=double_voice,
+            gain=double_gain,
+            pan=0.12,
+            release_seconds=0.2,
+            notes=[
+                Note(
+                    pitch=p + PART_MIX[style]["soprano"][0] + double_shift,
+                    start=s + s0,
+                    duration=d,
+                    velocity=_velocity(s, src_end),
+                )
+                for p, s, d, _ in piece["parts"]["soprano"]
+                if s + s0 >= drop[0]
+            ],
+            effects=[Delay(time_seconds=beat_seconds * 0.75, mix=0.15, repeats=3), duck],
         )
-    # Keep the complete source material; a short master fade shapes only its final cadence.
+    )
+
+    # Groove bass: the source bass line re-voiced as each genre's bass figure.
+    figure = {
+        "disco": [(0.0, 0), (0.5, 12), (1.0, 0), (1.5, 12)],
+        "techno": [(i / 4, 12 if i % 4 == 2 else 0) for i in range(8)],
+        "trance": [(0.5, 0), (1.5, 0)],
+        "drum-and-bass": [(0.0, 0)],
+    }[style]
+    length = {"disco": 0.4, "techno": 0.2, "trance": 0.42, "drum-and-bass": 1.9}[style]
+    groove = []
+    for bar in _bars(0, outro[0]):
+        for half in (0.0, 2.0):
+            for offset, octave in figure:
+                beat = bar + half + offset
+                if not in_spans(beat, groove_spans):
+                    continue
+                source_beat = beat - s0
+                root = TONIC if source_beat < 0 else _bass_root(piece["parts"]["bass"], source_beat)
+                groove.append(
+                    Note(
+                        pitch=root + octave + (12 if style in {"disco", "techno"} else 0),
+                        start=beat,
+                        duration=length,
+                        velocity=0.85 if offset in (0.0, 0.5) else 0.68,
+                        articulation="accented"
+                        if style == "techno" and round(offset * 4) % 3 == 0
+                        else None,
+                    )
+                )
+    tracks.append(
+        Track(
+            name="Groove bass",
+            instrument={
+                "disco": "disco_bass",
+                "techno": "acid_bass",
+                "trance": "disco_bass",
+                "drum-and-bass": "sub_bass",
+            }[style],
+            gain={"disco": 0.48, "techno": 0.4, "trance": 0.52, "drum-and-bass": 0.42}[style],
+            notes=groove,
+            tone=Tone(cutoff_hz=700, resonance=0.6, filter_env_octaves=2.5)
+            if style == "techno"
+            else None,
+            release_seconds=0.05,
+            effects=[duck] if style != "drum-and-bass" else [],
+        )
+    )
+
+    # Pad: an opening G major chord that opens its filter across the intro, and
+    # a closing chord with a long release so the piece ends on a natural tail.
+    pad_notes = [
+        Note(pitch=pitch, start=start, duration=duration, velocity=velocity)
+        for start, duration, velocity in ((0, s0, 0.55), (outro[0], 12, 0.7))
+        for pitch in (55, 62, 67, 71)
+    ]
+    tracks.append(
+        Track(
+            name="Intro and outro pad",
+            instrument="wavetable_pad"
+            if style in {"techno", "drum-and-bass"}
+            else "string_machine",
+            gain=0.2,
+            release_seconds=2.5,
+            notes=pad_notes,
+            effects=[
+                Filter(
+                    cutoff_hz=500,
+                    end_cutoff_hz=6000,
+                    sweep_seconds=round(beat_seconds * s0, 3),
+                ),
+                Chorus(mix=0.3),
+                Reverb(mix=0.35, decay_seconds=3.0),
+            ],
+        )
+    )
+    tracks.append(
+        Track(
+            name="Outro bass",
+            instrument="sub_bass",
+            gain=0.12,
+            release_seconds=1.5,
+            notes=[Note(pitch=TONIC, start=outro[0], duration=12, velocity=0.8)],
+        )
+    )
+
+    # Drums.
+    kick_voice = "kick_808" if style == "drum-and-bass" else "kick_909"
+    tracks.append(
+        _hits(
+            "Kick",
+            kick_voice,
+            0.62,
+            [(b, 0.5, 0.95 if b % 4 == 0 else 0.88) for b in kicks],
+            tone=Tone(decay_seconds=0.7 if style == "drum-and-bass" else 0.45),
+        )
+    )
+    backbeat = []
+    for bar in _bars(0, end):
+        for o in (1.0, 3.0):
+            if in_spans(bar + o, groove_spans):
+                backbeat.append((bar + o, 0.3, 0.92))
+        if style == "drum-and-bass":
+            for o, v in ((0.75, 0.32), (2.25, 0.28), (3.75, 0.38)):
+                if in_spans(bar + o, groove_spans):
+                    backbeat.append((bar + o, 0.1, v))
+    # Build: a snare roll that thickens into the theme and into the drop.
+    roll = []
+    for target in (s0, drop[0]):
+        roll += [(target - 4 + i * 0.25, 0.12, 0.3 + 0.5 * i / 11) for i in range(12)]
+        roll += [(target - 1 + i * 0.125, 0.06, 0.8 + 0.12 * i / 7) for i in range(8)]
+    if style in {"disco", "techno"}:
+        tracks.append(_hits("Backbeat", "clap", 0.42, backbeat, pan=0.05))
+        tracks.append(_hits("Build roll", "electronic_snare", 0.26, roll, pan=-0.1))
+    else:
+        # One MIDI drum note per instrument: the roll shares the backbeat snare track.
+        tracks.append(_hits("Backbeat", "electronic_snare", 0.42, backbeat + roll, pan=0.05))
+    hats = []
+    for bar in _bars(0, outro[0] + 8):
+        if bar < 8 and style != "techno":
+            continue
+        step = 0.25 if in_spans(bar, [full_a, drop]) and style != "drum-and-bass" else 0.5
+        for i in range(int(4 / step)):
+            beat = bar + i * step
+            hats.append((beat, 0.1, 0.75 if beat % 1 == 0.5 else (0.42 if beat % 1 else 0.58)))
+    tracks.append(_hits("Closed hats", "metal_hat", 0.9, hats, pan=0.2))
+    if style == "drum-and-bass":
+        ride = [
+            (bar + i / 2, 0.5, 0.7 if i % 2 == 0 else 0.5)
+            for bar in _bars(0, end)
+            for i in range(8)
+            if in_spans(bar + i / 2, [full_a, drop])
+        ]
+        tracks.append(_hits("Ride", "electronic_ride", 0.4, ride, pan=-0.25))
+    else:
+        opens = [
+            (bar + o, 0.4, 0.75)
+            for bar in _bars(0, end)
+            for o in (0.5, 1.5, 2.5, 3.5)
+            if in_spans(bar + o, [full_a, drop, (16, s0)])
+        ]
+        tracks.append(_hits("Open hats", "open_hat", 0.55, opens, pan=-0.2))
+    crashes = [(b, 3.5, 0.85) for b in (s0, drop[0], outro[0])]
+    tracks.append(_hits("Crash", "cymbal", 0.4, crashes, pan=-0.1))
+
     return Song(
         title=f"Ode to Joy / {style}",
         bpm=bpm,
         beats=end,
         seed=901,
         sample_rate=44100,
-        master_gain=0.8,
+        master_gain=1.0,
         tracks=tracks,
-        automation=[
-            Automation(
-                parameter="master_gain",
-                points=[
-                    {"beat": 0, "value": 0.8},
-                    {"beat": end - 1, "value": 0.8},
-                    {"beat": end, "value": 0},
-                ],
-            )
-        ],
+        # Oversampled tanh soft clip on the bus: rounds drum transients so the
+        # mix reaches the loudness target under the peak ceiling. Part of the score.
+        effects=[Distortion(drive=3.0, mix=1.0)],
     )
 
 
@@ -199,30 +446,176 @@ def original_song() -> Song:
 
 
 def audition_song(instrument: str) -> Song:
+    """A dry two-bar figure: a groove for drums, a legato riff with a held note otherwise."""
     info = get_instrument(instrument)
     if info.midi_note is not None:
+        pattern = {
+            "kick_808": [(0, 0.9), (2.5, 0.8), (4, 0.9), (6.5, 0.8), (7, 0.6)],
+            "kick_909": [(i, 0.9 if i % 2 == 0 else 0.8) for i in range(8)],
+            "clap": [(1, 0.85), (3, 0.9), (5, 0.85), (7, 0.9), (7.75, 0.5)],
+            "electronic_snare": [(1, 0.85), (3, 0.9), (4.75, 0.35), (5, 0.85), (7, 0.9)],
+            "metal_hat": [(i / 2, 0.75 if i % 2 else 0.5) for i in range(16)],
+            "open_hat": [(i + 0.5, 0.8) for i in range(8)],
+            "electronic_ride": [(i / 2, 0.7 if i % 2 == 0 else 0.5) for i in range(16)],
+            "fm_percussion": [(0, 0.8), (1.5, 0.55), (2.75, 0.7), (4, 0.8), (5.5, 0.6), (7, 0.7)],
+        }.get(instrument, [(0, 0.85), (4, 0.4), (5.5, 0.85)])
+        starts = [s for s, _ in pattern] + [8.0]
         notes = [
-            Note(pitch=info.preview_pitch, start=0, duration=3.5, velocity=0.85),
-            Note(pitch=info.preview_pitch, start=4, duration=1, velocity=0.4),
-            Note(pitch=info.preview_pitch, start=5.5, duration=2, velocity=0.85),
+            Note(
+                pitch=info.preview_pitch,
+                start=start,
+                duration=min(1.5, starts[i + 1] - start),
+                velocity=velocity,
+            )
+            for i, (start, velocity) in enumerate(pattern)
         ]
+        release = 0.12
     else:
+        # Notes reach the next onset and the release overlaps it (legato); the last note holds.
+        riff = ((0, 0, 0.55), (1, 0, 0.85), (2, 7, 0.7), (3, 12, 0.8), (4, 10, 0.65), (5, 7, 0.7))
         notes = [
-            Note(pitch=info.preview_pitch + offset, start=i, duration=0.7, velocity=v)
-            for i, offset, v in ((0, 0, 0.5), (1, 0, 0.9), (2, 7, 0.7), (3, 12, 0.8))
+            Note(pitch=info.preview_pitch + offset, start=i, duration=0.99, velocity=v)
+            for i, offset, v in riff
         ]
-        notes.append(Note(pitch=info.preview_pitch, start=4.5, duration=3, velocity=0.7))
+        notes.append(Note(pitch=info.preview_pitch, start=6, duration=2.5, velocity=0.75))
+        release = 0.45
     return Song(
         title=info.name,
         bpm=110,
-        beats=8,
+        beats=10,
         seed=901,
         tracks=[
             Track(
-                name=info.name, instrument=instrument, gain=0.7, notes=notes, release_seconds=0.12
+                name=info.name,
+                instrument=instrument,
+                gain=0.7,
+                notes=notes,
+                release_seconds=release,
             )
         ],
     )
+
+
+TEMPLATE = ROOT / "web" / "electronic-lab.html"
+
+
+def _section_map(style: str, seconds: float, bpm: float) -> str:
+    total_beats = song_sections(style)[-1][2]
+    spans = "".join(
+        f'<span class="s-{name.lower()}" style="width:{100 * (b - a) / total_beats:.3f}%">'
+        f"{name}</span>"
+        for name, a, b in song_sections(style)
+    )
+    return (
+        f'<div class="map" role="slider" tabindex="0" aria-label="Seek in the arrangement" '
+        f'aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">{spans}<i></i><b></b></div>'
+    )
+
+
+def _page(songs: dict, reports: dict, keys: list[str]) -> str:
+    source = source_piece()
+    cards, voices = [], []
+    for key in keys:
+        song, report = songs[key], reports[key]
+        seconds = report["audio"]["duration_seconds"]
+        title = html.escape(song.title, quote=True)
+        links = (
+            f'<p class="links"><a href="{key}.json">Editable score</a> · '
+            f'<a href="{key}.wav">WAV</a> · <a href="{key}.mid">MIDI</a></p>'
+        )
+        audio = f'<audio preload="none" src="{key}.wav"></audio>'
+        clock = f'<span class="time">0:00 / {fmt_time(seconds)}</span></div>'
+        if key in STYLES:
+            name = "Drum and bass" if key == "drum-and-bass" else key.capitalize()
+            cards.append(
+                f'<article class="card" data-player data-title="{title}" '
+                f'data-seconds="{seconds:.2f}"><div class="card-top"><span class="label">'
+                f"{song.bpm:g} BPM · {fmt_time(seconds)}</span>"
+                f'<span class="label">Arrangement</span></div><h3>{html.escape(name)}</h3>'
+                f"<p>{html.escape(STYLE_NOTES[key])}</p>"
+                f'<div class="controls"><button class="play" type="button" data-play '
+                f'aria-pressed="false" aria-label="Play {title}">Play</button>'
+                f"{_section_map(key, seconds, song.bpm)}{clock}{audio}{links}</article>"
+            )
+        elif key == "original":
+            cards.append(
+                f'<article class="card original" data-player data-title="{title}" '
+                f'data-seconds="{seconds:.2f}"><div class="card-top"><span class="label">'
+                f"Reference · {song.bpm:g} BPM · {fmt_time(seconds)}</span></div>"
+                "<h3>The hymn, as written</h3><p>The complete 16-bar, four-part edition on piano. "
+                "Every arrangement above keeps all of these notes.</p>"
+                f'<div class="controls"><button class="play" type="button" data-play '
+                f'aria-pressed="false" aria-label="Play {title}">Play</button>'
+                f"{clock}{audio}{links}</article>"
+            )
+        else:
+            voices.append(
+                f'<div class="voice" data-player data-title="{title}" data-seconds="{seconds:.2f}">'
+                f'<button class="play" type="button" data-play aria-pressed="false" '
+                f'aria-label="Play {title}">Play</button><div><strong>{html.escape(song.title)}'
+                f'</strong><small><code>{html.escape(key)}</code> · <a href="{key}.json">score</a>'
+                f' · <a href="{key}.wav">WAV</a></small></div>{audio}</div>'
+            )
+    lufs = [
+        reports[k]["loudness"]["achieved_lufs"]
+        for k in keys
+        if k in STYLES
+        and reports[k].get("loudness")
+        and reports[k]["loudness"].get("achieved_lufs")
+    ]
+    loud = (
+        f"The four arrangements measure {min(lufs):.1f} to {max(lufs):.1f} LUFS integrated. "
+        if lufs
+        else ""
+    )
+    original = next(c for c in cards if "card original" in c)
+    arrangements = [c for c in cards if "card original" not in c]
+    content = (
+        '<section class="hero"><div><p class="kicker">Audio as Code / electronic lab</p>'
+        "<h1>Ode to Joy, <span>four ways</span></h1>"
+        '<p class="lede">One public-domain hymn, rebuilt as disco, techno, trance and drum and '
+        "bass. Each arrangement has an intro, a breakdown, a drop and an outro, and every "
+        "sound in it is synthesized from code.</p></div>"
+        '<button class="start" type="button" data-start>Play disco first</button></section>'
+        "<h2>The arrangements</h2>"
+        '<p class="section-note">Click the section map to jump straight to the breakdown or the '
+        "drop. Only one track plays at a time.</p>"
+        '<section class="tracks" aria-label="Arrangements">'
+        + "".join(arrangements)
+        + original
+        + "</section><h2>The voices</h2>"
+        '<p class="section-note">Each electronic voice alone, dry, playing a short riff or a '
+        "two-bar groove. These are the building blocks of the arrangements.</p>"
+        '<section class="voices" aria-label="Voice auditions">'
+        + "".join(voices)
+        + '</section><section class="about"><div><h2>What you are hearing</h2>'
+        "<p>The source is the complete 16-bar, four-part Ode to Joy hymn edition, not "
+        "Beethoven's entire symphony. Every source note keeps its written rhythm; parts move "
+        "only by octaves. The intro, outro, groove bass, pads and drums are new parts written "
+        "for each genre.</p><p>All instruments are procedural synthesis models: no recordings, "
+        "samples or loops. They are designed sounds, not replicas of specific hardware.</p>"
+        "</div><div><h2>How it was measured</h2>"
+        f"<p>Listening copies are rendered with a {LOUDNESS_TARGET_LUFS:g} LUFS target and a "
+        f"{PEAK_CEILING_DBFS:g} dBFS sample-peak ceiling ({DRUM_PEAK_CEILING_DBFS:g} for dry drum "
+        f"auditions). {loud}Short dry auditions can land "
+        'below the target when the peak ceiling limits them. Exact numbers are in <a href="'
+        'measurements.json">the render report</a>.</p><p>These are signal measurements; they '
+        "do not prove how good the music sounds.</p></div></section>"
+        '<footer>Source score: <a href="'
+        + html.escape(source["source_url"], quote=True)
+        + '">Mutopia edition</a>. '
+        + html.escape(source["credit"])
+        + ", Public Domain. MIDI keeps notes and tempo; external instruments and effects "
+        "differ.</footer></main>"
+    )
+    template = TEMPLATE.read_text(encoding="utf-8")
+    if template.count("__CONTENT__") != 1:
+        raise RuntimeError("The electronic page template must have exactly one __CONTENT__")
+    return template.replace("__CONTENT__", content)
+
+
+def fmt_time(seconds: float) -> str:
+    return f"{int(seconds // 60)}:{int(seconds % 60):02d}"
 
 
 def build(
@@ -244,101 +637,40 @@ def build(
             songs[f"{instrument}-{gesture}"] = Song.model_validate(data)
     if only is not None and only not in songs:
         raise ValueError(f"unknown audition {only!r}; choose from {', '.join(songs)}")
-    rows = []
+    measurements = output / "measurements.json"
     reports = (
-        json.loads((output / "measurements.json").read_text(encoding="utf-8")) if html_only else {}
+        json.loads(measurements.read_text(encoding="utf-8"))
+        if (html_only or only) and measurements.is_file()
+        else {}
     )
     for key, song in songs.items():
-        if only is not None and key != only:
+        if html_only or (only is not None and key != only):
             continue
-        if html_only:
-            if key not in reports or not all(
-                (output / f"{key}.{ext}").is_file() for ext in ("wav", "json", "mid")
-            ):
-                continue
-            report = reports[key]
-        else:
-            score_path = output / f"{key}.json"
-            score_path.write_text(song.model_dump_json(indent=2), encoding="utf-8")
-            kwargs = {"target_lufs": -18, "peak_ceiling_dbfs": -1.5} if loudness else {}
-            report = render(song, output / f"{key}.wav", **kwargs)
-            export_midi(song, output / f"{key}.mid")
-            reports[key] = report
-        label = (
-            "Complete 16-bar hymn edition"
-            if key == "original"
-            else (
-                "Complete AI-written genre arrangement" if key in STYLES else "Dry voice audition"
-            )
+        score_path = output / f"{key}.json"
+        score_path.write_text(song.model_dump_json(indent=2), encoding="utf-8")
+        kwargs = (
+            {
+                "target_lufs": LOUDNESS_TARGET_LUFS,
+                "peak_ceiling_dbfs": DRUM_PEAK_CEILING_DBFS
+                if get_instrument(song.tracks[0].instrument).midi_note is not None
+                and len(song.tracks) == 1
+                else PEAK_CEILING_DBFS,
+            }
+            if loudness
+            else {}
         )
-        rows.append(
-            f"<article><small>{html.escape(label)}</small><h2>{html.escape(song.title)}</h2>"
-            f'<button data-play="{key}" aria-pressed="false" '
-            f'aria-label="Play {html.escape(song.title, quote=True)}">Play</button>'
-            f'<audio controls preload="none" src="{key}.wav"></audio>'
-            f'<p><a href="{key}.json">Editable score</a> · <a href="{key}.wav">WAV</a>'
-            f' · <a href="{key}.mid">MIDI</a></p></article>'
-        )
-        if not html_only:
-            print(f"Rendered {key}: {report['audio']['duration_seconds']:.2f}s", flush=True)
+        reports[key] = render(song, output / f"{key}.wav", **kwargs)
+        export_midi(song, output / f"{key}.mid")
+        print(f"Rendered {key}: {reports[key]['audio']['duration_seconds']:.2f}s", flush=True)
     if not html_only:
-        (output / "measurements.json").write_text(json.dumps(reports, indent=2), encoding="utf-8")
-    page = """<!doctype html><html lang="en"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dance floor, meet source code · Audio as Code</title><style>
-:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f5f0dd;color:#161616;
-font:18px/1.5 system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:40px 24px 80px}
-h1{font-size:clamp(42px,8vw,96px);line-height:1;letter-spacing:-.06em;max-width:900px}
-.tag{background:#f784b7;padding:8px 14px;display:inline-block;font-weight:800;border:2px solid}
-.intro{max-width:800px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px}
-article{border:2px solid;padding:22px;background:#fffdf5;box-shadow:5px 5px 0 #161616}
-article:first-child{background:#d0ee63}h2{font-size:26px;line-height:1.1;margin:10px 0 20px}
-small{font:12px monospace;text-transform:uppercase}a{color:inherit;text-underline-offset:4px}
-audio{width:100%}article p{font-size:14px}footer{margin-top:40px;font-size:14px}
-button{border:2px solid #161616;background:#161616;color:white;font:700 16px system-ui;
-padding:10px 24px;cursor:pointer;margin:0 0 12px;min-height:44px}
-button[aria-pressed=true]{background:#f784b7;color:#161616}
-button:focus-visible{outline:3px solid #c42670;outline-offset:3px}
-details{margin:20px 0}summary{cursor:pointer;font-weight:700}
-</style><main><span class="tag">AUDIO AS CODE / ELECTRONIC LAB</span>
-<h1>Dance floor,<br>meet source code.</h1><p class="intro">One complete classical hymn.
-Four new dance arrangements. Then hear every new voice on its own.</p>
-<details><summary>About the music and listening comparisons</summary>
-<p class="intro">The source is the complete 16-bar, four-part “Ode to Joy” hymn edition,
-not Beethoven’s entire symphony. Its notes and rhythms are retained, with octave shifts,
-AI-written instrumentation and original procedural drum patterns. All instrument sounds
-come from code. These are designed synthesis models, not recordings or calibrated replicas.</p>
-<p class="intro">Listening copies target −18 LUFS when built with the loudness extra,
-bounded by a −1.5 dBFS sample-peak ceiling. Some quiet or transient clips cannot reach that
-target. Exact gains and measurements are in <a href="measurements.json">the render report</a>.
-Numerical checks do not establish perceived quality.</p></details><section class="grid">"""
-    source = source_piece()
-    page += (
-        "\n".join(rows)
-        + '</section><footer>Source score: <a href="'
-        + html.escape(source["source_url"], quote=True)
-        + '">Mutopia edition</a>. '
-    )
-    page += (
-        html.escape(source["credit"])
-        + ", Public Domain. MIDI keeps notes and tempo; external instruments "
-        "and effects differ.</footer></main>"
-    )
-    page += """<script>
-for(const button of document.querySelectorAll('[data-play]')){
- const a=button.parentElement.querySelector('audio');
- function update(){button.textContent=a.paused?'Play':'Pause';
- button.setAttribute('aria-pressed',String(!a.paused));
- const title=button.parentElement.querySelector('h2').textContent;
- button.setAttribute('aria-label',`${a.paused?'Play':'Pause'} ${title}`)}
- for(const event of ['play','pause','ended'])a.addEventListener(event,update);
- button.addEventListener('click',async()=>{try{if(a.paused)await a.play();else a.pause()}
- catch{button.textContent='Download WAV to listen'}});
-}
-document.addEventListener('play',e=>{for(const a of document.querySelectorAll('audio')){
-if(a!==e.target)a.pause()}},true);
-</script></html>"""
-    (output / "index.html").write_text(page, encoding="utf-8")
+        measurements.write_text(json.dumps(reports, indent=2), encoding="utf-8")
+    keys = [
+        key
+        for key in songs
+        if key in reports
+        and all((output / f"{key}.{ext}").is_file() for ext in ("wav", "json", "mid"))
+    ]
+    (output / "index.html").write_text(_page(songs, reports, keys), encoding="utf-8")
 
 
 if __name__ == "__main__":
