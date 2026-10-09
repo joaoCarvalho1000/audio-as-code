@@ -14,6 +14,18 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSET_LIMIT = 25 * 1024 * 1024
 
 
+# Baseline hardening for every static asset. A Content-Security-Policy is not set
+# yet because pages use inline scripts and optional PostHog analytics.
+SECURITY_HEADERS = (
+    "/*\n"
+    "  X-Content-Type-Options: nosniff\n"
+    "  Referrer-Policy: strict-origin-when-cross-origin\n"
+    "  X-Frame-Options: SAMEORIGIN\n"
+    "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n"
+    "  Strict-Transport-Security: max-age=31536000\n\n"
+)
+
+
 def prepare(
     site: Path,
     output: Path,
@@ -71,7 +83,7 @@ def prepare(
         if relative.name == "index.html":
             directory = route.removesuffix("index.html")
             html_routes.update((directory, directory.rstrip("/") or "/"))
-    html_headers = "".join(
+    html_headers = SECURITY_HEADERS + "".join(
         f"{route}\n  Cache-Control: public, max-age=0, must-revalidate\n\n"
         for route in sorted(html_routes)
     )

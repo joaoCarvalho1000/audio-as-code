@@ -45,6 +45,13 @@ TASKS.md
 *.pfx
 *.prof
 credentials*
+.npmrc
+.pypirc
+*.keystore
+id_rsa*
+id_ed25519*
+*.sqlite
+*.db
 node_modules/
 .coverage
 .coverage.*

@@ -47,8 +47,11 @@ zone (Speed > Real user monitoring > Disable completely); otherwise Cloudflare c
 [inject its own Web Analytics beacon](https://developers.cloudflare.com/web-analytics/get-started/)
 into HTML. After each deploy, confirm the served HTML contains no
 `cloudflareinsights` reference. Adding `no-transform` would also block injection,
-but it disables HTML compression. JavaScript, CSS, fonts,
-JSON and media receive no added rule. An existing source `_headers` causes staging
+but it disables HTML compression. Every static asset also receives baseline
+security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`,
+`Permissions-Policy` and `Strict-Transport-Security`); JavaScript, CSS, fonts,
+JSON and media get no caching rule. Large media streamed from R2 by the Worker
+does not pass through `_headers`. A Content-Security-Policy is not set yet. An existing source `_headers` causes staging
 to fail before writing anything; reconcile that policy explicitly before staging.
 
 Keep `output/site/` unchanged until uploads finish: the report refers to those
