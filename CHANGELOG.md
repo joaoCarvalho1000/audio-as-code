@@ -5,6 +5,15 @@ are separate.
 
 ## Unreleased
 
+- Website demos: the four electronic Ode to Joy arrangements now have an intro,
+  breakdown, doubled-lead drop and outro with genre bass figures, build rolls and
+  sidechained pads around the complete hymn (score IDs unchanged; audio changes).
+  The electronic page is rebuilt on the site design with section-map players.
+- Instrument library: sustained voices play legato with accented short notes, music
+  demos get a light procedural room, featured percussion sits louder, and all clips
+  render to a common -16 LUFS target. The page gains a Keep playing option, Space
+  to play or pause, and a link to the electronic lab.
+
 ## 0.4.0 - 2026-10-06
 
 Published on [PyPI](https://pypi.org/project/audio-as-code/0.4.0/).

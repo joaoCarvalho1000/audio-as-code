@@ -12,7 +12,7 @@ Run these commands from the directory containing `pyproject.toml`, with Python
 uv sync --locked
 uv run python examples/classic_showcase.py --ffmpeg ffmpeg
 uv run python examples/classic_reimaginations.py --ffmpeg ffmpeg
-uv run python examples/instrument_browser.py
+uv run --extra loudness python examples/instrument_browser.py
 uv run --extra loudness python examples/electronic_music.py
 uv run python examples/build_site.py --strict
 ```
@@ -48,8 +48,17 @@ can take several minutes. They use procedural instrument sources and need no
 sample downloads or network services.
 
 The electronic listening page adds 32 auditions, including four complete dance
-arrangements of the Ode to Joy hymn edition beside its original setting. The
-builder publishes it at `electronic/index.html` with editable scores and MIDI.
+arrangements of the Ode to Joy hymn edition beside its original setting. Each
+arrangement wraps the complete hymn in an 8-bar intro and a 4-bar outro, with a
+kick-free breakdown and a doubled-lead drop inside the hymn; the page shows a
+clickable section map for each. The builder publishes it at
+`electronic/index.html` with editable scores and MIDI.
+
+Both listening libraries render to a -16 LUFS integrated target with a -1.5 dBFS
+sample-peak ceiling when the loudness extra is installed. Short or very
+transient clips can land below the target where the peak ceiling limits the
+gain; the per-clip reports record the measured value. Without the extra, the
+instrument library falls back to peak normalization.
 
 For instrument work, render a subset or resume an interrupted batch:
 

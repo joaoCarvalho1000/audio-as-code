@@ -23,6 +23,36 @@ else:
 
 ROOT = Path(__file__).resolve().parents[1]
 VARIANTS = ("music", "phrase", "note")
+SUSTAINED_FAMILIES = {"woodwinds", "brass", "bowed_strings"}
+SUSTAINED_VOICES = {
+    "organ",
+    "pad",
+    "sine",
+    "theremin",
+    "synthesizer",
+    "supersaw",
+    "string_machine",
+    "wavetable_pad",
+    "hoover",
+    "sync_lead",
+}
+# Every clip is rendered to one loudness target so switching voices does not jump in level.
+LOUDNESS_TARGET_LUFS = -16.0
+PEAK_CEILING_DBFS = -1.5
+# Noise-based hits overshoot between samples; a lower sample-peak ceiling keeps their
+# true peak under -1 dBTP.
+PERCUSSION_PEAK_CEILING_DBFS = -3.5
+
+
+def loudness_settings(instrument: InstrumentInfo | None = None) -> dict:
+    """Use the loudness target when the optional backend is installed."""
+    try:
+        import pyloudnorm  # noqa: F401
+    except ImportError:
+        return {}
+    percussive = instrument is not None and instrument.midi_note is not None
+    ceiling = PERCUSSION_PEAK_CEILING_DBFS if percussive else PEAK_CEILING_DBFS
+    return {"target_lufs": LOUDNESS_TARGET_LUFS, "peak_ceiling_dbfs": ceiling}
 
 
 def preview_score(instrument: InstrumentInfo, variant: str) -> Song:
@@ -63,6 +93,9 @@ def preview_score(instrument: InstrumentInfo, variant: str) -> Song:
                 offsets[4] = 12
             starts = [0, 0.75, 1.5, 2.25, 3, 4.25, 5, 5.75]
             durations = [0.58, 0.58, 0.62, 0.62, 1.0, 0.62, 0.62, 1.6]
+            if instrument.family in SUSTAINED_FAMILIES or instrument.id in SUSTAINED_VOICES:
+                # Legato: each note holds until the next onset, then the cadence rings.
+                durations = [0.75, 0.75, 0.75, 0.75, 1.25, 0.75, 0.75, 1.6]
             velocities = [0.45, 0.75, 0.57, 0.64, 0.82, 0.68, 0.59, 0.52]
             notes = [
                 Note(
@@ -261,7 +294,9 @@ def main(
             else:
                 song = preview_score(instrument, variant)
             stem = f"{instrument.id}-{variant}"
-            fingerprint = render_fingerprint(song, engine)
+            fingerprint = render_fingerprint(
+                song, engine + json.dumps(loudness_settings(instrument))
+            )
             previous = cached_preview(entries.get(stem, {}), output, stem, fingerprint)
             if previous is not None and (resume or instrument.id not in requested):
                 clips[variant] = previous
@@ -275,7 +310,7 @@ def main(
             wav = output / paths["audio"]
             song.save(output / paths["score"])
             midi = export_midi(song, output / paths["midi"])
-            report = render(song, wav)
+            report = render(song, wav, **loudness_settings(instrument))
             if report["wav"]["silent"] or report["wav"]["full_scale_samples"]:
                 raise RuntimeError(f"Invalid preview audio: {stem}")
             report.update(midi=midi, render_fingerprint=fingerprint, provenance=metadata)

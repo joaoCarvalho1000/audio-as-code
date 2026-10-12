@@ -1,0 +1,109 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Ode to Joy, four ways · Audio as Code</title>
+<style>
+@font-face{font-family:"Anybody";src:url("../assets/fonts/anybody-latin.woff2") format("woff2");font-weight:100 900;font-stretch:50% 150%;font-display:swap}
+@font-face{font-family:"Archivo";src:url("../assets/fonts/archivo-latin.woff2") format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url("../assets/fonts/jetbrains-mono-latin.woff2") format("woff2");font-weight:400 700;font-display:swap}
+:root{--paper:#f9fbfd;--ink:#141413;--pink:#ff48b0;--blue:#0078bf;--yellow:#ffe800;--pink-deep:#b8146f;
+--rule:#d8d6cc;--muted:#45443f;--display:"Anybody","Archivo","Arial Narrow",sans-serif;
+--body:"Archivo",system-ui,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+--gutter:clamp(16px,3.4vw,56px);color-scheme:light}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--body);overflow-x:hidden}
+a{color:inherit;text-decoration-thickness:2px;text-underline-offset:4px}a:hover{text-decoration-color:var(--pink)}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 7px var(--yellow)}
+button{font:inherit;color:inherit;cursor:pointer}
+main{max-width:1240px;margin:0 auto;padding:12px var(--gutter) 96px}
+main>p:first-child{font:600 13px/1.4 var(--mono);margin:8px 0 0}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 40px;align-items:end;
+padding:clamp(20px,4vw,48px) 0 clamp(22px,3vw,36px);border-bottom:3px solid var(--ink)}
+.kicker{font:500 clamp(20px,2.2vw,30px)/1 var(--display);font-stretch:52%;color:var(--pink-deep);margin:0 0 8px}
+h1{margin:0;font:900 clamp(46px,8.6vw,132px)/.86 var(--display);letter-spacing:-.02em;text-transform:uppercase;
+color:var(--blue);transform:rotate(-1.2deg);transform-origin:0 70%}
+h1 span{background:linear-gradient(transparent 58%,var(--yellow) 58%,var(--yellow) 92%,transparent 92%);color:var(--ink)}
+.lede{margin:18px 0 0;max-width:58ch;font-size:clamp(16px,1.4vw,19px);font-weight:600;line-height:1.45}
+.start{display:inline-flex;align-items:center;gap:10px;min-height:52px;border:0;background:var(--ink);color:var(--yellow);
+padding:12px 22px;font:900 17px/1 var(--display);font-stretch:110%;text-transform:uppercase;box-shadow:6px 6px 0 var(--pink)}
+.start:hover{background:var(--blue);color:var(--paper)}
+h2{font:900 clamp(28px,4vw,52px)/.95 var(--display);text-transform:uppercase;margin:48px 0 6px;letter-spacing:-.01em}
+.section-note{margin:0 0 20px;max-width:70ch;color:var(--muted)}
+.tracks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.card{border:3px solid var(--ink);background:var(--paper);padding:20px;box-shadow:8px 8px 0 var(--blue);min-width:0}
+.card.is-playing{box-shadow:8px 8px 0 var(--pink)}
+.card.original{grid-column:1/-1;box-shadow:8px 8px 0 var(--yellow)}
+.card-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.label{font:700 12px/1 var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--pink-deep)}
+.card h3{margin:8px 0 6px;font:900 clamp(26px,3vw,40px)/.95 var(--display);text-transform:uppercase;font-stretch:105%;overflow-wrap:anywhere}
+.card p{margin:0 0 14px;font-size:15px}
+.controls{display:flex;align-items:center;gap:14px}
+.play{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:112px;min-height:48px;
+border:2px solid var(--ink);background:var(--ink);color:var(--yellow);font:900 16px/1 var(--display);text-transform:uppercase;padding:0 16px}
+.play:hover{background:var(--blue);color:var(--paper)}
+.play[aria-pressed=true]{background:var(--pink);color:var(--ink)}
+.time{font:500 12px/1 var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.map{position:relative;flex:1;min-width:0;display:flex;height:44px;border:2px solid var(--ink);cursor:pointer;background:var(--paper)}
+.map span{position:relative;display:flex;align-items:flex-end;padding:0 4px 3px;border-right:1px solid var(--ink);
+font:600 10px/1 var(--mono);text-transform:uppercase;overflow:hidden;white-space:nowrap;min-width:0}
+.map span:last-of-type{border-right:0}
+.map .s-intro,.map .s-outro{background:#eef5fb}.map .s-breakdown{background:#fff9c2}.map .s-drop{background:#ffd6ec}
+.map .s-theme{background:#dceaf6}
+.map i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(20,20,19,.16);pointer-events:none}
+.map b{position:absolute;top:-2px;bottom:-2px;left:0;width:3px;background:var(--pink-deep);pointer-events:none}
+.links{margin-top:12px;font-size:13px;font-weight:600}
+.voices{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:0;border-top:3px solid var(--ink)}
+.voice{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--ink);min-width:0}
+.voice .play{min-width:44px;width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;font-size:13px}
+.voice div{min-width:0}.voice strong{display:block;font:800 16px/1.1 var(--display);text-transform:uppercase;overflow-wrap:anywhere}
+.voice small{font:500 11px/1.3 var(--mono)}
+.voice.is-playing{background:var(--yellow)}
+.about{margin-top:48px;border-top:3px solid var(--ink);padding-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.about h2{margin-top:16px;font-size:clamp(22px,2.4vw,30px)}.about p{margin:0 0 12px;max-width:62ch}
+footer{margin-top:40px;font-size:14px;border-top:1px solid var(--rule);padding-top:16px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media (max-width:800px){.tracks,.about{grid-template-columns:1fr}.hero{grid-template-columns:1fr}
+.controls{flex-wrap:wrap}.map{flex-basis:100%;order:3}}
+@media (prefers-reduced-motion:no-preference){.play,.card{transition:background-color .14s,box-shadow .14s}}
+</style></head><body><main>
+__CONTENT__
+<script>
+"use strict";
+const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+const players=[...document.querySelectorAll("[data-player]")];
+for(const box of players){
+ const a=box.querySelector("audio"),button=box.querySelector("[data-play]"),title=box.dataset.title;
+ const map=box.querySelector(".map"),time=box.querySelector(".time");
+ function update(){
+  const playing=!a.paused;
+  button.textContent=playing?"Pause":"Play";
+  button.setAttribute("aria-pressed",String(playing));
+  button.setAttribute("aria-label",`${playing?"Pause":"Play"} ${title}`);
+  box.classList.toggle("is-playing",playing);
+ }
+ function progress(){
+  const total=Number.isFinite(a.duration)?a.duration:Number(box.dataset.seconds);
+  const p=total?Math.min(1,a.currentTime/total):0;
+  if(map){map.querySelector("i").style.width=`${p*100}%`;map.querySelector("b").style.left=`calc(${p*100}% - 1px)`;
+   map.setAttribute("aria-valuenow",String(Math.round(p*100)));
+   map.setAttribute("aria-valuetext",`${fmt(a.currentTime)} of ${fmt(total)}`);}
+  if(time)time.textContent=`${fmt(a.currentTime)} / ${fmt(total)}`;
+ }
+ for(const e of["play","pause","ended"])a.addEventListener(e,update);
+ for(const e of["timeupdate","loadedmetadata"])a.addEventListener(e,progress);
+ button.addEventListener("click",async()=>{try{if(a.paused)await a.play();else a.pause()}
+  catch{button.textContent="Use the WAV link"}});
+ if(map){
+  const seek=async ratio=>{const total=Number(box.dataset.seconds);
+   if(a.readyState<1){a.preload="metadata";a.load();await new Promise(r=>a.addEventListener("loadedmetadata",r,{once:true}))}
+   a.currentTime=Math.max(0,Math.min(1,ratio))*(Number.isFinite(a.duration)?a.duration:total);progress()};
+  map.addEventListener("click",e=>{const r=map.getBoundingClientRect();seek((e.clientX-r.left)/r.width)});
+  map.addEventListener("keydown",e=>{const total=Number(box.dataset.seconds)||1;
+   if(e.key==="ArrowRight"||e.key==="ArrowLeft"){e.preventDefault();seek((a.currentTime+(e.key==="ArrowRight"?5:-5))/total)}});
+ }
+ progress();
+}
+document.addEventListener("play",e=>{for(const a of document.querySelectorAll("audio"))if(a!==e.target)a.pause()},true);
+const start=document.querySelector("[data-start]");
+if(start)start.addEventListener("click",()=>document.querySelector(".card:not(.original) [data-play]").click());
+</script></body></html>
