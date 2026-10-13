@@ -13,7 +13,7 @@ from .electronic import synthesize as synthesize_electronic
 from .extended import EXTENDED_INSTRUMENTS
 from .extended import synthesize as synthesize_extended
 from .instruments import KIT_NOTES, PHYSICAL_INSTRUMENTS, get_instrument
-from .model import Tone
+from .model import CustomInstrument, Tone
 from .orchestra import EXTRA_INSTRUMENTS
 from .orchestra import synthesize as synthesize_orchestra
 from .physical import synthesize
@@ -153,7 +153,21 @@ def _voice(
     tone: Tone | None = None,
     held_frames: int | None = None,
     articulation: str | None = None,
+    custom_patch: CustomInstrument | None = None,
+    custom_release_seconds: float | None = None,
 ) -> Audio:
+    if custom_patch is not None:
+        from .custom import synthesize as synthesize_custom
+
+        return synthesize_custom(
+            custom_patch,
+            440 * 2 ** ((pitch - 69) / 12),
+            frames,
+            frames if held_frames is None else held_frames,
+            rate,
+            seed,
+            custom_release_seconds,
+        )
     if articulation is not None and articulation not in get_instrument(instrument).articulations:
         raise ValueError(f"articulation {articulation!r} is not supported by {instrument}")
     if instrument == "drum_machine":

@@ -5,7 +5,10 @@ from __future__ import annotations
 import math
 import re
 from bisect import bisect_right
+from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -14,6 +17,7 @@ from pydantic import (
     Field,
     StrictBool,
     StrictInt,
+    field_serializer,
     field_validator,
     model_validator,
 )
@@ -50,6 +54,127 @@ def midi_pitch(value: int | str) -> int:
 
 class ScoreModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, validate_default=True)
+
+
+CustomName = Annotated[str, Field(strict=True, pattern=r"^custom:[a-z][a-z0-9_]{0,63}$")]
+
+
+class BusCompressor(ScoreModel):
+    """Stereo-linked peak compressor. Times are in seconds, levels in decibels."""
+
+    threshold_dbfs: Annotated[Number, Field(ge=-60, le=0)] = -18
+    ratio: Annotated[Number, Field(ge=1, le=20)] = 2
+    attack_seconds: Annotated[Number, Field(ge=0.0001, le=1)] = 0.01
+    release_seconds: Annotated[Number, Field(ge=0.001, le=5)] = 0.1
+    makeup_db: Annotated[Number, Field(ge=-24, le=24)] = 0
+    knee_db: Annotated[Number, Field(ge=0, le=24)] = 6
+
+
+class TruePeakLimiter(ScoreModel):
+    """Offline stereo-linked lookahead limiter with generated FIR oversampling."""
+
+    ceiling_dbtp: Annotated[Number, Field(ge=-60, le=0)] = -1
+    lookahead_seconds: Annotated[Number, Field(ge=0.001, le=0.02)] = 0.005
+    release_seconds: Annotated[Number, Field(ge=0.01, le=2)] = 0.1
+    oversample: Literal[4, 8] = 4
+
+
+class Mastering(ScoreModel):
+    """Opt-in processing after master effects. An empty object is a bypass."""
+
+    compressor: BusCompressor | None = None
+    limiter: TruePeakLimiter | None = None
+    target_lufs: Annotated[Number, Field(ge=-70, le=0)] | None = None
+
+
+class Envelope(ScoreModel):
+    """Linear ADSR; note-off releases from the current envelope value."""
+
+    attack_seconds: Annotated[Number, Field(ge=0.0001, le=10)] = 0.005
+    decay_seconds: Annotated[Number, Field(ge=0.0001, le=10)] = 0.1
+    sustain: Annotated[Number, Field(ge=0, le=1)] = 0.8
+    release_seconds: Annotated[Number, Field(ge=0, le=10)] = 0.1
+
+
+class _Layer(ScoreModel):
+    gain: Annotated[Number, Field(ge=0, le=1)] = 0.5
+    tuning_semitones: Annotated[Number, Field(ge=-48, le=48)] = 0
+    envelope: Envelope = Envelope()
+
+
+class OscillatorLayer(_Layer):
+    type: Literal["oscillator"] = "oscillator"
+    waveform: Literal["sine", "triangle", "saw", "pulse"] = "sine"
+    pulse_width: Annotated[Number, Field(ge=0.05, le=0.95)] = 0.5
+
+
+class NoiseLayer(ScoreModel):
+    type: Literal["noise"] = "noise"
+    gain: Annotated[Number, Field(ge=0, le=1)] = 0.5
+    envelope: Envelope = Envelope()
+
+
+class ModalPartial(ScoreModel):
+    ratio: Annotated[Number, Field(ge=0.125, le=64)] = 1
+    amplitude: Annotated[Number, Field(ge=0, le=1)] = 1
+    decay_seconds: Annotated[Number, Field(ge=0.001, le=20)] = 1
+
+
+class ModalLayer(_Layer):
+    type: Literal["modal"] = "modal"
+    partials: Annotated[tuple[ModalPartial, ...], Field(min_length=1, max_length=64)]
+
+
+class FMLayer(_Layer):
+    type: Literal["fm"] = "fm"
+    ratio: Annotated[Number, Field(ge=0.25, le=8)] = 2
+    index: Annotated[Number, Field(ge=0, le=12)] = 2
+    index_decay_seconds: Annotated[Number, Field(ge=0.001, le=20)] = 1
+
+
+Layer = Annotated[OscillatorLayer | NoiseLayer | ModalLayer | FMLayer, Field(discriminator="type")]
+
+
+class PatchFilter(ScoreModel):
+    mode: Literal["lowpass", "highpass", "bandpass"] = "lowpass"
+    cutoff_hz: Annotated[Number, Field(ge=30, le=20000)] = 2000
+    resonance: Annotated[Number, Field(ge=0, le=1)] = 0.2
+
+
+class CustomInstrument(ScoreModel):
+    """Bounded procedural patch, scoped to one song, without external assets or code."""
+
+    name: Annotated[str, Field(strict=True, min_length=1, max_length=80)]
+    description: Annotated[str, Field(strict=True, max_length=1000)] = (
+        "User-defined procedural patch."
+    )
+    layers: Annotated[tuple[Layer, ...], Field(min_length=1, max_length=8)]
+    filter: PatchFilter | None = None
+    midi_program: Annotated[StrictInt, Field(ge=0, le=127)] | None = None
+
+    @property
+    def release_seconds(self) -> float:
+        return max(layer.envelope.release_seconds for layer in self.layers)
+
+
+@dataclass(frozen=True, eq=False)
+class _PatchMap(Mapping):
+    """Read-only definitions that also support Pydantic's deep-copy operation."""
+
+    _data: Mapping
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __deepcopy__(self, memo):
+        # Keys and validated patch models (including nested layers) are immutable.
+        return self
 
 
 class TempoChange(ScoreModel):
@@ -218,7 +343,7 @@ class Tone(ScoreModel):
 
 class Track(ScoreModel):
     name: Annotated[str, Field(strict=True, min_length=1, max_length=80)]
-    instrument: Instrument = "pluck"
+    instrument: Instrument | CustomName = "pluck"
     gain: Annotated[Number, Field(ge=0, le=1)] = 0.6
     pan: Annotated[Number, Field(ge=-1, le=1)] = 0
     tone: Tone | None = None
@@ -233,13 +358,22 @@ class Track(ScoreModel):
     @field_validator("instrument", mode="before")
     @classmethod
     def available_instrument(cls, value: object) -> object:
-        if isinstance(value, str):
+        if isinstance(value, str) and not value.startswith("custom:"):
             require_instrument(value)
         return value
 
     @model_validator(mode="after")
     def validate_tone(self) -> Track:
         _validate_lanes(self.automation, {"gain", "pan"})
+        if self.instrument.startswith("custom:"):
+            if (
+                self.tone is not None
+                or self.articulation
+                or self.pedal
+                or any(note.articulation for note in self.notes)
+            ):
+                raise ValueError("custom instruments do not support Tone, articulation or pedal")
+            return self
         articulations = get_instrument(self.instrument).articulations
         if self.articulation is not None and self.articulation not in articulations:
             raise ValueError(
@@ -291,6 +425,19 @@ class Song(ScoreModel):
     tempo_map: Annotated[tuple[TempoChange, ...], Field(max_length=1024)] = ()
     automation: Annotated[tuple[Automation, ...], Field(max_length=1)] = ()
     effects: Annotated[tuple[Effect, ...], Field(max_length=4)] = ()
+    mastering: Mastering | None = None
+    custom_instruments: Annotated[Mapping[CustomName, CustomInstrument], Field(max_length=64)] = (
+        Field(default_factory=dict)
+    )
+
+    @field_validator("custom_instruments", mode="after")
+    @classmethod
+    def immutable_patches(cls, value: Mapping) -> Mapping:
+        return _PatchMap(MappingProxyType(value))
+
+    @field_serializer("custom_instruments")
+    def serialize_patches(self, value: Mapping) -> dict:
+        return dict(value)
 
     @model_validator(mode="after")
     def validate_arrangement(self) -> Song:
@@ -311,6 +458,11 @@ class Song(ScoreModel):
         names: set[str] = set()
         count = 0
         for track in self.tracks:
+            if (
+                track.instrument.startswith("custom:")
+                and track.instrument not in self.custom_instruments
+            ):
+                raise ValueError(f"undefined custom instrument {track.instrument!r}")
             if track.pedal and track.pedal[-1].beat > self.beats:
                 raise ValueError("pedal events must not exceed the song's beats")
             if track.name in names:
@@ -377,6 +529,8 @@ class Song(ScoreModel):
             return note.release_seconds
         if track.release_seconds:
             return track.release_seconds
+        if track.instrument.startswith("custom:"):
+            return self.custom_instruments[track.instrument].release_seconds
         return 0.12 if self.note_gate_end(track, note) > note.start + note.duration else 0.0
 
     @classmethod

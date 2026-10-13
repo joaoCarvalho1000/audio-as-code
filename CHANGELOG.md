@@ -5,6 +5,15 @@ are separate.
 
 ## Unreleased
 
+- Added opt-in bus compression, oversampled lookahead true-peak limiting and
+  iterative LUFS targeting through Python, score JSON and CLI. Reports include
+  reconstructed peaks, gain reduction and encoded-file measurements. Legacy
+  default samples and score hashes are preserved.
+- Added song-local user-defined oscillator/noise/modal/FM patches with envelopes
+  and a filter, namespaced discovery, explicit MIDI mappings and existing effects.
+  Added examples, generated schema and independent FFmpeg reference tests.
+  Numerical validation does not establish perceptual realism or meter certification.
+
 - Website demos: the four electronic Ode to Joy arrangements now have an intro,
   breakdown, doubled-lead drop and outro with genre bass figures, build rolls and
   sidechained pads around the complete hymn (score IDs unchanged; audio changes).

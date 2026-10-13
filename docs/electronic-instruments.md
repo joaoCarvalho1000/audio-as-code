@@ -6,6 +6,10 @@ All instrument sources are generated
 from equations, including the electronic drums. There are no recordings,
 SoundFonts, sampled breakbeats or measured impulse responses.
 
+This source revision also supports [user-defined layered patches](custom-instruments.md)
+and opt-in [bus mastering](production-output.md#opt-in-bus-mastering). These
+additions do not change the built-in catalog or existing default renders.
+
 ## Choose a voice
 
 | Use | IDs | Model and useful controls |

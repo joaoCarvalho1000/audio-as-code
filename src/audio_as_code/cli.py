@@ -18,7 +18,7 @@ from .inspection import inspect_score
 from .instruments import ENGINES, FAMILIES, instrument_catalog
 from .midi import export_midi
 from .mixing import MixEdit, apply_mix, audition_song, inspect_mix
-from .model import Song
+from .model import Mastering, Song, TruePeakLimiter
 from .project_setup import doctor, init_project
 from .render import analyze_wav, render, render_preview
 
@@ -78,6 +78,12 @@ def _render_arguments(parser: argparse.ArgumentParser, *, stems: bool) -> None:
         help="Sample-peak ceiling with --target-lufs (default: -1 dBFS; not true peak)",
     )
     parser.add_argument("--report", help="Also save the JSON render report to this path")
+    parser.add_argument("--mastering", help="JSON Mastering object, overriding score mastering")
+    parser.add_argument(
+        "--limiter-ceiling-dbtp",
+        type=float,
+        help="Enable the lookahead true-peak limiter at this dBTP ceiling",
+    )
     parser.add_argument(
         "--progress-file",
         metavar="PATH",
@@ -108,6 +114,7 @@ def _parser() -> argparse.ArgumentParser:
     instruments.add_argument("--all", action="store_true", help="Include planned instruments")
     instruments.add_argument("--family", choices=[family.id for family in FAMILIES])
     instruments.add_argument("--engine", choices=[engine.id for engine in ENGINES])
+    instruments.add_argument("--score", help="Include user-defined instruments from this score")
     demo = commands.add_parser("demo", help="Write an example JSON score")
     demo.add_argument("-o", "--output", default="demo.json", help="Score path (default: demo.json)")
     schema = commands.add_parser("schema", help="Print the versioned JSON Schema")
@@ -169,9 +176,6 @@ def _error_hint(error: Exception) -> str:
 def main(argv: list[str] | None = None) -> int:
     try:
         args = _parser().parse_args(argv)
-        if args.command in {"render", "preview"}:
-            if args.peak_ceiling_dbfs is not None and args.target_lufs is None:
-                raise ArgumentError("--peak-ceiling-dbfs requires --target-lufs")
         if args.command == "init":
             result = init_project(args.directory)
         elif args.command == "doctor":
@@ -193,7 +197,10 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
         elif args.command == "instruments":
             result = instrument_catalog(
-                family=args.family, engine=args.engine, include_planned=args.all
+                family=args.family,
+                engine=args.engine,
+                include_planned=args.all,
+                custom_instruments=Song.load(args.score).custom_instruments if args.score else None,
             )
         elif args.command == "demo":
             _check_paths([args.output])
@@ -263,6 +270,26 @@ def main(argv: list[str] | None = None) -> int:
                 result = export_midi(song, args.output)
             else:
                 paths = [args.score, args.output]
+                mastering = song.mastering
+                if args.mastering:
+                    paths.append(args.mastering)
+                    mastering = Mastering.model_validate_json(
+                        Path(args.mastering).read_text(encoding="utf-8-sig")
+                    )
+                if args.limiter_ceiling_dbtp is not None:
+                    data = mastering.model_dump() if mastering else {}
+                    limiter = data.get("limiter") or {}
+                    limiter["ceiling_dbtp"] = args.limiter_ceiling_dbtp
+                    data["limiter"] = TruePeakLimiter.model_validate(limiter)
+                    mastering = Mastering.model_validate(data)
+                if mastering and mastering.limiter and args.peak_ceiling_dbfs is not None:
+                    raise ArgumentError("--peak-ceiling-dbfs conflicts with the true-peak limiter")
+                if (
+                    args.peak_ceiling_dbfs is not None
+                    and args.target_lufs is None
+                    and (mastering is None or mastering.target_lufs is None)
+                ):
+                    raise ArgumentError("--peak-ceiling-dbfs requires a loudness target")
                 if args.report:
                     paths.append(args.report)
                 if args.progress_file:
@@ -278,9 +305,8 @@ def main(argv: list[str] | None = None) -> int:
                         "wav_format": args.wav_format,
                         "progress": progress,
                         "target_lufs": args.target_lufs,
-                        "peak_ceiling_dbfs": (
-                            args.peak_ceiling_dbfs if args.peak_ceiling_dbfs is not None else -1.0
-                        ),
+                        "peak_ceiling_dbfs": args.peak_ceiling_dbfs,
+                        "mastering": mastering,
                     }
                     if args.command == "preview":
                         result = render_preview(

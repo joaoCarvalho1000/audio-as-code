@@ -70,6 +70,21 @@ def _midi_issues(song: Song, issues: list[dict]) -> int:
     percussion: dict[int, list[tuple[int, int, int, int]]] = {}
     for track_index, track in enumerate(song.tracks):
         path = ["tracks", track_index]
+        if track.instrument.startswith("custom:"):
+            mapped = song.custom_instruments[track.instrument].midi_program is not None
+            _issue(
+                issues,
+                "midi_custom_instrument",
+                "midi",
+                [*path, "instrument"],
+                "MIDI does not carry custom patches. "
+                + (
+                    "An approximate program mapping will be used."
+                    if mapped
+                    else "Set an explicit midi_program on the custom definition to export."
+                ),
+                blocking=not mapped,
+            )
         is_drum = track.instrument in DRUM_NOTES
         if is_drum:
             if track.instrument in drum_kinds:
@@ -248,7 +263,7 @@ def inspect_score(song: Song) -> dict:
     tracks = []
     all_intervals = []
     for track_index, track in enumerate(song.tracks):
-        instrument = get_instrument(track.instrument)
+        instrument = get_instrument(track.instrument, custom_instruments=song.custom_instruments)
         intervals = [(note.start, note.start + note.duration) for note in track.notes]
         all_intervals.extend(intervals)
         starts = [start for start, _ in intervals]
@@ -288,6 +303,7 @@ def inspect_score(song: Song) -> dict:
                 "family": instrument.family,
                 "engine": instrument.engine,
                 "instrument_description": instrument.description,
+                "instrument_origin": instrument.origin,
                 "note_count": len(track.notes),
                 "pedal_event_count": len(track.pedal),
                 "pedal_auto_lift": bool(track.pedal and track.pedal[-1].down),

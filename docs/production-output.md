@@ -127,10 +127,102 @@ the report. Measurement is before encoding; PCM rounding can change the file's
 loudness and sample peak slightly. Preview loudness describes the full render,
 including when the excerpt is shorter than 400 ms.
 
-This feature does not measure or constrain true peak, intersample overs, loudness
-range, or platform delivery compliance. The checks against FFmpeg's
+The legacy constant-gain path does not constrain true peak or intersample overs.
+This source revision adds reconstructed true-peak estimates to render and loudness
+reports. Neither path measures loudness range or certifies platform delivery
+compliance. The checks against FFmpeg's
 [ebur128 filter](https://ffmpeg.org/ffmpeg-filters.html#ebur128) cover generated
 signals and music; they are not meter certification or perceptual validation.
+
+## Opt-in bus mastering
+
+This source revision adds `Mastering`, `BusCompressor` and `TruePeakLimiter`.
+They are not in published 0.4.0. Without mastering settings, old scores keep their
+audio samples and score hashes, including the legacy sample-ceiling LUFS path.
+
+```python
+from audio_as_code import BusCompressor, Mastering, TruePeakLimiter, render
+
+chain = Mastering(
+    compressor=BusCompressor(threshold_dbfs=-18, ratio=2, knee_db=6),
+    limiter=TruePeakLimiter(ceiling_dbtp=-1),
+    target_lufs=-14,
+)
+report = render(song, "output/master.wav", mastering=chain, wav_format="pcm24")
+print(report["loudness"]["target_reached"])
+print(report["encoded_measurements"])
+```
+
+All four render functions accept `mastering`. Alternatively put the same object
+on `Song.mastering`, serialized as this optional top-level score field:
+
+```json
+{"mastering": {
+  "compressor": {"threshold_dbfs": -18, "ratio": 2},
+  "limiter": {"ceiling_dbtp": -1},
+  "target_lufs": -14
+}}
+```
+
+The value of that field can also be saved alone as a CLI configuration file:
+
+```sh
+aac render score.json -o master.wav --mastering mastering.json --format pcm24
+aac render score.json -o master.wav --target-lufs -14 --limiter-ceiling-dbtp -1
+```
+
+A supplied mastering object replaces score mastering; `Mastering()` bypasses
+score dynamics. An explicit `target_lufs` overrides the configuration's target.
+The CLI limiter flag changes the configured limiter ceiling or creates a default
+limiter. `peak_ceiling_dbfs` cannot accompany a limiter, including an explicitly
+supplied -1 value. LUFS targeting still requires the loudness extra, at least
+400 ms, and `normalize=True`. Compressor/limiter-only operation needs neither
+the extra nor a minimum musical duration. `normalize=False` disables automatic
+constant-gain normalization, but does not bypass explicitly configured dynamics.
+
+Order is existing master effects, bus compression, delivery gain, then limiting.
+Without a limiter, the existing normalization/sample-ceiling rules apply after
+compression. Compressor and limiter are independently optional.
+
+| Processor | Controls, defaults and bounds |
+| --- | --- |
+| `BusCompressor` | `threshold_dbfs=-18` (-60 to 0), `ratio=2` (1 to 20), `attack_seconds=0.01` (0.0001 to 1), `release_seconds=0.1` (0.001 to 5), `makeup_db=0` (-24 to 24), `knee_db=6` (0 to 24) |
+| `TruePeakLimiter` | `ceiling_dbtp=-1` (-60 to 0), `lookahead_seconds=0.005` (0.001 to 0.02), `release_seconds=0.1` (0.01 to 2), `oversample=4` (4 or 8) |
+
+The compressor detects the larger absolute channel sample and smooths gain
+reduction in decibels using the selected attack/release time constants. It has a
+quadratic soft knee, or a hard knee at zero width. Ratio 1 with no makeup bypasses
+it. Both processors share gain between channels to preserve stereo balance.
+
+The limiter uses generated Kaiser-windowed sinc reconstruction, lookahead,
+smoothed gain reduction and downsampling with latency compensation. Frame count
+is unchanged. It rechecks eight-times reconstructed output, including conservative
+reflected-edge checks, after downsampling. Safety headroom is 0.1 dB plus an absolute
+2/32768 amplitude reserve for PCM16 quantization; the reserve matters more at very
+quiet ceilings.
+
+LUFS targeting searches pre-limiter drive from the same compressed source, up to
+24 evaluations and +60 dB drive. It aims for the target even when substantial
+limiting is needed; this can audibly reduce dynamics. The ceiling takes priority.
+Silence or fully gated audio receives no boost. Impossible targets return the
+closest measured candidate with `target_reached=false` and a warning.
+
+Reports include effective settings, maximum gain reduction, iterations and delivery
+gain. `gain_applied` describes only constant delivery gain, not dynamic envelopes.
+The `loudness` block describes full-mix pre-encoding loudness;
+`encoded_measurements` independently measures the staged WAV's quantized samples.
+Full exports that fail the measured ceiling are rejected before publication.
+Stems omit master effects and dynamics and share only constant delivery gain;
+their sum and individual peaks can differ from the mastered mix.
+
+`measure_true_peak(audio, sample_rate, oversample=4)` accepts finite float mono or
+stereo arrays, one sample to 300 seconds, at supported render rates. It returns
+linear `true_peak`, `true_peak_dbtp`, channel peaks and method/oversampling metadata.
+Silence has a null dBTP value. It includes original sample peaks and uses silence
+beyond file boundaries. FFmpeg's boundary extrapolation can differ, especially at
+hard cuts. Comparisons use defined generated signals including intersample overs.
+These are numerical checks, not meter certification, perceptual validation or
+platform approval.
 
 ## Exact excerpts
 
@@ -144,7 +236,9 @@ or faster renderer.
 Boundaries use `round(seconds * sample_rate)` and the end is exclusive. The end
 is clamped to the rendered duration, including tails. Empty excerpts, negative
 starts, non-finite bounds, and starts at or after the end are rejected. No fade is
-added to cuts; a boundary through a waveform can click.
+added to cuts; a boundary through a waveform can click. Mastering and loudness
+remain full-render operations. A cut can introduce a new reconstructed peak; the
+encoded preview reports its own peak and warns if it exceeds the full-mix ceiling.
 
 The preview report's `audio` and `wav` describe the excerpt. Score identity,
 `before_gain`, warnings, and `gain_applied` retain full-render context.
@@ -157,7 +251,8 @@ All four render functions accept `progress=callback` and `cancel=predicate`.
 Callbacks run synchronously; the engine does not print progress. A callback
 receives immutable `RenderProgress(phase, completed, total, track)` values with
 stage-local counts. Phases include `tracks`, `notes`, `track_effects`,
-`master_effects`, `analysis`, `loudness` (when requested), and `export`. Counts are
+`master_effects`, `mastering` (when configured), `analysis`, `loudness` (when requested),
+and `export`. Counts are
 not wall-clock estimates.
 
 ```python

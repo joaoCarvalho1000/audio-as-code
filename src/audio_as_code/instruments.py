@@ -6,9 +6,13 @@ in scores. The metadata also supplies tone capabilities and MIDI mappings.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from types import MappingProxyType
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from .model import CustomInstrument
 
 Instrument = Literal[
     "sine",
@@ -125,6 +129,7 @@ class InstrumentInfo:
     preview_pitch: int = 60
     default_tone: tuple[tuple[str, float], ...] = ()
     articulations: tuple[str, ...] = ()
+    origin: Literal["builtin", "user_defined"] = "builtin"
 
 
 FAMILIES = (
@@ -1175,17 +1180,36 @@ _FAMILY_IDS = frozenset(family.id for family in FAMILIES)
 _ENGINE_IDS = frozenset(engine.id for engine in ENGINES)
 
 
-def get_instrument(instrument_id: str) -> InstrumentInfo:
+def get_instrument(
+    instrument_id: str, *, custom_instruments: Mapping[str, CustomInstrument] | None = None
+) -> InstrumentInfo:
     """Inspect an instrument, including planned entries. Does not imply playability."""
+    if instrument_id.startswith("custom:") and custom_instruments is not None:
+        if instrument_id not in custom_instruments:
+            raise ValueError(f"undefined custom instrument {instrument_id!r}")
+        patch = custom_instruments[instrument_id]
+        modal = all(layer.type == "modal" for layer in patch.layers)
+        return InstrumentInfo(
+            instrument_id,
+            patch.name,
+            "pitched_percussion" if modal else "electronic",
+            "modal" if modal else "electronic",
+            "available",
+            "User-defined procedural patch. " + patch.description,
+            midi_program=patch.midi_program,
+            origin="user_defined",
+        )
     try:
         return _BY_ID[instrument_id]
     except KeyError:
         raise ValueError(f"unknown instrument {instrument_id!r}; use 'aac instruments'") from None
 
 
-def require_instrument(instrument_id: str) -> InstrumentInfo:
+def require_instrument(
+    instrument_id: str, *, custom_instruments: Mapping[str, CustomInstrument] | None = None
+) -> InstrumentInfo:
     """Resolve a playable instrument; never silently substitute another sound."""
-    instrument = get_instrument(instrument_id)
+    instrument = get_instrument(instrument_id, custom_instruments=custom_instruments)
     if instrument.status != "available":
         raise ValueError(
             f"instrument {instrument_id!r} is planned and cannot be rendered yet; "
@@ -1199,15 +1223,20 @@ def list_instruments(
     family: str | None = None,
     engine: str | None = None,
     include_planned: bool = False,
+    custom_instruments: Mapping[str, CustomInstrument] | None = None,
 ) -> tuple[InstrumentInfo, ...]:
     """Discover playable voices by default; opt in to see the full framework scope."""
     if family is not None and family not in _FAMILY_IDS:
         raise ValueError(f"unknown instrument family {family!r}")
     if engine is not None and engine not in _ENGINE_IDS:
         raise ValueError(f"unknown synthesis engine {engine!r}")
+    custom = tuple(
+        get_instrument(name, custom_instruments=custom_instruments)
+        for name in (custom_instruments or {})
+    )
     return tuple(
         instrument
-        for instrument in INSTRUMENTS
+        for instrument in (*INSTRUMENTS, *custom)
         if (include_planned or instrument.status == "available")
         and (family is None or instrument.family == family)
         and (engine is None or instrument.engine == engine)
@@ -1219,9 +1248,15 @@ def instrument_catalog(
     family: str | None = None,
     engine: str | None = None,
     include_planned: bool = False,
+    custom_instruments: Mapping[str, CustomInstrument] | None = None,
 ) -> dict:
     """Machine-readable discovery; engine availability denotes an initial implementation."""
-    selected = list_instruments(family=family, engine=engine, include_planned=include_planned)
+    selected = list_instruments(
+        family=family,
+        engine=engine,
+        include_planned=include_planned,
+        custom_instruments=custom_instruments,
+    )
     return {
         "catalog_version": "1",
         "synthesis_policy": "code_only",
