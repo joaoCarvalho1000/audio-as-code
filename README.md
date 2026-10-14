@@ -10,7 +10,11 @@ then carry the rendered WAV into your video, game or slides. See the
 [creative workflow integrations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/integrations.md) for Codex, Claude Code
 and Hyperframes recipes.
 
-**Status: 0.4.0 alpha.** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+**Status: 0.5.0 release candidate, alpha.** PyPI currently serves 0.4.0; the installation commands below target that published release. Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+
+**Coming in 0.5.0:** evenly spaced rhythms, swing, accents, phrase reversal and
+scheduled fills, plus an original before/after composition with editable exports.
+See [composition tools](docs/composition-tools.md).
 
 A **score** is the editable recipe for a piece: instruments, notes, timing,
 volume and tempo. Write it in Python or JSON; rendering turns it into audio.

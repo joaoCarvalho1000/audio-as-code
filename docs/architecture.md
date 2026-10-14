@@ -67,7 +67,7 @@ half-pedaling and sympathetic resonance are not modeled. See [piano sustain](pia
 `schemas/song-v1.schema.json` is generated from `Song.model_json_schema()`. Runtime
 checks additionally enforce unique track names, note bounds, supported controls,
 and cross-field relationships. Schema version `"1"` is independent of package
-version `0.4.0`. Breaking the score contract requires explicit version/migration
+version `0.5.0`. Breaking the score contract requires explicit version/migration
 work; adding a Python helper does not automatically change the score schema.
 
 Rendering revalidates scores and is limited to 300 seconds including tails. It

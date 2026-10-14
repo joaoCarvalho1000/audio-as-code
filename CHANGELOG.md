@@ -5,6 +5,11 @@ are separate.
 
 ## Unreleased
 
+### 0.5.0 release candidate
+
+Prepared for publication. PyPI still serves 0.4.0 until the reviewed release is
+merged and the manual publishing workflow succeeds.
+
 - Website: a matched-loudness original before/after comparison, playback-position
   switching, editable score/MIDI/composer downloads, and source-only rhythm API
   documentation. The build regenerates the comparison and verifies its loudness.
