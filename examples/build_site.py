@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import html
+import importlib.util
 import json
 import re
 import shutil
@@ -1311,7 +1312,11 @@ class Site:
         work = ROOT / "output" / "site-work" / "groove"
         work.mkdir(parents=True, exist_ok=True)
         script = ROOT / "examples" / "groove_comparison.py"
-        subprocess.run([sys.executable, str(script)], cwd=work, check=True, capture_output=True)
+        result = subprocess.run(
+            [sys.executable, str(script)], cwd=work, capture_output=True, text=True, check=False
+        )
+        if result.returncode:
+            raise RuntimeError(f"Groove comparison failed: {result.stderr}")
         source = work / "output" / "groove-comparison"
         report = json.loads((source / "report.json").read_text(encoding="utf-8"))
         data = {}
@@ -1493,6 +1498,11 @@ def build(
     originals: bool = False,
 ) -> dict:
     # Validated before anything is removed, so a bad key never costs the previous build.
+    if importlib.util.find_spec("pyloudnorm") is None:
+        raise ValueError(
+            "The website comparison requires the loudness extra. "
+            "Run uv run --extra loudness python examples/build_site.py --strict."
+        )
     if analytics is not None:
         analytics = analytics_config(
             analytics.get("projectKey"),
