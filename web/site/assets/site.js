@@ -918,11 +918,15 @@
       label.textContent = on ? `Pause ${mini.dataset.compare ? original.replace(/^Play /, "") : ""}`.trim() : original;
       wake();
     };
-    const player = { group: mini.dataset.compare, release() { pendingSeek = null; audio.pause(); set(false); message(""); } };
+    const player = {
+      group: mini.dataset.compare,
+      position: () => pendingSeek ?? audio.currentTime,
+      release() { pendingSeek = null; audio.pause(); set(false); message(""); },
+    };
     button.addEventListener("click", async () => {
       if (owner === player && !audio.paused && !failed && !audio.error) { audio.pause(); return; }
       const switching = owner !== player && player.group && owner?.group === player.group;
-      const position = switching && !audio.ended ? audio.currentTime : 0;
+      const position = switching && !audio.ended ? owner.position() : 0;
       const changingSource = audio.dataset.src !== mini.dataset.src;
       claim(player, mini.dataset.src);
       pendingSeek = changingSource ? position : null;

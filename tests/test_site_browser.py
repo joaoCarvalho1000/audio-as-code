@@ -112,6 +112,13 @@ def test_groove_switches_at_same_position_and_retries_failed_audio(browser, site
         assert page.evaluate("lastPlayed.currentTime < 8")
         assert before.get_attribute("aria-pressed") == "false"
         assert after.get_attribute("aria-pressed") == "true"
+        # A second selection before metadata arrives must retain the pending position.
+        page.evaluate("""() => {
+          document.querySelector('[data-src="groove/before.wav"] button').click();
+          document.querySelector('[data-src="groove/after.wav"] button').click();
+        }""")
+        page.wait_for_function("lastPlayed.readyState >= 3 && !lastPlayed.paused")
+        assert 5 <= page.evaluate("lastPlayed.currentTime") < 9
         after.click()
         page.wait_for_function("lastPlayed.paused")
         # Fail the next selection, then recover without reloading the page.
