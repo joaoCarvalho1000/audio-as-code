@@ -45,6 +45,8 @@ Keep the package and dependency versions in the project's uv.lock. The quickstar
 
 ## Docs
 
+- Source-only rhythm tools: `Pattern.euclidean`, `.swing`, `.reverse`, `.accent`, and `.repeat(..., variations={...})` compile to ordinary score notes. These are in the current source download, not PyPI 0.4.0. Read [composition tools](docs/composition-tools.md). Run `examples/groove_comparison.py` with the loudness extra for an original matched-loudness before/after.
+
 - [Quickstart](docs/quickstart.md): versioned PyPI install, source workspace, demo, Python and JSON
 - [Agent guide](docs/agents.md): agent handoff and revision prompts, compose/validate/render/inspect/revise loop, exact commands, strict JSON score, errors and recovery
 - [Creative integrations](docs/integrations.md): Codex and Claude Code skill setup, a Hyperframes soundtrack handoff, game/presentation cues, and a runnable local CLI-to-artifact bridge

@@ -91,6 +91,9 @@ SDIST_ROOTS = {
     "PKG-INFO",
 }
 REQUIRED_SOURCE = {
+    "examples/groove_comparison.py",
+    "examples/rhythm_sketch.py",
+    "docs/composition-tools.md",
     "src/audio_as_code/__init__.py",
     "src/audio_as_code/py.typed",
     "src/audio_as_code/extended.py",

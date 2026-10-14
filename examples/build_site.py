@@ -1,6 +1,6 @@
 """Build the static public website: python examples/build_site.py [--out output/site].
 
-Inputs are files other steps produce; nothing here synthesizes audio:
+Most inputs are files other steps produce. The loop and groove examples are rendered here:
 
 - web/site/                         page templates, CSS, JS, fonts
 - output/classic-showcase/          manifest.json + WAV/MIDI/JSON written by classic_showcase.py
@@ -64,6 +64,7 @@ RAW_DOCS = {
     "articulations.md": "docs/articulations.md",
     "production-output.md": "docs/production-output.md",
     "mixing.md": "docs/mixing.md",
+    "composition-tools.md": "docs/composition-tools.md",
 }
 ANALYTICS_CONFIG = WEB / "analytics-config.json"
 POSTHOG_HOSTS = ("https://us.i.posthog.com", "https://eu.i.posthog.com")
@@ -1305,6 +1306,29 @@ class Site:
             "roots": SOURCE_ALLOW,
         }
 
+    def groove(self) -> dict:
+        """Render the comparison from current source, never from stale audition files."""
+        work = ROOT / "output" / "site-work" / "groove"
+        work.mkdir(parents=True, exist_ok=True)
+        script = ROOT / "examples" / "groove_comparison.py"
+        subprocess.run([sys.executable, str(script)], cwd=work, check=True, capture_output=True)
+        source = work / "output" / "groove-comparison"
+        report = json.loads((source / "report.json").read_text(encoding="utf-8"))
+        data = {}
+        for label in ("before", "after"):
+            for suffix in ("wav", "mid", "json"):
+                self.copy(source / f"{label}.{suffix}", f"groove/{label}.{suffix}")
+            envelope, seconds = wav_envelope(source / f"{label}.wav", bins=160)
+            data[f"GROOVE_{label.upper()}_ENVELOPE"] = html.escape(json.dumps(envelope))
+            if not report[label]["loudness"]["target_reached"]:
+                raise ValueError("groove comparison must reach its matched loudness target")
+            data["GROOVE_SECONDS"] = f"{seconds:.2f}"
+        self.copy(source / "report.json", "groove/report.json")
+        self.copy(source / "before-then-after.wav", "groove/before-then-after.wav")
+        self.copy(script, "groove/groove_comparison.py")
+        data["GROOVE_LUFS"] = f"{report['after']['loudness']['target_lufs']:g}"
+        return data
+
     def loop(self) -> dict:
         """Run the README example exactly as shown and publish what it wrote."""
         work = ROOT / "output" / "site-work" / "loop"
@@ -1505,6 +1529,7 @@ def build(
         "version": __version__,
     }
     loop = site.loop()
+    groove = site.groove()
     family_names = {f["id"]: f["name"] for f in catalog["families"]}
     family_counts: dict[str, int] = {}
     for item in catalog["instruments"]:
@@ -1533,6 +1558,7 @@ def build(
         VERSION=__version__,
         FAMILIES=families,
         **loop,
+        **groove,
     )
     site.templated(
         "source.html",

@@ -23,7 +23,7 @@ flowchart TD
 | --- | --- |
 | `__init__.py`, `__main__.py` | Public Python exports/version and `python -m audio_as_code` entry point. |
 | `model.py` | Immutable Pydantic score objects, strict validation, pitch conversion, piecewise tempo integration, and release/effect-tail duration. |
-| `pattern.py` | Explicit phrase length and composition transforms, including sequence, repeat, transpose, append, overlay, stretch, velocity scaling, and placement. |
+| `pattern.py` | Explicit phrase lengths; sequences and Euclidean rhythms; repeat with scheduled variations, reverse, swing, beat-grid accents, transpose, append, overlay, stretch, velocity scaling, and placement. |
 | `arrangement.py` | Timestamp placement, named section edits and measured loop previews; section metadata stays outside score JSON. |
 | `mixing.py` | Validated immutable gain/pan edits, automation-preserving trims, audition selection and score-setting reports. |
 | `project_setup.py`, `_project_templates/` | Installed project scaffolds and local runtime diagnostics. |
