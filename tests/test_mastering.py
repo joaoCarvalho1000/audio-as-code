@@ -330,3 +330,24 @@ def test_empty_chain_bypasses_score_mastering_without_changing_audio():
     mastered = song.model_copy(update={"mastering": Mastering(compressor=BusCompressor())})
     expected = render_audio(song).audio
     np.testing.assert_array_equal(render_audio(mastered, mastering=Mastering()).audio, expected)
+
+
+def test_true_peak_cancellation_stops_between_blocks(monkeypatch):
+    import importlib
+
+    from audio_as_code import RenderCancelled
+
+    module = importlib.import_module("audio_as_code.mastering")
+    original = module._high_block
+    calls = []
+
+    def block(*args, **kwargs):
+        calls.append(1)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "_high_block", block)
+    with pytest.raises(RenderCancelled):
+        module.measure_true_peak(
+            np.zeros((100000, 2), dtype=np.float32), 44100, cancel=lambda: bool(calls)
+        )
+    assert len(calls) == 1

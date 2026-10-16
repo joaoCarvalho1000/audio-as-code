@@ -19,16 +19,20 @@ def _envelope(env: Envelope, frames: int, held: int, rate: int, release: float) 
         t / attack,
         1 - (1 - env.sustain) * np.minimum(1, (t - attack) / env.decay_seconds),
     )
-    if held < frames:
-        count = min(frames - held, round(release * rate))
+    release_frames = round(release * rate)
+    if held < frames and release_frames > 0:
+        count = min(frames - held, release_frames)
         level = curve[max(0, held - 1)]
         curve[held:] = 0
         if count:
             curve[held : held + count] = level * np.linspace(1, 0, count)
     else:
         # Explicit zero release still ends cleanly inside the written gate.
-        count = min(frames, max(2, round(0.002 * rate)))
-        curve[-count:] *= np.linspace(1, 0, count)
+        end = min(held, frames)
+        count = min(end, max(2, round(0.002 * rate)))
+        if count:
+            curve[end - count : end] *= np.linspace(1, 0, count)
+        curve[end:] = 0
     return curve
 
 

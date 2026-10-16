@@ -256,3 +256,27 @@ def test_mix_arrangement_and_automation_preserve_patch_data():
         }
     )
     assert render_audio(song.model_copy(update={"tracks": (track,)})).report["audio"]["silent"]
+
+
+@pytest.mark.parametrize("rate", [22050, 44100, 48000])
+def test_zero_release_layer_is_independent_of_other_layer_tail(rate):
+    from audio_as_code import Envelope
+    from audio_as_code.custom import synthesize
+
+    held = round(0.2 * rate)
+    frames = held + round(0.1 * rate)
+    layer = OscillatorLayer(envelope=Envelope(sustain=1, release_seconds=0))
+    short = CustomInstrument(name="Short", layers=[layer])
+    long_layer = OscillatorLayer(envelope=Envelope(sustain=1, release_seconds=0.1))
+    mixed = CustomInstrument(name="Mixed", layers=[layer, long_layer])
+    # Preserve the long layer's seed/index while isolating its contribution.
+    long_only = CustomInstrument(
+        name="Long", layers=[layer.model_copy(update={"gain": 0}), long_layer]
+    )
+    dry = synthesize(short, 440, held, held, rate, 37)
+    contribution = synthesize(mixed, 440, frames, held, rate, 37) - synthesize(
+        long_only, 440, frames, held, rate, 37
+    )
+    np.testing.assert_allclose(contribution[:held], dry, atol=1e-7)
+    np.testing.assert_allclose(contribution[held:], 0, atol=1e-7)
+    assert contribution[held - 1] == 0

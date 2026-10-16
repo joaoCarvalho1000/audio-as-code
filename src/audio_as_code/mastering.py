@@ -11,6 +11,7 @@ import math
 import numpy as np
 
 from ._fir import convolve_causal
+from ._render_control import CancelCallback, _RenderControl
 from .model import BusCompressor, Mastering, TruePeakLimiter
 
 _BLOCK = 32768
@@ -61,15 +62,25 @@ def _high_block(audio: np.ndarray, start: int, stop: int, factor: int) -> np.nda
     return result
 
 
-def measure_true_peak(audio: np.ndarray, sample_rate: int, *, oversample: int = 4) -> dict:
+def measure_true_peak(
+    audio: np.ndarray,
+    sample_rate: int,
+    *,
+    oversample: int = 4,
+    cancel: CancelCallback | None = None,
+) -> dict:
     """Return a JSON-safe FIR reconstructed peak estimate, including sample peaks."""
+    control = _RenderControl(cancel=cancel)
+    control.check()
     audio = _validate_audio(audio, sample_rate)
     if type(oversample) is not int or oversample not in (4, 8):
         raise ValueError("oversample must be 4 or 8")
     peaks = np.max(np.abs(audio), axis=0).astype(np.float64)
     for start in range(0, len(audio), _BLOCK):
+        control.check()
         high = _high_block(audio, start, min(len(audio), start + _BLOCK), oversample)
         peaks = np.maximum(peaks, np.max(np.abs(high), axis=0))
+    control.check()
     peak = float(np.max(peaks))
     return {
         "true_peak": peak,

@@ -281,3 +281,8 @@ files intact and remove temporary WAVs; newly created directories may remain.
 Each final file replacement is atomic, but the group is not a filesystem
 transaction: a filesystem failure during publication can replace only part of a
 stem set. Cancellation is not checked during that short replacement loop.
+
+True-peak analysis runs even when mastering is disabled and adds offline render cost.
+`measure_true_peak(..., cancel=callback)` and render cancellation are checked between
+32768-frame metering blocks. Cancellation remains cooperative; it cannot interrupt a
+NumPy operation already in progress. This does not change rendered samples.

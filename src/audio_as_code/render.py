@@ -316,7 +316,10 @@ def _render_audio(
         "warnings": warnings,
     }
     report["true_peak"] = measure_true_peak(
-        mix, song.sample_rate, oversample=8 if active_mastering and settings.limiter else 4
+        mix,
+        song.sample_rate,
+        oversample=8 if active_mastering and settings.limiter else 4,
+        cancel=control.cancel,
     )
     if mastering_report is not None:
         report["mastering"] = mastering_report
@@ -491,7 +494,7 @@ def _preview_result(
     report = {
         **result.report,
         "audio": _metrics(audio, song.sample_rate),
-        "true_peak": measure_true_peak(audio, song.sample_rate),
+        "true_peak": measure_true_peak(audio, song.sample_rate, cancel=control.cancel),
         "preview": {
             "requested_start_seconds": start_seconds,
             "requested_duration_seconds": duration_seconds,
