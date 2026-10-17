@@ -5,6 +5,24 @@ are separate.
 
 ## Unreleased
 
+### 0.5.0 release candidate
+
+Prepared for publication. PyPI still serves 0.4.0 until the reviewed release is
+merged and the manual publishing workflow succeeds.
+
+- Website: a matched-loudness original before/after comparison, playback-position
+  switching, editable score/MIDI/composer downloads, and source-only rhythm API
+  documentation. The build regenerates the comparison and verifies its loudness.
+
+- Composition: evenly spaced rhythm grids with `Pattern.euclidean`, boundary-aware
+  `.swing()` and rest-aware `.reverse()` transformations. Added an original
+  `examples/rhythm_sketch.py` groove with WAV/MIDI/JSON export. Existing score
+  formats, voices and rendering defaults are unchanged.
+- Phrase development: `.accent()` applies repeating velocity grids to beats and
+  chords; `.repeat(..., variations={...})` schedules same-length fills without
+  shifting later bars. Added an original loudness-matched before/after example
+  in `examples/groove_comparison.py`.
+
 - Website demos: the four electronic Ode to Joy arrangements now have an intro,
   breakdown, doubled-lead drop and outro with genre bass figures, build rolls and
   sidechained pads around the complete hymn (score IDs unchanged; audio changes).

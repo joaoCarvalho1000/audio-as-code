@@ -14,7 +14,7 @@ uv run python examples/classic_showcase.py --ffmpeg ffmpeg
 uv run python examples/classic_reimaginations.py --ffmpeg ffmpeg
 uv run --extra loudness python examples/instrument_browser.py
 uv run --extra loudness python examples/electronic_music.py
-uv run python examples/build_site.py --strict
+uv run --extra loudness python examples/build_site.py --strict
 ```
 
 The homepage compares five public-domain works, each in two complete versions
@@ -74,6 +74,15 @@ its existing `catalog.json` without changing or rerendering any audio.
 Resume reuses a clip only when its source, score, runtime fingerprint and all
 output hashes match. A subset build can leave missing previews; finish the full
 batch before building the website. A synthesis change invalidates cached clips.
+
+The site builder also renders `examples/groove_comparison.py` on every build.
+The homepage's original before/after comparison publishes both WAVs, MIDI files,
+JSON scores, Python source and a measurement report under `groove/`. Both versions
+must reach -20 LUFS. Playback switches between versions at the current position;
+all homepage players share one audio output. The page labels the new pattern
+helpers as source-only until a registry release includes them. This build step
+requires the loudness extra: run the builder with `uv run --extra loudness` or
+use `--no-sync` after installing the browser/loudness groups.
 
 The site builder reads those outputs, copies the documentation and web assets,
 generates the downloadable source archive and machine-readable files, and

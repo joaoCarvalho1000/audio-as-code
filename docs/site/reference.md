@@ -219,6 +219,23 @@ effect state. These helpers do not add fields to score JSON.
 | `.scale_velocity(factor)` | `Pattern`; multiply velocities by a positive factor, with every result in (0, 1] |
 | `.at(beat: float)` | `tuple[Note, ...]` on the absolute timeline |
 
+#### Pattern tools in the current source download
+
+These additions are available in the source workspace, not the PyPI 0.4.0 release.
+All return immutable patterns and compile to the existing version 1 score.
+
+| Method | Behavior |
+| --- | --- |
+| `Pattern.euclidean(pulses, steps, *, pitch=60, step=0.5, rotation=0, gate=0.8, velocity=0.8)` | Evenly distribute hits over a grid; positive rotation delays hits cyclically; zero pulses is silence |
+| `.swing(ratio=2/3, *, step=0.5)` | Warp note starts and ends over complete step pairs; ratio must be inside `(0, 1)`; `0.5` is straight |
+| `.reverse()` | Mirror written note intervals and rests; does not reverse audio |
+| `.accent(weights, *, step=0.5)` | Multiply velocities by a repeating beat grid; chords share weights; results must remain in `(0, 1]` |
+| `.repeat(times, *, variations=None)` | Optionally replace zero-based repetitions with equal-length patterns; later bars stay in place |
+
+Apply accents before swing when weights should follow the straight grid.
+See [composition tools](../composition-tools.md) for validation rules and
+[the audible comparison](../index.html#groove) for a complete example.
+
 ### Rendering
 
 | Function | Returns |

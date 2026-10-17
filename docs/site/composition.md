@@ -1,6 +1,32 @@
 # Composition guide
 
-A score is a `Song`: a tempo, a length in beats, and named tracks of notes. This guide covers the musical model and the Python helpers for building it. Every fact here matches the 0.1 source; field limits are collected in the [reference](reference.md).
+A score is a `Song`: a tempo, a length in beats, and named tracks of notes. This guide covers the musical model and the Python helpers for building it. Source-only additions are marked below; field limits are collected in the [reference](reference.md).
+
+## Rhythm and phrase development
+
+The current [source download](../source.html) adds five tools for shaping a groove.
+They are not yet included in the PyPI 0.4.0 package. Hear the
+[original before/after comparison](../index.html#groove), then try:
+
+```python
+from audio_as_code import Pattern
+
+hats = Pattern.euclidean(5, 8, pitch=42, rotation=1, velocity=0.4)
+hats = hats.accent([1, 0.6]).swing(0.61).repeat(8)
+motif = Pattern.sequence(["D4", None, "F4", "A4", None, "C5", "E5", "A4"], step=0.5)
+answer = motif.reverse().scale_velocity(0.8)
+melody = motif.repeat(8, variations={3: answer, 7: answer}).swing(0.61)
+```
+
+Use `hats.at(0)` and `melody.at(0)` on separate tracks, with `beats=32`.
+Accents follow a repeating beat grid, so chords stay together and rests keep
+their place. Swing moves note starts and ends while preserving phrase length.
+Repetition indices start at zero; replacements must have the source phrase's
+length. The existing score format and procedural voices stay the same.
+
+Run `uv run --extra loudness python examples/groove_comparison.py` in the source
+workspace for the complete arrangement, WAV/MIDI exports and matched-loudness
+comparison. See [composition tools](../composition-tools.md) for limits and examples.
 
 ```text
 Song ── bpm, tempo_map, beats, seed, sample_rate, master_gain, automation, effects

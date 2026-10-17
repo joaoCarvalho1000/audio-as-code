@@ -17,7 +17,7 @@ visible guides:
   manifest remain directly downloadable. Installed CLI discovery is authoritative
   when a project's version differs from the website.
 
-Run `uv run python examples/build_site.py --strict` after preparing the listening
+Run `uv run --extra loudness python examples/build_site.py --strict` after preparing the listening
 assets. Generated discovery files live in `output/site/`; edit their source in
 `docs/site/`, `web/site/`, or `examples/_site_discovery.py`. Page URLs follow
 Cloudflare's extensionless HTML redirects, while local HTML links retain their

@@ -10,7 +10,11 @@ then carry the rendered WAV into your video, game or slides. See the
 [creative workflow integrations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/integrations.md) for Codex, Claude Code
 and Hyperframes recipes.
 
-**Status: 0.4.0 alpha.** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+**Status: 0.5.0 release candidate, alpha.** PyPI currently serves 0.4.0; the installation commands below target that published release. Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+
+**Coming in 0.5.0:** evenly spaced rhythms, swing, accents, phrase reversal and
+scheduled fills, plus an original before/after composition with editable exports.
+See [composition tools](docs/composition-tools.md).
 
 A **score** is the editable recipe for a piece: instruments, notes, timing,
 volume and tempo. Write it in Python or JSON; rendering turns it into audio.
@@ -191,6 +195,14 @@ Layer a countermelody with `.overlay(other, offset=2)`, expand a motif with
 `.stretch(2)`, or soften it with `.scale_velocity(0.7)`. Each returns a new
 pattern and preserves the original. See the [composition tools](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/composition-tools.md)
 and [runnable example](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/examples/composition_tools.py) for combining these into a piece.
+
+For rhythmic sketches, build a pulse grid with `Pattern.euclidean(5, 8)`, shape
+its dynamics with `.accent([1, 0.6])`, and add `.swing(0.6)`. Use `.reverse()`
+for an answering phrase and `.repeat(8, variations={3: fill, 7: ending})` for
+same-length variations on selected repetitions (zero-based indices). Run
+`uv run --extra loudness python examples/groove_comparison.py` from this checkout
+to render an original straight/developed comparison at matched loudness, with
+editable scores and MIDI under `output/groove-comparison/`.
 
 For finer control, construct `Note(pitch="C4", start=0, duration=1, velocity=0.8)` directly. Scores and patterns are immutable; create a revised score from its JSON data when editing.
 

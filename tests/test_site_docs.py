@@ -10,6 +10,24 @@ builder = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(builder)
 
 
+def test_missing_comparison_backend_preserves_previous_build(tmp_path, monkeypatch):
+    import pytest
+
+    previous = tmp_path / "site"
+    previous.mkdir()
+    marker = previous / "index.html"
+    marker.write_text("previous build", encoding="utf-8")
+    find_spec = builder.importlib.util.find_spec
+    monkeypatch.setattr(
+        builder.importlib.util,
+        "find_spec",
+        lambda name: None if name == "pyloudnorm" else find_spec(name),
+    )
+    with pytest.raises(ValueError, match="loudness extra"):
+        builder.build(previous)
+    assert marker.read_text(encoding="utf-8") == "previous build"
+
+
 def test_published_raw_document_links_in_html_and_markdown(tmp_path, monkeypatch):
     docs = tmp_path / "source-docs"
     docs.mkdir()

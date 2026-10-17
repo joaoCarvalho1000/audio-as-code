@@ -9,7 +9,7 @@ dispatches it from `main`; pushes and tags do not trigger publication.
 ## Decide the scope
 
 Review `CHANGELOG.md`, the supported Python range and all compatibility changes.
-The current package version is `0.4.0`, while the JSON score schema is version
+The prepared package version is `0.5.0` (not yet published), while the JSON score schema is version
 `"1"`. Do not change the schema version solely because the package version changes.
 
 For an actual future version change, update `pyproject.toml` and
