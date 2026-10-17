@@ -1,7 +1,7 @@
 # Reference
 
-Audio as Code 0.4.0. Python distribution `audio-as-code`, import `audio_as_code`,
-command `aac`. Install `audio-as-code==0.4.0` from PyPI for the engine and CLI;
+Audio as Code 0.5.0. Python distribution `audio-as-code`, import `audio_as_code`,
+command `aac`. Install `audio-as-code==0.5.0` from PyPI for the engine and CLI;
 use the source workspace for the complete examples and portable skill. See the
 [quickstart](quickstart.md) for both routes. The early API may change; breaking score
 format changes will use a new `schema_version`. Expression fields are optional
@@ -19,7 +19,7 @@ Also runnable as `python -m audio_as_code`. With uv, prefix with `uv run`.
 
 | Command | Arguments | Does |
 | --- | --- | --- |
-| `aac --version` | | Print `{"version": "0.4.0"}` |
+| `aac --version` | | Print `{"version": "0.5.0"}` |
 | `aac init` | `DIRECTORY` | Create a starter in a new or empty folder; never install dependencies |
 | `aac doctor` | | Check the imported runtime and short synthesis path |
 | `aac instruments` | `[--all] [--family F] [--engine E]` | Print the catalog. Without `--all`, only playable voices |
@@ -219,9 +219,9 @@ effect state. These helpers do not add fields to score JSON.
 | `.scale_velocity(factor)` | `Pattern`; multiply velocities by a positive factor, with every result in (0, 1] |
 | `.at(beat: float)` | `tuple[Note, ...]` on the absolute timeline |
 
-#### Pattern tools in the current source download
+#### Pattern tools added in 0.5.0
 
-These additions are available in the source workspace, not the PyPI 0.4.0 release.
+These additions are available in the source workspace and the PyPI 0.5.0 release.
 All return immutable patterns and compile to the existing version 1 score.
 
 | Method | Behavior |

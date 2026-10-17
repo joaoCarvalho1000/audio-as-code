@@ -3,15 +3,12 @@
 Audio as Code is an early prototype. Package versions and score schema versions
 are separate.
 
-## Unreleased
+## 0.5.0 - 2026-10-17
 
-### 0.5.0 release candidate
-
-Prepared for publication. PyPI still serves 0.4.0 until the reviewed release is
-merged and the manual publishing workflow succeeds.
+Published on [PyPI](https://pypi.org/project/audio-as-code/0.5.0/).
 
 - Website: a matched-loudness original before/after comparison, playback-position
-  switching, editable score/MIDI/composer downloads, and source-only rhythm API
+  switching, editable score/MIDI/composer downloads, and rhythm API
   documentation. The build regenerates the comparison and verifies its loudness.
 
 - Composition: evenly spaced rhythm grids with `Pattern.euclidean`, boundary-aware

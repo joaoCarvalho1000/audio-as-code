@@ -1,11 +1,11 @@
 # Composition guide
 
-A score is a `Song`: a tempo, a length in beats, and named tracks of notes. This guide covers the musical model and the Python helpers for building it. Source-only additions are marked below; field limits are collected in the [reference](reference.md).
+A score is a `Song`: a tempo, a length in beats, and named tracks of notes. This guide covers the musical model and the Python helpers for building it. Rhythm helpers require 0.5.0 or later; field limits are collected in the [reference](reference.md).
 
 ## Rhythm and phrase development
 
-The current [source download](../source.html) adds five tools for shaping a groove.
-They are not yet included in the PyPI 0.4.0 package. Hear the
+Audio as Code 0.5.0 includes five tools for shaping a groove, available from PyPI
+and the [source download](../source.html). Hear the
 [original before/after comparison](../index.html#groove), then try:
 
 ```python

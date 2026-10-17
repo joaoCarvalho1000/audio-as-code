@@ -21,21 +21,21 @@ To add the library to an existing Python project managed by uv, run from that
 project's root:
 
 ```sh
-uv add "audio-as-code==0.4.0"
+uv add "audio-as-code==0.5.0"
 uv run --locked aac --version
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
-This installs version 0.4.0 from PyPI. Keep the project's `pyproject.toml` and
+This installs version 0.5.0 from PyPI. Keep the project's `pyproject.toml` and
 `uv.lock` to record package and dependency versions. Use `uv run --locked` for
 composition and rendering. Do not replace an existing application's lockfile
 with the framework's lock. The wheel contains the engine and CLI; the portable
 skill and bundled example scripts are available separately in the source project.
 
 Without uv, create `.venv` with `python -m venv .venv`, then use
-`.venv/Scripts/python.exe -m pip install audio-as-code==0.4.0` on Windows or
-`.venv/bin/python -m pip install audio-as-code==0.4.0` on macOS/Linux. Invoke that
+`.venv/Scripts/python.exe -m pip install audio-as-code==0.5.0` on Windows or
+`.venv/bin/python -m pip install audio-as-code==0.5.0` on macOS/Linux. Invoke that
 interpreter with `-m audio_as_code` and use it for composer scripts. No activation
 is needed. Reuse an existing project environment rather than a global Python.
 
