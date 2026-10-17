@@ -1,6 +1,6 @@
 # Audio as Code
 
-> An open-source Python framework (MIT) for AI agents and developers to compose editable music for videos, games and presentations, render it offline to WAV with instruments synthesized entirely from code, export MIDI, and read back signal measurements. Version 0.4.0, early prototype. Distribution `audio-as-code`, import `audio_as_code`, command `aac`.
+> An open-source Python framework (MIT) for AI agents and developers to compose editable music for videos, games and presentations, render it offline to WAV with instruments synthesized entirely from code, export MIDI, and read back signal measurements. Version 0.5.0, early prototype. Distribution `audio-as-code`, import `audio_as_code`, command `aac`.
 
 ## Start here
 
@@ -12,8 +12,8 @@
 
 Facts an agent should rely on:
 
-- Install version 0.4.0 from PyPI in an existing uv project: `uv add audio-as-code==0.4.0`, then prefix commands with `uv run --locked`. Without uv, create `.venv` and use its Python to `-m pip install audio-as-code==0.4.0` and `-m audio_as_code`; activation is optional. The wheel contains the engine and CLI. For a source workspace with the complete examples, run `uv sync --locked` from the extracted source root.
-- For a new project: `uvx --from audio-as-code==0.4.0 aac init soundtrack`, then `cd soundtrack`, `uv sync`, `uv run aac doctor` and `uv run python compose.py`. Init only writes to a new or empty directory; doctor checks the imported runtime.
+- Install version 0.5.0 from PyPI in an existing uv project: `uv add audio-as-code==0.5.0`, then prefix commands with `uv run --locked`. Without uv, create `.venv` and use its Python to `-m pip install audio-as-code==0.5.0` and `-m audio_as_code`; activation is optional. The wheel contains the engine and CLI. For a source workspace with the complete examples, run `uv sync --locked` from the extracted source root.
+- For a new project: `uvx --from audio-as-code==0.5.0 aac init soundtrack`, then `cd soundtrack`, `uv sync`, `uv run aac doctor` and `uv run python compose.py`. Init only writes to a new or empty directory; doctor checks the imported runtime.
 - Export PCM16 (default), PCM24 or float32 WAV with `aac render --format`. `aac preview --start SECONDS --duration SECONDS` preserves full-render context but costs a full render. `--progress-file PATH` writes JSON Lines separately from the single JSON result.
 - Optional `audio-as-code[loudness]` enables `--target-lufs` and `--peak-ceiling-dbfs` (sample peak, not true peak). Python rendering also supports progress callbacks and cooperative cancellation.
 - There is no hosted API, MCP server, in-browser renderer, bundled AI model or required provider API key. Audio on the website was pre-rendered locally by the Python synthesizers. To hear an edit, render locally.
@@ -32,7 +32,7 @@ A score is the editable recipe for music: instruments, notes, timing, dynamics a
 For an existing uv project with Python 3.10+:
 
 ```sh
-uv add "audio-as-code==0.4.0"
+uv add "audio-as-code==0.5.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 uv run --locked aac demo -o output/song.json
@@ -45,7 +45,7 @@ Keep the package and dependency versions in the project's uv.lock. The quickstar
 
 ## Docs
 
-- Source-only rhythm tools: `Pattern.euclidean`, `.swing`, `.reverse`, `.accent`, and `.repeat(..., variations={...})` compile to ordinary score notes. These are in the current source download, not PyPI 0.4.0. Read [composition tools](docs/composition-tools.md). Run `examples/groove_comparison.py` with the loudness extra for an original matched-loudness before/after.
+- Rhythm tools (0.5.0): `Pattern.euclidean`, `.swing`, `.reverse`, `.accent`, and `.repeat(..., variations={...})` compile to ordinary score notes. These are included in PyPI 0.5.0 and the current source download. Read [composition tools](docs/composition-tools.md). Run `examples/groove_comparison.py` with the loudness extra for an original matched-loudness before/after.
 
 - [Quickstart](docs/quickstart.md): versioned PyPI install, source workspace, demo, Python and JSON
 - [Agent guide](docs/agents.md): agent handoff and revision prompts, compose/validate/render/inspect/revise loop, exact commands, strict JSON score, errors and recovery

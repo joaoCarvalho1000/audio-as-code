@@ -10,16 +10,16 @@ then carry the rendered WAV into your video, game or slides. See the
 [creative workflow integrations](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/integrations.md) for Codex, Claude Code
 and Hyperframes recipes.
 
-**Status: 0.5.0 release candidate, alpha.** PyPI currently serves 0.4.0; the installation commands below target that published release. Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
+**Status: 0.5.0 alpha, published on [PyPI](https://pypi.org/project/audio-as-code/0.5.0/).** Python 3.10+, a versioned JSON score, a headless CLI, and an offline synthesis backend. No API keys, audio device, model weights, sample downloads, or DAW are required.
 
-**Coming in 0.5.0:** evenly spaced rhythms, swing, accents, phrase reversal and
+**New in 0.5.0:** evenly spaced rhythms, swing, accents, phrase reversal and
 scheduled fills, plus an original before/after composition with editable exports.
 See [composition tools](docs/composition-tools.md).
 
 A **score** is the editable recipe for a piece: instruments, notes, timing,
 volume and tempo. Write it in Python or JSON; rendering turns it into audio.
 
-**New in 0.4.0:** precise group gain/pan edits, automation-preserving dB trims,
+**Added in 0.4.0:** precise group gain/pan edits, automation-preserving dB trims,
 and mute/solo auditions through `aac mix` and Python helpers. Fixed source-level
 trims reduce level outliers in 13 of the 70 playable voices. Existing score IDs
 are unchanged, but rendered levels intentionally differ. See [mix revisions](docs/mixing.md).
@@ -72,26 +72,26 @@ To browse and audition the catalog, run `uv run python examples/instrument_brows
 For a coding agent, start with: **“Read https://audioascode.com/llms.txt and add
 Audio as Code to this project. Then compose the music in my brief.”**
 
-To add version 0.4.0 to an existing uv project:
+To add version 0.5.0 to an existing uv project:
 
 ```sh
-uv add "audio-as-code==0.4.0"
+uv add "audio-as-code==0.5.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
 
 Commit your project's `uv.lock` to preserve the package and dependency versions.
-For a new composition project, run `uvx --from audio-as-code==0.4.0 aac init my-soundtrack`,
+For a new composition project, run `uvx --from audio-as-code==0.5.0 aac init my-soundtrack`,
 then `cd my-soundtrack`, `uv sync`, `uv run aac doctor` and `uv run python compose.py`.
 The starter includes an editable composer, JSON score and agent instructions.
 
-For a one-off CLI check, run `uvx --from audio-as-code==0.4.0 aac --help`.
+For a one-off CLI check, run `uvx --from audio-as-code==0.5.0 aac --help`.
 The package contains the Python library and CLI. Use a source checkout or the
 website's source ZIP for the complete examples, guides and portable skill.
 
 Without uv, create a local environment with `python -m venv .venv`. On Windows,
-run `.venv/Scripts/python.exe -m pip install audio-as-code==0.4.0`; on macOS/Linux,
-run `.venv/bin/python -m pip install audio-as-code==0.4.0`. Use that interpreter
+run `.venv/Scripts/python.exe -m pip install audio-as-code==0.5.0`; on macOS/Linux,
+run `.venv/bin/python -m pip install audio-as-code==0.5.0`. Use that interpreter
 with `-m audio_as_code --help`; no activation or global installation is needed.
 
 The [quickstart](https://github.com/joaoCarvalho1000/audio-as-code/blob/main/docs/site/quickstart.md)
