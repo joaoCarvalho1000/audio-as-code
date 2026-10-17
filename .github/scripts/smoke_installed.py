@@ -12,14 +12,18 @@ from pathlib import Path
 
 import audio_as_code
 from audio_as_code import (
+    CustomInstrument,
     Distortion,
     Ducker,
+    Mastering,
     MixEdit,
     Note,
+    OscillatorLayer,
     Pattern,
     Song,
     Tone,
     Track,
+    TruePeakLimiter,
     analyze_wav,
     apply_mix,
     audition_song,
@@ -42,6 +46,25 @@ def main() -> None:
     console = Path(sys.executable).with_name("aac.exe" if sys.platform == "win32" else "aac")
     with tempfile.TemporaryDirectory(prefix="aac-installed-") as folder:
         work = Path(folder)
+        custom = Song(
+            beats=1,
+            sample_rate=22050,
+            custom_instruments={
+                "custom:smoke": CustomInstrument(
+                    name="Smoke",
+                    layers=[OscillatorLayer()],
+                    midi_program=80,
+                )
+            },
+            tracks=[Track(name="Custom", instrument="custom:smoke", notes=[Note()])],
+            mastering=Mastering(limiter=TruePeakLimiter()),
+        )
+        custom.save(work / "custom.json")
+        assert Song.load(work / "custom.json") == custom
+        custom_report = render(custom, work / "custom.wav")
+        assert custom_report["encoded_measurements"]["ceiling_met"]
+        assert not custom_report["audio"]["silent"]
+        export_midi(custom, work / "custom.mid")
         for command in ([str(console)], [sys.executable, "-m", "audio_as_code"]):
             version = subprocess.run(
                 [*command, "--version"], cwd=work, capture_output=True, text=True, check=True

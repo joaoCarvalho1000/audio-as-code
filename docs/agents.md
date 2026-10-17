@@ -17,6 +17,10 @@ For a new composition workspace, the installed CLI can scaffold one with
 `aac init "my music"`; run `aac doctor` to check its imported runtime. Init does
 not install dependencies or overwrite a nonempty directory. See
 [project setup](project-setup.md).
+This source revision adds [custom procedural patches](custom-instruments.md) and
+[opt-in mastering](production-output.md#opt-in-bus-mastering). These are newer
+than published 0.4.0; inspect the installed schema before composing with them.
+
 Give your agent the skill and say:
 
 ```text

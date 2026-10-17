@@ -53,6 +53,7 @@ DEFAULT_PIECE = "classic-fur-elise"
 # Repository docs published verbatim beside the guides: classic credits, the reimagining notes
 # and the analytics notice.
 RAW_DOCS = {
+    "custom-instruments.md": "docs/custom-instruments.md",
     "electronic-instruments.md": "docs/electronic-instruments.md",
     "classic-showcase.md": "docs/classic-showcase.md",
     "classic-reimaginations.md": "docs/classic-reimaginations.md",

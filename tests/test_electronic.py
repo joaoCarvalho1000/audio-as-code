@@ -179,7 +179,7 @@ def test_new_optional_tone_defaults_preserve_legacy_score_identity():
     song = Song(tracks=[Track(name="Old", instrument="guitar", tone=Tone(), notes=[Note()])])
     data = _canonical_score(song)
     expected = song.model_dump(mode="json")
-    for key in ("tempo_map", "effects", "automation"):
+    for key in ("tempo_map", "effects", "automation", "mastering", "custom_instruments"):
         expected.pop(key)
     track = expected["tracks"][0]
     for key in ("articulation", "automation", "effects", "release_seconds", "pedal"):

@@ -10,6 +10,10 @@
 - [Source download](source.html): actual source ZIP, size and SHA-256. Follow this page's download link or use [the GitHub repository](https://github.com/joaoCarvalho1000/audio-as-code). Website handoff prompts include the current site's exact source URL. Use this workspace for the complete examples and portable skill.
 - A person describes the music and requests revisions in ordinary language. The agent makes artistic decisions and runs the tool locally. The human does not need to write Python; the agent needs a shell, writable project and Python 3.10+.
 
+Newer source-revision capabilities: [user-defined patches](docs/custom-instruments.md)
+and [bus mastering](docs/production-output.md#opt-in-bus-mastering). These are not
+in published 0.4.0; verify the installed schema and CLI help.
+
 Facts an agent should rely on:
 
 - Install version 0.4.0 from PyPI in an existing uv project: `uv add audio-as-code==0.4.0`, then prefix commands with `uv run --locked`. Without uv, create `.venv` and use its Python to `-m pip install audio-as-code==0.4.0` and `-m audio_as_code`; activation is optional. The wheel contains the engine and CLI. For a source workspace with the complete examples, run `uv sync --locked` from the extracted source root.
