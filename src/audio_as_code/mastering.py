@@ -91,7 +91,11 @@ def measure_true_peak(
     }
 
 
-def _compress(audio: np.ndarray, rate: int, settings: BusCompressor) -> tuple[np.ndarray, dict]:
+def _compress(
+    audio: np.ndarray, rate: int, settings: BusCompressor, *, cancel: CancelCallback | None = None
+) -> tuple[np.ndarray, dict]:
+    control = _RenderControl(cancel=cancel)
+    control.check()
     settings = BusCompressor.model_validate(settings.model_dump())
     if settings.ratio == 1:
         return audio * 10 ** (settings.makeup_db / 20), {"max_gain_reduction_db": 0.0}
@@ -106,10 +110,13 @@ def _compress(audio: np.ndarray, rate: int, settings: BusCompressor) -> tuple[np
     attack = math.exp(-1 / (rate * settings.attack_seconds))
     release = math.exp(-1 / (rate * settings.release_seconds))
     state = 0.0
-    for i, requested in enumerate(reduction.tolist()):
-        coefficient = attack if requested > state else release
-        state = coefficient * state + (1 - coefficient) * requested
-        reduction[i] = state
+    for start in range(0, len(reduction), _BLOCK):
+        control.check()
+        for offset, requested in enumerate(reduction[start : start + _BLOCK].tolist()):
+            coefficient = attack if requested > state else release
+            state = coefficient * state + (1 - coefficient) * requested
+            reduction[start + offset] = state
+    control.check()
     gain = 10 ** ((settings.makeup_db - reduction) / 20)
     return (audio * gain[:, None]).astype(np.float32), {
         "max_gain_reduction_db": float(reduction.max()),
@@ -125,28 +132,35 @@ def _future_min(values: np.ndarray, size: int) -> np.ndarray:
     return np.minimum(suffix[:n], prefix[size - 1 : size - 1 + n])
 
 
-def _safety_peak(audio: np.ndarray, rate: int) -> float:
-    peak = measure_true_peak(audio, rate, oversample=8)["true_peak"]
+def _safety_peak(audio: np.ndarray, rate: int, cancel: CancelCallback | None = None) -> float:
+    peak = measure_true_peak(audio, rate, oversample=8, cancel=cancel)["true_peak"]
     # Resamplers differ in their treatment of a discontinuous file boundary.
     # Also check reflected edges, conservatively covering startup extrapolation.
     for edge in (audio[:96], audio[-96:]):
         reflected = np.pad(edge, ((48, 48), (0, 0)), mode="reflect")
-        peak = max(peak, measure_true_peak(reflected, rate, oversample=8)["true_peak"])
+        peak = max(
+            peak, measure_true_peak(reflected, rate, oversample=8, cancel=cancel)["true_peak"]
+        )
     return peak
 
 
-def _limit(audio: np.ndarray, rate: int, settings: TruePeakLimiter) -> tuple[np.ndarray, dict]:
+def _limit(
+    audio: np.ndarray, rate: int, settings: TruePeakLimiter, *, cancel: CancelCallback | None = None
+) -> tuple[np.ndarray, dict]:
+    control = _RenderControl(cancel=cancel)
+    control.check()
     factor = settings.oversample
     # Absolute reserve bounds reconstructed PCM16 rounding noise even at quiet ceilings.
     ceiling = 10 ** ((settings.ceiling_dbtp - _SAFETY_DB) / 20) - 2 / 32768
     required = np.empty(len(audio))
     for start in range(0, len(audio), _BLOCK):
+        control.check()
         stop = min(len(audio), start + _BLOCK)
         high = _high_block(audio, start, stop, factor)
         peaks = np.max(np.abs(high).reshape(stop - start, factor, -1), axis=(1, 2))
         required[start:stop] = np.minimum(1, ceiling / np.maximum(peaks, 1e-30))
     if np.all(required == 1):
-        peak = _safety_peak(audio, rate)
+        peak = _safety_peak(audio, rate, cancel)
         correction = min(1.0, ceiling / peak) if peak else 1.0
         return audio * correction, {
             "max_gain_reduction_db": -20 * math.log10(correction),
@@ -159,9 +173,11 @@ def _limit(audio: np.ndarray, rate: int, settings: TruePeakLimiter) -> tuple[np.
     anticipatory = _future_min(required, window)
     recovery = math.exp(-1 / (rate * settings.release_seconds))
     state = float(anticipatory[0])
-    for i, value in enumerate(anticipatory.tolist()):
-        state = min(value, recovery * state + (1 - recovery))
-        anticipatory[i] = state
+    for start in range(0, len(anticipatory), _BLOCK):
+        control.check()
+        for offset, value in enumerate(anticipatory[start : start + _BLOCK].tolist()):
+            state = min(value, recovery * state + (1 - recovery))
+            anticipatory[start + offset] = state
     # Every value in this trailing average already looked ahead to the current peak.
     padded = np.pad(anticipatory, (window - 1, 0), mode="edge")
     cumulative = np.concatenate(([0.0], np.cumsum(padded, dtype=np.float64)))
@@ -169,6 +185,7 @@ def _limit(audio: np.ndarray, rate: int, settings: TruePeakLimiter) -> tuple[np.
     result = np.empty_like(audio)
     kernel = _resample_kernel(factor, down=True)
     for start in range(0, len(audio), _BLOCK):
+        control.check()
         stop = min(len(audio), start + _BLOCK)
         lo, hi = max(0, start - _HALF), min(len(audio), stop + _HALF)
         high = _high_block(audio, lo, hi, factor)
@@ -177,7 +194,7 @@ def _limit(audio: np.ndarray, rate: int, settings: TruePeakLimiter) -> tuple[np.
             low = _centered(high[:, channel], kernel)[::factor]
             result[start:stop, channel] = low[start - lo : stop - lo]
     # Reconstructed peaks can grow during decimation. Correct using an independent pass.
-    peak = _safety_peak(result, rate)
+    peak = _safety_peak(result, rate, cancel)
     correction = min(1.0, ceiling / peak) if peak else 1.0
     result *= correction
     return result, {
@@ -196,7 +213,9 @@ def process_master(audio, rate, settings: Mastering, target, sample_ceiling, con
     report = {"settings": settings.model_dump(), "gain_scope": "constant_delivery_gain_only"}
     source = audio
     if settings.compressor is not None:
-        source, report["compressor"] = _compress(source, rate, settings.compressor)
+        source, report["compressor"] = _compress(
+            source, rate, settings.compressor, cancel=control.cancel
+        )
     control.check()
     before = measure_loudness(source, rate, true_peak=False) if target is not None else None
     before_lufs = before["integrated_lufs"] if before is not None else None
@@ -213,7 +232,7 @@ def process_master(audio, rate, settings: Mastering, target, sample_ceiling, con
     def candidate(db):
         control.check()
         gain = 10 ** (db / 20)
-        result, limited = _limit(source * gain, rate, settings.limiter)
+        result, limited = _limit(source * gain, rate, settings.limiter, cancel=control.cancel)
         measured = measure_loudness(result, rate, true_peak=False) if target is not None else None
         return result, gain * limited["safety_gain"], limited, measured
 
@@ -257,11 +276,15 @@ def process_master(audio, rate, settings: Mastering, target, sample_ceiling, con
     return result, gain, report, loudness
 
 
-def measure_exported(path, wav_format: str, *, loudness: bool = False) -> dict:
+def measure_exported(
+    path, wav_format: str, *, loudness: bool = False, cancel: CancelCallback | None = None
+) -> dict:
     """Remeasure a staged engine WAV, including its actual quantization."""
     from ._audio import _wav_header
     from .loudness import measure_loudness
 
+    control = _RenderControl(cancel=cancel)
+    control.check()
     _, channels, rate, offset, size = _wav_header(path)
     width = {"pcm16": 2, "pcm24": 3, "float32": 4}[wav_format]
     frames = size // (channels * width)
@@ -269,6 +292,7 @@ def measure_exported(path, wav_format: str, *, loudness: bool = False) -> dict:
     with path.open("rb") as stream:
         stream.seek(offset)
         for start in range(0, frames, _BLOCK):
+            control.check()
             stop = min(frames, start + _BLOCK)
             data = stream.read((stop - start) * channels * width)
             if wav_format == "float32":
@@ -280,9 +304,10 @@ def measure_exported(path, wav_format: str, *, loudness: bool = False) -> dict:
                 values = packed[:, 0] | (packed[:, 1] << 8) | (packed[:, 2] << 16)
                 values = ((values ^ 8388608) - 8388608).astype(np.float32) / 8388608
             audio[start:stop] = values.reshape(-1, channels)
-    report = measure_true_peak(audio, rate, oversample=8)
+    report = measure_true_peak(audio, rate, oversample=8, cancel=cancel)
     if loudness and frames >= round(0.4 * rate):
         report["integrated_lufs"] = measure_loudness(audio, rate, true_peak=False)[
             "integrated_lufs"
         ]
+    control.check()
     return report

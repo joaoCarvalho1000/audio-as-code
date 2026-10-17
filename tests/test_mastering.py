@@ -351,3 +351,56 @@ def test_true_peak_cancellation_stops_between_blocks(monkeypatch):
             np.zeros((100000, 2), dtype=np.float32), 44100, cancel=lambda: bool(calls)
         )
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("stage", ["compressor", "limiter"])
+def test_mastering_checks_cancellation_during_processing(stage):
+    from audio_as_code import RenderCancelled
+
+    checks = 0
+
+    def cancel():
+        nonlocal checks
+        checks += 1
+        return checks == 4
+
+    settings = Mastering(**{stage: BusCompressor() if stage == "compressor" else TruePeakLimiter()})
+    with pytest.raises(RenderCancelled):
+        process_master(
+            np.ones((100000, 2), dtype=np.float32),
+            44100,
+            settings,
+            None,
+            None,
+            _RenderControl(cancel=cancel),
+            True,
+        )
+    assert checks == 4
+
+
+def test_cancel_encoded_meter_preserves_existing_output(tmp_path, monkeypatch):
+    import importlib
+
+    from audio_as_code import RenderCancelled
+
+    module = importlib.import_module("audio_as_code.render")
+    measure = module.measure_exported
+    started = False
+
+    def encoded(*args, **kwargs):
+        nonlocal started
+        started = True
+        return measure(*args, **kwargs)
+
+    monkeypatch.setattr(module, "measure_exported", encoded)
+    output = tmp_path / "mix.wav"
+    output.write_bytes(b"existing")
+    song = Song(
+        beats=1,
+        tracks=[Track(name="Tone", instrument="sine", notes=[Note()])],
+        mastering=Mastering(compressor=BusCompressor()),
+    )
+    with pytest.raises(RenderCancelled):
+        render(song, output, cancel=lambda: started)
+    assert output.read_bytes() == b"existing"
+    assert not list(tmp_path.glob(".aac-*"))

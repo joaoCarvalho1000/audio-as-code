@@ -6,7 +6,8 @@ are separate.
 ## Unreleased
 
 - Fixed zero-release custom layers ending abruptly when another layer has a longer tail.
-  True-peak report metering now checks cancellation between analysis blocks.
+  Mastering dynamics, true-peak metering and encoded-file verification now check
+  cancellation between processing blocks.
 
 - Added opt-in bus compression, oversampled lookahead true-peak limiting and
   iterative LUFS targeting through Python, score JSON and CLI. Reports include

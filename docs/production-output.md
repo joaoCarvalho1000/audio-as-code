@@ -284,5 +284,6 @@ stem set. Cancellation is not checked during that short replacement loop.
 
 True-peak analysis runs even when mastering is disabled and adds offline render cost.
 `measure_true_peak(..., cancel=callback)` and render cancellation are checked between
-32768-frame metering blocks. Cancellation remains cooperative; it cannot interrupt a
+32768-frame metering blocks. Compression, limiting and encoded-file verification
+also check render cancellation between blocks. Cancellation remains cooperative; it cannot interrupt a
 NumPy operation already in progress. This does not change rendered samples.

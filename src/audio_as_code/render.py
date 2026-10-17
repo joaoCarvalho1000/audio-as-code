@@ -401,7 +401,7 @@ def render(
         control.notify("export", 0, len(staged))
         _write_wav(staged[0], result.audio, song.sample_rate, wav_format)
         report["wav"] = analyze_wav(staged[0])
-        _verify_master_export(staged[0], report, wav_format)
+        _verify_master_export(staged[0], report, wav_format, control)
         control.notify("export", 1, len(staged))
         for index, (track, stem_path) in enumerate(zip(song.tracks, stem_paths, strict=False)):
             stem = _track_audio(song, track, len(result.audio), control)
@@ -416,10 +416,14 @@ def render(
     return report
 
 
-def _verify_master_export(path: Path, report: dict, wav_format: WavFormat) -> None:
+def _verify_master_export(
+    path: Path, report: dict, wav_format: WavFormat, control: _RenderControl
+) -> None:
     if "mastering" not in report:
         return
-    measured = measure_exported(path, wav_format, loudness="loudness" in report)
+    measured = measure_exported(
+        path, wav_format, loudness="loudness" in report, cancel=control.cancel
+    )
     report["encoded_measurements"] = measured
     limiter = report["mastering"].get("limiter")
     if limiter is not None:
@@ -578,6 +582,6 @@ def render_preview(
         control.notify("export", 0, 1)
         _write_wav(staged[0], result.audio, song.sample_rate, wav_format)
         report["wav"] = analyze_wav(staged[0])
-        _verify_master_export(staged[0], report, wav_format)
+        _verify_master_export(staged[0], report, wav_format, control)
         control.notify("export", 1, 1)
     return report
