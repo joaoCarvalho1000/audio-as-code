@@ -218,6 +218,40 @@ def custom_schema_validator(request):
     return jsonschema.Draft202012Validator(schema)
 
 
+@pytest.mark.parametrize("layer", [{}, {"waveform": "sine"}, {"ratio": 2}, {"partials": [{}]}])
+def test_custom_layers_require_type(custom_schema_validator, layer):
+    data = {
+        "tracks": [{"name": "Rest"}],
+        "custom_instruments": {"custom:glass": {"name": "Glass", "layers": [layer]}},
+    }
+    with pytest.raises(ValidationError, match="union_tag_not_found"):
+        Song.model_validate(data)
+    with pytest.raises(jsonschema.ValidationError):
+        custom_schema_validator.validate(data)
+
+
+@pytest.mark.parametrize(
+    "model, fields",
+    [(OscillatorLayer, {}), (NoiseLayer, {}), (FMLayer, {}), (ModalLayer, {"partials": [{}]})],
+)
+def test_custom_layer_tags_and_python_defaults(custom_schema_validator, model, fields):
+    layer = model(**fields)
+    data = {
+        "tracks": [{"name": "Rest"}],
+        "custom_instruments": {
+            "custom:glass": {"name": "Glass", "layers": [{"type": layer.type, **fields}]}
+        },
+    }
+    custom_schema_validator.validate(data)
+    song = Song.model_validate(data)
+    assert song.custom_instruments["custom:glass"].layers == (layer,)
+    assert CustomInstrument(name="Glass", layers=[layer]).layers == (layer,)
+    # Standalone models retain their convenient defaults, including the type tag.
+    assert model.model_validate(fields) == layer
+    jsonschema.Draft202012Validator(model.model_json_schema()).validate(fields)
+    custom_schema_validator.validate(song.model_dump(mode="json"))
+
+
 @pytest.mark.parametrize(
     "name",
     [

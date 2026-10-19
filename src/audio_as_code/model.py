@@ -132,7 +132,11 @@ class FMLayer(_Layer):
     index_decay_seconds: Annotated[Number, Field(ge=0.001, le=20)] = 1
 
 
-Layer = Annotated[OscillatorLayer | NoiseLayer | ModalLayer | FMLayer, Field(discriminator="type")]
+Layer = Annotated[
+    OscillatorLayer | NoiseLayer | ModalLayer | FMLayer,
+    # Tagged-union parsing requires the tag even though standalone models default it.
+    Field(discriminator="type", json_schema_extra={"required": ["type"]}),
+]
 
 
 class PatchFilter(ScoreModel):
