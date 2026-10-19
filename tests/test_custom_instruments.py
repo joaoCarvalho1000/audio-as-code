@@ -1,7 +1,9 @@
 """Custom patches are data, and share the ordinary rendering/effect contract."""
 
 import json
+from pathlib import Path
 
+import jsonschema
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -204,6 +206,68 @@ def test_invalid_patches_and_undefined_names():
     ):
         with pytest.raises(ValidationError):
             CustomInstrument.model_validate({"name": "Bad", **data})
+
+
+@pytest.fixture(params=["generated", "committed"])
+def custom_schema_validator(request):
+    if request.param == "generated":
+        schema = Song.model_json_schema()
+    else:
+        path = Path(__file__).parents[1] / "schemas" / "song-v1.schema.json"
+        schema = json.loads(path.read_text(encoding="utf-8"))
+    return jsonschema.Draft202012Validator(schema)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "glass",
+        "sine",
+        "custom:",
+        "custom:INVALID",
+        "custom:1glass",
+        "custom:" + "a" * 65,
+        "custom:glass\n",
+    ],
+)
+@pytest.mark.parametrize("value", [{"name": "Glass", "layers": [{"type": "oscillator"}]}, 42])
+def test_custom_mapping_rejects_invalid_keys(custom_schema_validator, name, value):
+    data = {"tracks": [{"name": "Lead"}], "custom_instruments": {name: value}}
+    with pytest.raises(ValidationError):
+        Song.model_validate(data)
+    with pytest.raises(jsonschema.ValidationError):
+        custom_schema_validator.validate(data)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        42,
+        {},
+        {"name": "Glass", "layers": []},
+        {"name": "Glass", "layers": [{"type": "sample", "path": "x.wav"}]},
+        {"name": "Glass", "layers": [{"type": "fm", "index": 13}]},
+    ],
+)
+def test_custom_mapping_rejects_invalid_values(custom_schema_validator, value):
+    data = {"tracks": [{"name": "Lead"}], "custom_instruments": {"custom:glass": value}}
+    with pytest.raises(ValidationError):
+        Song.model_validate(data)
+    with pytest.raises(jsonschema.ValidationError):
+        custom_schema_validator.validate(data)
+
+
+@pytest.mark.parametrize("name", ["custom:a", "custom:glass_2", "custom:" + "a" * 64])
+def test_custom_mapping_accepts_valid_patches(custom_schema_validator, name):
+    data = patch_song(
+        [OscillatorLayer(), NoiseLayer(), FMLayer(), ModalLayer(partials=[ModalPartial()])]
+    )
+    data = data.model_dump(mode="json")
+    data["custom_instruments"][name] = data["custom_instruments"].pop("custom:glass")
+    data["tracks"][0]["instrument"] = name
+    validated = Song.model_validate(data)
+    custom_schema_validator.validate(data)
+    assert validated.model_dump(mode="json") == data
 
 
 def test_midi_requires_explicit_mapping_and_preserves_file(tmp_path):

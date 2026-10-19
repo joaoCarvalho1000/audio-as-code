@@ -426,9 +426,17 @@ class Song(ScoreModel):
     automation: Annotated[tuple[Automation, ...], Field(max_length=1)] = ()
     effects: Annotated[tuple[Effect, ...], Field(max_length=4)] = ()
     mastering: Mastering | None = None
-    custom_instruments: Annotated[Mapping[CustomName, CustomInstrument], Field(max_length=64)] = (
-        Field(default_factory=dict)
-    )
+    custom_instruments: Annotated[
+        Mapping[CustomName, CustomInstrument],
+        Field(
+            max_length=64,
+            json_schema_extra={
+                "additionalProperties": False,
+                # JSON Schema's $ anchor can also match before a final newline.
+                "propertyNames": {"not": {"pattern": "\n"}},
+            },
+        ),
+    ] = Field(default_factory=dict)
 
     @field_validator("custom_instruments", mode="after")
     @classmethod

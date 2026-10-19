@@ -1615,10 +1615,16 @@
       "default": null
     },
     "custom_instruments": {
+      "additionalProperties": false,
       "maxProperties": 64,
       "patternProperties": {
         "^custom:[a-z][a-z0-9_]{0,63}$": {
           "$ref": "#/$defs/CustomInstrument"
+        }
+      },
+      "propertyNames": {
+        "not": {
+          "pattern": "\n"
         }
       },
       "title": "Custom Instruments",
