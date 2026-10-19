@@ -273,6 +273,53 @@ def test_custom_mapping_rejects_invalid_keys(custom_schema_validator, name, valu
         custom_schema_validator.validate(data)
 
 
+@pytest.mark.parametrize("usage", ["mapping_key", "track_instrument"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "custom:",
+        "custom:INVALID",
+        "custom:1glass",
+        "custom:glass-name",
+        "custom:" + "a" * 65,
+        "custom:glass\n",
+        "custom:glass\r\n",
+        "custom:glass\r",
+        "custom:glass\t",
+        "custom:gl\nass",
+        "custom:gläss",
+    ],
+)
+def test_custom_name_rejects_malformed_values(custom_schema_validator, usage, name):
+    patch = {"name": "Glass", "layers": [{"type": "oscillator"}]}
+    data = {
+        "tracks": [{"name": "Lead", "instrument": "sine"}],
+        "custom_instruments": {"custom:glass": patch},
+    }
+    if usage == "mapping_key":
+        data["custom_instruments"] = {name: patch}
+    else:
+        data["tracks"][0]["instrument"] = name
+    with pytest.raises(ValidationError) as error:
+        Song.model_validate(data)
+    assert "string_pattern_mismatch" in {issue["type"] for issue in error.value.errors()}
+    with pytest.raises(jsonschema.ValidationError):
+        custom_schema_validator.validate(data)
+
+
+@pytest.mark.parametrize("usage", ["mapping_key", "track_instrument"])
+@pytest.mark.parametrize("name", ["custom:a", "custom:z0_", "custom:" + "a" * 64])
+def test_custom_name_accepts_boundaries(custom_schema_validator, usage, name):
+    data = {
+        "tracks": [{"name": "Lead", "instrument": name if usage == "track_instrument" else "sine"}],
+        "custom_instruments": {name: {"name": "Glass", "layers": [{"type": "oscillator"}]}},
+    }
+    song = Song.model_validate(data)
+    assert name in song.custom_instruments
+    custom_schema_validator.validate(data)
+    custom_schema_validator.validate(song.model_dump(mode="json"))
+
+
 @pytest.mark.parametrize(
     "value",
     [

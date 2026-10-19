@@ -56,7 +56,15 @@ class ScoreModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, validate_default=True)
 
 
-CustomName = Annotated[str, Field(strict=True, pattern=r"^custom:[a-z][a-z0-9_]{0,63}$")]
+CustomName = Annotated[
+    str,
+    Field(
+        strict=True,
+        pattern=r"^custom:[a-z][a-z0-9_]{0,63}$",
+        # Some JSON Schema regex engines match $ before a final newline.
+        json_schema_extra={"not": {"pattern": "\n"}},
+    ),
+]
 
 
 class BusCompressor(ScoreModel):
