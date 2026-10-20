@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from ._export_rules import (
     MAX_MELODIC_TRACKS,
     MAX_MIDI_TICK,
@@ -258,6 +260,20 @@ def inspect_score(song: Song) -> dict:
             "render",
             ["beats"],
             "Song duration rounds to fewer than one audio sample.",
+            blocking=True,
+        )
+    if (
+        song.mastering is not None
+        and song.mastering.target_lufs is not None
+        and frames < math.ceil(0.4 * song.sample_rate)
+    ):
+        _issue(
+            issues,
+            "render_loudness_duration",
+            "render",
+            ["mastering", "target_lufs"],
+            "Integrated loudness requires at least 0.4 seconds of rendered audio, "
+            "including releases and effects.",
             blocking=True,
         )
     tracks = []

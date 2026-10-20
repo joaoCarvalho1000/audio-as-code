@@ -1,3 +1,4 @@
+import builtins
 import importlib
 import json
 import shutil
@@ -11,6 +12,7 @@ from audio_as_code import (
     Automation,
     AutomationPoint,
     Delay,
+    Mastering,
     Note,
     Song,
     TempoChange,
@@ -94,6 +96,83 @@ def test_render_limit_includes_release_tail(release, ready):
     assert report["readiness"]["render"]["ready"] is ready
     assert ("render_duration_limit" in _codes(report)) is (not ready)
     assert report["readiness"]["midi"]["ready"]
+
+
+def test_embedded_loudness_target_blocks_short_render_without_loading_backend(monkeypatch):
+    original_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name.split(".")[0] in {"pyloudnorm", "scipy"}:
+            pytest.fail("Static inspection must not load optional loudness dependencies")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    song = Song.model_validate(
+        {"beats": 0.1, "tracks": [{"name": "Rest"}], "mastering": {"target_lufs": -14}}
+    )
+    report = inspect_score(song)
+    assert report["readiness"]["render"]["frames"] == 2205
+    assert not report["readiness"]["render"]["ready"]
+    assert report["readiness"]["midi"]["ready"]
+    assert next(
+        issue for issue in report["issues"] if issue["code"] == "render_loudness_duration"
+    ) == {
+        "code": "render_loudness_duration",
+        "severity": "error",
+        "target": "render",
+        "path": ["mastering", "target_lufs"],
+        "message": "Integrated loudness requires at least 0.4 seconds of rendered audio, "
+        "including releases and effects.",
+    }
+
+
+@pytest.mark.parametrize("sample_rate", [22050, 44100, 48000])
+@pytest.mark.parametrize("frame_offset,ready", [(-0.6, False), (-0.4, True), (0, True), (1, True)])
+@pytest.mark.parametrize("target_lufs", [-14, 0])
+def test_loudness_readiness_uses_rounded_render_frames(
+    sample_rate, frame_offset, ready, target_lufs
+):
+    song = Song(
+        beats=2 * (0.4 + frame_offset / sample_rate),
+        sample_rate=sample_rate,
+        tracks=[Track(name="Rest")],
+        mastering=Mastering(target_lufs=target_lufs),
+    )
+    report = inspect_score(song)
+    assert report["readiness"]["render"]["frames"] == round(0.4 * sample_rate + frame_offset)
+    assert report["readiness"]["render"]["ready"] is ready
+    assert ("render_loudness_duration" in _codes(report)) is (not ready)
+
+
+@pytest.mark.parametrize("tail", ["release", "track_effect", "master_effect"])
+def test_loudness_readiness_includes_render_tails(tail):
+    song = Song(
+        beats=0.1,
+        tracks=[
+            Track(
+                name="Lead",
+                notes=[Note(duration=0.1, release_seconds=0.35 if tail == "release" else 0)],
+                effects=[Delay(time_seconds=0.35, repeats=1)] if tail == "track_effect" else [],
+            )
+        ],
+        effects=[Delay(time_seconds=0.35, repeats=1)] if tail == "master_effect" else [],
+        mastering=Mastering(target_lufs=-14),
+    )
+    report = inspect_score(song)
+    assert report["summary"]["duration_seconds"] == pytest.approx(0.05)
+    assert report["summary"]["render_duration_seconds"] == pytest.approx(0.4)
+    assert report["readiness"]["render"]["ready"]
+    assert "render_loudness_duration" not in _codes(report)
+
+
+@pytest.mark.parametrize(
+    "mastering", [None, {}, {"target_lufs": None}, {"compressor": {}}, {"limiter": {}}]
+)
+def test_short_render_without_loudness_target_remains_ready(mastering):
+    song = Song(beats=0.1, tracks=[Track(name="Rest")], mastering=mastering)
+    report = inspect_score(song)
+    assert report["readiness"]["render"]["ready"]
+    assert "render_loudness_duration" not in _codes(report)
 
 
 @pytest.mark.parametrize(
