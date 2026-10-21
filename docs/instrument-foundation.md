@@ -72,7 +72,17 @@ resonators = list_instruments(engine="modal")
 catalog = instrument_catalog(include_planned=True)
 ```
 
-Metadata records are immutable. Catalog dictionaries are independent JSON-serializable copies. The score schema lists playable IDs; unknown or future planned IDs produce validation errors instead of fallback sounds.
+Metadata records are immutable. Catalog dictionaries are independent JSON-serializable copies. The score schema lists playable built-in IDs and the `custom:` name pattern.
+Song validation resolves custom definitions; unknown or future planned built-in
+IDs produce errors instead of fallback sounds.
+
+## User-defined patches
+
+This source revision adds song-local `custom:` instrument names backed by validated
+[layered procedural definitions](custom-instruments.md). Discovery with a score
+context labels them `origin="user_defined"`; the default built-in catalog remains
+70 entries. A custom patch is never substituted for a planned or unknown built-in
+voice. Existing musical families and engine groups describe its implementation.
 
 ## Implementation boundary
 

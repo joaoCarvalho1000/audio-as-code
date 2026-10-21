@@ -54,12 +54,13 @@ def _validate_target(
     _meter(sample_rate)  # Fail before expensive synthesis or any file writes.
 
 
-def measure_loudness(audio: Audio, sample_rate: int) -> dict:
+def measure_loudness(audio: Audio, sample_rate: int, *, true_peak: bool = True) -> dict:
     """Measure mono/stereo integrated LUFS, including the absolute/relative gates.
 
     Accepts 0.4 to 300 seconds at the engine's 22050/44100/48000 Hz rates.
     Silence or signals below the loudness gate return integrated_lufs=None.
-    This does not measure true peak, loudness range, or streaming delivery compliance.
+    Reconstructed true peak is included unless true_peak=False. Neither this
+    estimate nor integrated loudness certifies streaming delivery compliance.
     """
     if (
         isinstance(sample_rate, bool)
@@ -89,7 +90,10 @@ def measure_loudness(audio: Audio, sample_rate: int) -> dict:
     value = float(meter.integrated_loudness(audio[:measured_frames].astype(np.float64)))
     if math.isnan(value) or value == math.inf:
         raise ValueError("loudness measurement produced a non-finite result")
+    from .mastering import measure_true_peak
+
     return {
+        **(measure_true_peak(audio, sample_rate) if true_peak else {}),
         "integrated_lufs": value if math.isfinite(value) else None,
         "measurable": math.isfinite(value),
         "method": "ITU-R BS.1770-4",

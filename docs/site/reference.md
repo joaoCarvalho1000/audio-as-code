@@ -59,6 +59,19 @@ They revise existing gain/pan controls, preserve gain envelopes under dB trims,
 and report precise changes without adding score fields.
 Read [mix revisions](mixing.md) for the Python/JSON contract and edit diagnostics.
 
+## New source-revision capabilities
+
+These additions are not in published 0.4.0. Optional `Song.mastering` and the
+`mastering` keyword on every render API accept `Mastering`, `BusCompressor` and
+`TruePeakLimiter`. The CLI accepts `--mastering FILE` and
+`--limiter-ceiling-dbtp FLOAT`; see [production output](production-output.md).
+
+`Song.custom_instruments` maps `custom:` names to bounded procedural patches.
+Tracks reference those names, and `aac instruments --score FILE` includes their
+user-defined discovery metadata. See [custom instruments](custom-instruments.md)
+for the Python models, JSON tags, limits, release rules and MIDI requirements.
+Empty definitions and absent mastering preserve existing score hashes and audio.
+
 ## Score format (schema version 1)
 
 Unknown fields are rejected everywhere. Numbers must be finite. Times are quarter-note beats.
@@ -79,12 +92,16 @@ Unknown fields are rejected everywhere. Numbers must be finite. Times are quarte
 | `automation` | array of Automation | `[]` | At most one lane, targeting `master_gain` |
 | `effects` | array of tagged effects | `[]` | Ordered chain, at most 4 effects; see below |
 
+Additional source-revision Song fields: `mastering` defaults to null;
+`custom_instruments` defaults to an empty object and holds up to 64 definitions.
+Both use schema version 1. See the guides above for nested fields.
+
 ### Track
 
 | Field | Type | Default | Constraint |
 | --- | --- | --- | --- |
 | `name` | string | required | 1–80 characters, at least one visible character, unique |
-| `instrument` | string | `"pluck"` | A playable catalog ID |
+| `instrument` | string | `"pluck"` | A playable built-in ID or defined `custom:` name |
 | `gain` | number | 0.6 | 0–1, linear |
 | `pan` | number | 0 | −1 (left) to 1 (right), equal-power |
 | `tone` | Tone or null | null | Only fields in the instrument's `tone_controls` |

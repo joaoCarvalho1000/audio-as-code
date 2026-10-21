@@ -241,6 +241,29 @@ Keep track names and unchanged note ordering stable because they affect seeded
 excitation. After rendering, check actual duration and any loop seam again. A
 revision that preserves score length can still change the WAV length via tails.
 
+## Custom instruments and mastering (source revision)
+
+These capabilities are newer than published 0.4.0. Check the installed schema and
+help before using them; use a verified source commit containing the additions.
+
+Define `Song.custom_instruments` using `CustomInstrument` and oscillator, noise,
+modal or FM layers. Reference a definition by its `custom:` name in a Track.
+Use `aac instruments --score score.json` to discover user-defined metadata.
+Patches are bounded JSON data, never code or sample/IR paths. Existing Delay,
+Reverb and other track/master effects work normally. Custom voices reject Tone,
+pedal and articulations. MIDI needs an explicit approximate `midi_program`.
+Read [custom instruments](../../docs/custom-instruments.md) for controls and limits.
+
+Opt into `Mastering(compressor=BusCompressor(), limiter=TruePeakLimiter(),
+target_lufs=-14)` on the song or render call, or pass `--target-lufs -14
+--limiter-ceiling-dbtp -1`. Full settings are available via `--mastering FILE`.
+Do not combine the limiter with `--peak-ceiling-dbfs`. Targeting needs the
+loudness extra. Inspect `target_reached`, gain reduction, reconstructed true peak
+and `encoded_measurements`; the ceiling wins if the target is unreachable.
+Large reduction may sound undesirable. Stems omit bus dynamics. Exact preview
+cuts can create new boundary peaks. Defaults remain the legacy rendering path.
+Numerical tests do not establish perceptual realism; state whether listening occurred.
+
 ## Deliver
 
 Link the actual WAV, MIDI, editable JSON score, render report, and composer source

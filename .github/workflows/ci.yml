@@ -58,9 +58,14 @@ jobs:
       - name: Schema stays in sync with the score model
         run: uv run --locked python .github/scripts/check_schema.py
       - run: uv run --locked pytest
+      - name: Install reference true-peak meter
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Optional loudness backend
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
-        run: uv run --locked --extra loudness pytest tests/test_loudness.py tests/test_production_output.py tests/test_production_cli.py -W error
+        env:
+          AAC_REQUIRE_FFMPEG: '1'
+        run: uv run --locked --extra loudness pytest tests/test_loudness.py tests/test_mastering.py tests/test_production_output.py tests/test_production_cli.py -W error
 
   distribution:
     runs-on: ubuntu-latest

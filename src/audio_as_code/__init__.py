@@ -11,17 +11,28 @@ from .arrangement import (
 from .inspection import inspect_score
 from .instruments import get_instrument, instrument_catalog, list_instruments
 from .loudness import measure_loudness
+from .mastering import measure_true_peak
 from .midi import export_midi
 from .mixing import MixEdit, MixResult, apply_mix, audition_song, inspect_mix
 from .model import (
     Automation,
     AutomationPoint,
+    BusCompressor,
     Chorus,
+    CustomInstrument,
     Delay,
     Distortion,
     Ducker,
+    Envelope,
     Filter,
+    FMLayer,
+    Mastering,
+    ModalLayer,
+    ModalPartial,
+    NoiseLayer,
     Note,
+    OscillatorLayer,
+    PatchFilter,
     PedalEvent,
     Phaser,
     Reverb,
@@ -30,6 +41,7 @@ from .model import (
     Tone,
     Track,
     Tremolo,
+    TruePeakLimiter,
     midi_pitch,
 )
 from .pattern import Pattern
@@ -46,6 +58,18 @@ from .render import (
 
 __version__ = "0.5.0"
 __all__ = [
+    "BusCompressor",
+    "TruePeakLimiter",
+    "Mastering",
+    "CustomInstrument",
+    "Envelope",
+    "OscillatorLayer",
+    "NoiseLayer",
+    "ModalPartial",
+    "ModalLayer",
+    "FMLayer",
+    "PatchFilter",
+    "measure_true_peak",
     "Arrangement",
     "Automation",
     "AutomationPoint",

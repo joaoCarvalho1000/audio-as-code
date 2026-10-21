@@ -33,7 +33,8 @@ flowchart TD
 | `_voices.py` | Instrument dispatch, electronic voices, drum-kit routing and note envelopes. |
 | `_instrument_levels.py` | Conservative fixed source trims; independent of note velocity, pitch and authored mix gains. |
 | `_audio.py` | PCM WAV encoding and signal measurements; independent of score objects and synthesis engines. |
-| `loudness.py` | Optional integrated metering and constant-gain targeting; imports its backend only when requested. |
+| `loudness.py`, `mastering.py` | Optional integrated metering, constant-gain targeting, opt-in bus compression/true-peak limiting and reconstructed peak measurement. |
+| `custom.py` | Bounded song-local oscillator/noise/modal/FM patches, routed through ordinary track effects. |
 | `_render_control.py`, `_cli_progress.py` | Cooperative cancellation, staged audio publication and separate JSON Lines progress. |
 | `_export_rules.py` | Shared sample/tick rounding, percussion pitch mapping and export limits for rendering, MIDI and inspection. |
 | `physical.py` | Original generated string and modal instrument models. |

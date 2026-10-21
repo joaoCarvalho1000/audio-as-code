@@ -23,7 +23,7 @@ def test_catalog_contract_and_score_schema_stay_in_sync():
     available = {item.id for item in list_instruments()}
     assert available == set(get_args(Instrument))
     assert available == set(
-        Song.model_json_schema()["$defs"]["Track"]["properties"]["instrument"]["enum"]
+        Song.model_json_schema()["$defs"]["Track"]["properties"]["instrument"]["anyOf"][0]["enum"]
     )
     assert len({item.id for item in INSTRUMENTS}) == len(INSTRUMENTS)
     assert len(FAMILIES) == 8 and len(ENGINES) == 5

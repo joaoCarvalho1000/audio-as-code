@@ -14,12 +14,18 @@ from ._export_rules import (
     midi_note_ticks,
     midi_tick,
 )
-from .instruments import DRUM_NOTES, PROGRAMS
+from .instruments import DRUM_NOTES, get_instrument
 from .model import Song
 
 
 def _export_warnings(song: Song) -> list[str]:
     messages = ["MIDI preserves notes and tempo; sounds depend on the receiving synthesizer."]
+    if any(track.instrument.startswith("custom:") for track in song.tracks):
+        messages.append(
+            "Custom patches are not exported; explicit MIDI programs are approximations."
+        )
+    if song.mastering is not None:
+        messages.append("Mastering is not exported to MIDI.")
     if any(track.instrument in DRUM_NOTES for track in song.tracks):
         messages.append(
             "Percussion uses shared channel 10, with gain in velocity and no per-track pan. "
@@ -56,6 +62,15 @@ def _export_warnings(song: Song) -> list[str]:
 
 def export_midi(song: Song, path: str | Path) -> dict:
     song = Song.model_validate(song.model_dump())
+    programs = {}
+    for track in song.tracks:
+        info = get_instrument(track.instrument, custom_instruments=song.custom_instruments)
+        if track.instrument not in DRUM_NOTES:
+            if info.midi_program is None:
+                raise ValueError(
+                    f"{track.instrument} requires an explicit midi_program for MIDI export"
+                )
+            programs[track.instrument] = info.midi_program
     melodic = [track for track in song.tracks if track.instrument not in DRUM_NOTES]
     if len(melodic) > MAX_MELODIC_TRACKS:
         raise ValueError(
@@ -95,7 +110,7 @@ def export_midi(song: Song, path: str | Path) -> dict:
         output.append(mido.MetaMessage("track_name", name=track.name))
         if not percussion:
             output.append(
-                mido.Message("program_change", channel=channel, program=PROGRAMS[track.instrument])
+                mido.Message("program_change", channel=channel, program=programs[track.instrument])
             )
             output.append(
                 mido.Message(

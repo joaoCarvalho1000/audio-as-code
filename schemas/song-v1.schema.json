@@ -60,6 +60,56 @@
       "title": "AutomationPoint",
       "type": "object"
     },
+    "BusCompressor": {
+      "additionalProperties": false,
+      "description": "Stereo-linked peak compressor. Times are in seconds, levels in decibels.",
+      "properties": {
+        "threshold_dbfs": {
+          "default": -18,
+          "maximum": 0,
+          "minimum": -60,
+          "title": "Threshold Dbfs",
+          "type": "number"
+        },
+        "ratio": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Ratio",
+          "type": "number"
+        },
+        "attack_seconds": {
+          "default": 0.01,
+          "maximum": 1,
+          "minimum": 0.0001,
+          "title": "Attack Seconds",
+          "type": "number"
+        },
+        "release_seconds": {
+          "default": 0.1,
+          "maximum": 5,
+          "minimum": 0.001,
+          "title": "Release Seconds",
+          "type": "number"
+        },
+        "makeup_db": {
+          "default": 0,
+          "maximum": 24,
+          "minimum": -24,
+          "title": "Makeup Db",
+          "type": "number"
+        },
+        "knee_db": {
+          "default": 6,
+          "maximum": 24,
+          "minimum": 0,
+          "title": "Knee Db",
+          "type": "number"
+        }
+      },
+      "title": "BusCompressor",
+      "type": "object"
+    },
     "Chorus": {
       "additionalProperties": false,
       "description": "Stereo modulated fractional delay; no feedback or recorded response.",
@@ -100,6 +150,89 @@
         }
       },
       "title": "Chorus",
+      "type": "object"
+    },
+    "CustomInstrument": {
+      "additionalProperties": false,
+      "description": "Bounded procedural patch, scoped to one song, without external assets or code.",
+      "properties": {
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "User-defined procedural patch.",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "layers": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "fm": "#/$defs/FMLayer",
+                "modal": "#/$defs/ModalLayer",
+                "noise": "#/$defs/NoiseLayer",
+                "oscillator": "#/$defs/OscillatorLayer"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/OscillatorLayer"
+              },
+              {
+                "$ref": "#/$defs/NoiseLayer"
+              },
+              {
+                "$ref": "#/$defs/ModalLayer"
+              },
+              {
+                "$ref": "#/$defs/FMLayer"
+              }
+            ],
+            "required": [
+              "type"
+            ]
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Layers",
+          "type": "array"
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PatchFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "midi_program": {
+          "anyOf": [
+            {
+              "maximum": 127,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Midi Program"
+        }
+      },
+      "required": [
+        "name",
+        "layers"
+      ],
+      "title": "CustomInstrument",
       "type": "object"
     },
     "Delay": {
@@ -226,6 +359,99 @@
       "title": "Ducker",
       "type": "object"
     },
+    "Envelope": {
+      "additionalProperties": false,
+      "description": "Linear ADSR; note-off releases from the current envelope value.",
+      "properties": {
+        "attack_seconds": {
+          "default": 0.005,
+          "maximum": 10,
+          "minimum": 0.0001,
+          "title": "Attack Seconds",
+          "type": "number"
+        },
+        "decay_seconds": {
+          "default": 0.1,
+          "maximum": 10,
+          "minimum": 0.0001,
+          "title": "Decay Seconds",
+          "type": "number"
+        },
+        "sustain": {
+          "default": 0.8,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Sustain",
+          "type": "number"
+        },
+        "release_seconds": {
+          "default": 0.1,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Release Seconds",
+          "type": "number"
+        }
+      },
+      "title": "Envelope",
+      "type": "object"
+    },
+    "FMLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "gain": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gain",
+          "type": "number"
+        },
+        "tuning_semitones": {
+          "default": 0,
+          "maximum": 48,
+          "minimum": -48,
+          "title": "Tuning Semitones",
+          "type": "number"
+        },
+        "envelope": {
+          "$ref": "#/$defs/Envelope",
+          "default": {
+            "attack_seconds": 0.005,
+            "decay_seconds": 0.1,
+            "sustain": 0.8,
+            "release_seconds": 0.1
+          }
+        },
+        "type": {
+          "const": "fm",
+          "default": "fm",
+          "title": "Type",
+          "type": "string"
+        },
+        "ratio": {
+          "default": 2,
+          "maximum": 8,
+          "minimum": 0.25,
+          "title": "Ratio",
+          "type": "number"
+        },
+        "index": {
+          "default": 2,
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Index",
+          "type": "number"
+        },
+        "index_decay_seconds": {
+          "default": 1,
+          "maximum": 20,
+          "minimum": 0.001,
+          "title": "Index Decay Seconds",
+          "type": "number"
+        }
+      },
+      "title": "FMLayer",
+      "type": "object"
+    },
     "Filter": {
       "additionalProperties": false,
       "description": "Resonant state-variable filter with an optional whole-track frequency sweep.",
@@ -290,6 +516,155 @@
         }
       },
       "title": "Filter",
+      "type": "object"
+    },
+    "Mastering": {
+      "additionalProperties": false,
+      "description": "Opt-in processing after master effects. An empty object is a bypass.",
+      "properties": {
+        "compressor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BusCompressor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "limiter": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TruePeakLimiter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "target_lufs": {
+          "anyOf": [
+            {
+              "maximum": 0,
+              "minimum": -70,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Lufs"
+        }
+      },
+      "title": "Mastering",
+      "type": "object"
+    },
+    "ModalLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "gain": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gain",
+          "type": "number"
+        },
+        "tuning_semitones": {
+          "default": 0,
+          "maximum": 48,
+          "minimum": -48,
+          "title": "Tuning Semitones",
+          "type": "number"
+        },
+        "envelope": {
+          "$ref": "#/$defs/Envelope",
+          "default": {
+            "attack_seconds": 0.005,
+            "decay_seconds": 0.1,
+            "sustain": 0.8,
+            "release_seconds": 0.1
+          }
+        },
+        "type": {
+          "const": "modal",
+          "default": "modal",
+          "title": "Type",
+          "type": "string"
+        },
+        "partials": {
+          "items": {
+            "$ref": "#/$defs/ModalPartial"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Partials",
+          "type": "array"
+        }
+      },
+      "required": [
+        "partials"
+      ],
+      "title": "ModalLayer",
+      "type": "object"
+    },
+    "ModalPartial": {
+      "additionalProperties": false,
+      "properties": {
+        "ratio": {
+          "default": 1,
+          "maximum": 64,
+          "minimum": 0.125,
+          "title": "Ratio",
+          "type": "number"
+        },
+        "amplitude": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Amplitude",
+          "type": "number"
+        },
+        "decay_seconds": {
+          "default": 1,
+          "maximum": 20,
+          "minimum": 0.001,
+          "title": "Decay Seconds",
+          "type": "number"
+        }
+      },
+      "title": "ModalPartial",
+      "type": "object"
+    },
+    "NoiseLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "noise",
+          "default": "noise",
+          "title": "Type",
+          "type": "string"
+        },
+        "gain": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gain",
+          "type": "number"
+        },
+        "envelope": {
+          "$ref": "#/$defs/Envelope",
+          "default": {
+            "attack_seconds": 0.005,
+            "decay_seconds": 0.1,
+            "sustain": 0.8,
+            "release_seconds": 0.1
+          }
+        }
+      },
+      "title": "NoiseLayer",
       "type": "object"
     },
     "Note": {
@@ -364,6 +739,91 @@
         }
       },
       "title": "Note",
+      "type": "object"
+    },
+    "OscillatorLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "gain": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gain",
+          "type": "number"
+        },
+        "tuning_semitones": {
+          "default": 0,
+          "maximum": 48,
+          "minimum": -48,
+          "title": "Tuning Semitones",
+          "type": "number"
+        },
+        "envelope": {
+          "$ref": "#/$defs/Envelope",
+          "default": {
+            "attack_seconds": 0.005,
+            "decay_seconds": 0.1,
+            "sustain": 0.8,
+            "release_seconds": 0.1
+          }
+        },
+        "type": {
+          "const": "oscillator",
+          "default": "oscillator",
+          "title": "Type",
+          "type": "string"
+        },
+        "waveform": {
+          "default": "sine",
+          "enum": [
+            "sine",
+            "triangle",
+            "saw",
+            "pulse"
+          ],
+          "title": "Waveform",
+          "type": "string"
+        },
+        "pulse_width": {
+          "default": 0.5,
+          "maximum": 0.95,
+          "minimum": 0.05,
+          "title": "Pulse Width",
+          "type": "number"
+        }
+      },
+      "title": "OscillatorLayer",
+      "type": "object"
+    },
+    "PatchFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "lowpass",
+          "enum": [
+            "lowpass",
+            "highpass",
+            "bandpass"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "cutoff_hz": {
+          "default": 2000,
+          "maximum": 20000,
+          "minimum": 30,
+          "title": "Cutoff Hz",
+          "type": "number"
+        },
+        "resonance": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Resonance",
+          "type": "number"
+        }
+      },
+      "title": "PatchFilter",
       "type": "object"
     },
     "PedalEvent": {
@@ -721,81 +1181,92 @@
           "type": "string"
         },
         "instrument": {
-          "default": "pluck",
-          "enum": [
-            "sine",
-            "triangle",
-            "pluck",
-            "bass",
-            "pad",
-            "kick",
-            "snare",
-            "hat",
-            "guitar",
-            "marimba",
-            "bell",
-            "electric_guitar",
-            "bass_guitar",
-            "harp",
-            "ukulele",
-            "banjo",
-            "violin",
-            "viola",
-            "cello",
-            "double_bass",
-            "piano",
-            "electric_piano",
-            "organ",
-            "harpsichord",
-            "flute",
-            "clarinet",
-            "saxophone",
-            "oboe",
-            "bassoon",
-            "trumpet",
-            "trombone",
-            "french_horn",
-            "tuba",
-            "toms",
-            "cymbal",
-            "congas",
-            "bongos",
-            "tambourine",
-            "xylophone",
-            "vibraphone",
-            "glockenspiel",
-            "timpani",
-            "synthesizer",
-            "drum_machine",
-            "theremin",
-            "mandolin",
-            "kalimba",
-            "celesta",
-            "recorder",
-            "acid_bass",
-            "supersaw",
-            "reese_bass",
-            "fm_bass",
-            "clavinet",
-            "string_machine",
-            "disco_bass",
-            "trance_pluck",
-            "fm_bell",
-            "wavetable_pad",
-            "sync_lead",
-            "hoover",
-            "sub_bass",
-            "kick_808",
-            "kick_909",
-            "clap",
-            "electronic_snare",
-            "metal_hat",
-            "open_hat",
-            "electronic_ride",
-            "fm_percussion"
+          "anyOf": [
+            {
+              "enum": [
+                "sine",
+                "triangle",
+                "pluck",
+                "bass",
+                "pad",
+                "kick",
+                "snare",
+                "hat",
+                "guitar",
+                "marimba",
+                "bell",
+                "electric_guitar",
+                "bass_guitar",
+                "harp",
+                "ukulele",
+                "banjo",
+                "violin",
+                "viola",
+                "cello",
+                "double_bass",
+                "piano",
+                "electric_piano",
+                "organ",
+                "harpsichord",
+                "flute",
+                "clarinet",
+                "saxophone",
+                "oboe",
+                "bassoon",
+                "trumpet",
+                "trombone",
+                "french_horn",
+                "tuba",
+                "toms",
+                "cymbal",
+                "congas",
+                "bongos",
+                "tambourine",
+                "xylophone",
+                "vibraphone",
+                "glockenspiel",
+                "timpani",
+                "synthesizer",
+                "drum_machine",
+                "theremin",
+                "mandolin",
+                "kalimba",
+                "celesta",
+                "recorder",
+                "acid_bass",
+                "supersaw",
+                "reese_bass",
+                "fm_bass",
+                "clavinet",
+                "string_machine",
+                "disco_bass",
+                "trance_pluck",
+                "fm_bell",
+                "wavetable_pad",
+                "sync_lead",
+                "hoover",
+                "sub_bass",
+                "kick_808",
+                "kick_909",
+                "clap",
+                "electronic_snare",
+                "metal_hat",
+                "open_hat",
+                "electronic_ride",
+                "fm_percussion"
+              ],
+              "type": "string"
+            },
+            {
+              "not": {
+                "pattern": "\n"
+              },
+              "pattern": "^custom:[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            }
           ],
-          "title": "Instrument",
-          "type": "string"
+          "default": "pluck",
+          "title": "Instrument"
         },
         "gain": {
           "default": 0.6,
@@ -971,6 +1442,44 @@
       },
       "title": "Tremolo",
       "type": "object"
+    },
+    "TruePeakLimiter": {
+      "additionalProperties": false,
+      "description": "Offline stereo-linked lookahead limiter with generated FIR oversampling.",
+      "properties": {
+        "ceiling_dbtp": {
+          "default": -1,
+          "maximum": 0,
+          "minimum": -60,
+          "title": "Ceiling Dbtp",
+          "type": "number"
+        },
+        "lookahead_seconds": {
+          "default": 0.005,
+          "maximum": 0.02,
+          "minimum": 0.001,
+          "title": "Lookahead Seconds",
+          "type": "number"
+        },
+        "release_seconds": {
+          "default": 0.1,
+          "maximum": 2,
+          "minimum": 0.01,
+          "title": "Release Seconds",
+          "type": "number"
+        },
+        "oversample": {
+          "default": 4,
+          "enum": [
+            4,
+            8
+          ],
+          "title": "Oversample",
+          "type": "integer"
+        }
+      },
+      "title": "TruePeakLimiter",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -1099,6 +1608,33 @@
       "maxItems": 4,
       "title": "Effects",
       "type": "array"
+    },
+    "mastering": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Mastering"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "custom_instruments": {
+      "additionalProperties": false,
+      "maxProperties": 64,
+      "patternProperties": {
+        "^custom:[a-z][a-z0-9_]{0,63}$": {
+          "$ref": "#/$defs/CustomInstrument"
+        }
+      },
+      "propertyNames": {
+        "not": {
+          "pattern": "\n"
+        }
+      },
+      "title": "Custom Instruments",
+      "type": "object"
     }
   },
   "required": [

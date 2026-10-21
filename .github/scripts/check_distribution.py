@@ -91,6 +91,10 @@ SDIST_ROOTS = {
     "PKG-INFO",
 }
 REQUIRED_SOURCE = {
+    "src/audio_as_code/custom.py",
+    "src/audio_as_code/mastering.py",
+    "docs/custom-instruments.md",
+    "examples/custom_mastering.py",
     "examples/groove_comparison.py",
     "examples/rhythm_sketch.py",
     "docs/composition-tools.md",
@@ -239,6 +243,8 @@ def check_wheel(path: Path, expected_version: str) -> dict:
                 "arrangement.py",
                 "project_setup.py",
                 "loudness.py",
+                "custom.py",
+                "mastering.py",
                 "_render_control.py",
                 "_cli_progress.py",
                 "_project_templates/compose.py.txt",

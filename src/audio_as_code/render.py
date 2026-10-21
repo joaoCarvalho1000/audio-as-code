@@ -27,7 +27,8 @@ from ._voices import _voice
 from .automation import automation_values
 from .effects import apply_effects
 from .loudness import _loudness_gain, _validate_target, measure_loudness
-from .model import Song, Track, midi_pitch
+from .mastering import measure_exported, measure_true_peak, process_master
+from .model import Mastering, Song, Track, midi_pitch
 
 PEAK_CEILING = 0.95
 
@@ -61,6 +62,7 @@ def _track_audio(
 ) -> Audio:
     if (
         song.tempo_map
+        or track.instrument.startswith("custom:")
         or song.automation
         or track.automation
         or any(effect.mix for effect in track.effects)
@@ -120,6 +122,12 @@ def _expressive_track_audio(
             track.tone,
             held_frames=held_end - start if end > held_end else None,
             articulation=note.articulation or track.articulation,
+            custom_patch=song.custom_instruments.get(track.instrument),
+            custom_release_seconds=(
+                note.release_seconds
+                if note.release_seconds is not None
+                else track.release_seconds or None
+            ),
         )
         mono[start:end] += voice * note.velocity
     result = np.zeros((frames, 2), dtype=np.float32)
@@ -150,7 +158,7 @@ def _expressive_track_audio(
 def _canonical_score(song: Song) -> dict:
     """Omit additive defaults from hashing to preserve existing score identities."""
     data = song.model_dump(mode="json")
-    for key in ("tempo_map", "automation", "effects"):
+    for key in ("tempo_map", "automation", "effects", "custom_instruments", "mastering"):
         if not data[key]:
             del data[key]
     for track in data["tracks"]:
@@ -188,7 +196,8 @@ def render_audio(
     progress: ProgressCallback | None = None,
     cancel: CancelCallback | None = None,
     target_lufs: float | None = None,
-    peak_ceiling_dbfs: float = -1.0,
+    peak_ceiling_dbfs: float | None = None,
+    mastering: Mastering | None = None,
 ) -> RenderResult:
     """Render stereo float32 audio and measurements. Limit: five minutes per call.
 
@@ -205,6 +214,7 @@ def render_audio(
         control=_RenderControl(progress, cancel),
         target_lufs=target_lufs,
         peak_ceiling_dbfs=peak_ceiling_dbfs,
+        mastering=mastering,
     )
 
 
@@ -214,7 +224,8 @@ def _render_audio(
     normalize: bool,
     control: _RenderControl,
     target_lufs: float | None = None,
-    peak_ceiling_dbfs: float = -1.0,
+    peak_ceiling_dbfs: float | None = None,
+    mastering: Mastering | None = None,
 ) -> RenderResult:
     # Revalidate even if a caller used Pydantic's unchecked construction/copy escape hatches.
     song = Song.model_validate(song.model_dump())
@@ -223,7 +234,19 @@ def _render_audio(
     frames = round(song.render_seconds * song.sample_rate)
     if frames < 1:
         raise ValueError("song is shorter than one audio sample")
+    settings = mastering if mastering is not None else song.mastering
+    if settings is not None:
+        settings = Mastering.model_validate(settings.model_dump())
+        if target_lufs is None:
+            target_lufs = settings.target_lufs
+        settings = settings.model_copy(update={"target_lufs": target_lufs})
+        if settings.limiter is not None and peak_ceiling_dbfs is not None:
+            raise ValueError("peak_ceiling_dbfs cannot be combined with a true-peak limiter")
+    peak_ceiling_dbfs = -1.0 if peak_ceiling_dbfs is None else peak_ceiling_dbfs
     _validate_target(target_lufs, peak_ceiling_dbfs, normalize, song.sample_rate, frames)
+    active_mastering = settings is not None and (
+        settings.compressor is not None or settings.limiter is not None
+    )
     control.notify("tracks", 0, len(song.tracks))
     mix = np.zeros((frames, 2), dtype=np.float32)
     for index, track in enumerate(song.tracks):
@@ -237,21 +260,29 @@ def _render_audio(
     before = _metrics(mix, song.sample_rate)
     attenuation = min(1.0, PEAK_CEILING / before["peak"]) if normalize and before["peak"] else 1.0
     loudness = None
-    if target_lufs is not None:
+    mastering_report = None
+    if active_mastering:
+        control.notify("mastering", 0, 1)
+        mix, attenuation, mastering_report, loudness = process_master(
+            mix, song.sample_rate, settings, target_lufs, peak_ceiling_dbfs, control, normalize
+        )
+        control.notify("mastering", 1, 1)
+    elif target_lufs is not None:
         control.notify("loudness", 0, 2)
         attenuation, loudness = _loudness_gain(
             mix, song.sample_rate, target_lufs, peak_ceiling_dbfs
         )
         control.notify("loudness", 1, 2)
-    mix *= attenuation
+    if not active_mastering:
+        mix *= attenuation
     warnings = []
     if before["silent"]:
         warnings.append("The render is silent; check notes, pitch range, and track/master gains.")
-    if attenuation < 1 and target_lufs is None:
+    if attenuation < 1 and target_lufs is None and not active_mastering:
         warnings.append(
             "The mix exceeded the peak ceiling and was attenuated; consider lowering gains."
         )
-    if not normalize and before["clipped_samples"]:
+    if not normalize and np.max(np.abs(mix)) > 1:
         warnings.append("The mix exceeds full scale; WAV export will hard-clip these samples.")
     if any(
         _note_frame(song, song.note_gate_end(track, note)) - _note_frame(song, note.start) < 3
@@ -284,8 +315,17 @@ def _render_audio(
         "audio": _metrics(mix, song.sample_rate),
         "warnings": warnings,
     }
+    report["true_peak"] = measure_true_peak(
+        mix,
+        song.sample_rate,
+        oversample=8 if active_mastering and settings.limiter else 4,
+        cancel=control.cancel,
+    )
+    if mastering_report is not None:
+        report["mastering"] = mastering_report
     if loudness is not None:
-        after = measure_loudness(mix, song.sample_rate)["integrated_lufs"]
+        loudness.update(report["true_peak"])
+        after = measure_loudness(mix, song.sample_rate, true_peak=False)["integrated_lufs"]
         loudness["integrated_lufs"] = after
         loudness["measurable"] = after is not None
         loudness["achieved_lufs"] = after
@@ -295,13 +335,14 @@ def _render_audio(
             warnings.append(
                 "Loudness is below the measurement gate; no loudness boost was applied."
             )
-        elif loudness["peak_limited"]:
+        elif loudness["peak_limited"] and "sample_peak_ceiling_dbfs" in loudness:
             warnings.append(
                 "The sample-peak ceiling limited loudness gain; the target may not be reached."
             )
         elif not loudness["target_reached"]:
             warnings.append(
-                "Measured loudness differs from the target after gating; see achieved_lufs."
+                "Requested loudness was not reached within gain/peak bounds and gating; "
+                "see achieved_lufs."
             )
         control.notify("loudness", 2, 2)
     control.notify("analysis", 1, 1)
@@ -318,7 +359,8 @@ def render(
     progress: ProgressCallback | None = None,
     cancel: CancelCallback | None = None,
     target_lufs: float | None = None,
-    peak_ceiling_dbfs: float = -1.0,
+    peak_ceiling_dbfs: float | None = None,
+    mastering: Mastering | None = None,
 ) -> dict:
     """Write stereo WAV (pcm16 default, pcm24, or float32), with optional stems.
 
@@ -345,18 +387,21 @@ def render(
         control=control,
         target_lufs=target_lufs,
         peak_ceiling_dbfs=peak_ceiling_dbfs,
+        mastering=mastering,
     )
     report = {**result.report, "output": str(destination), "stems": []}
     _format_report(report, wav_format)
-    if stem_paths and song.effects:
+    if stem_paths and (song.effects or "mastering" in report):
         report["warnings"].append(
-            "Stems include track effects and master gain automation, but omit master effects; "
+            "Stems include track effects and master gain automation, "
+            "but omit master effects and dynamics; "
             "their sum will differ from the processed mix."
         )
     with _staged_outputs([destination, *stem_paths]) as staged:
         control.notify("export", 0, len(staged))
         _write_wav(staged[0], result.audio, song.sample_rate, wav_format)
         report["wav"] = analyze_wav(staged[0])
+        _verify_master_export(staged[0], report, wav_format, control)
         control.notify("export", 1, len(staged))
         for index, (track, stem_path) in enumerate(zip(song.tracks, stem_paths, strict=False)):
             stem = _track_audio(song, track, len(result.audio), control)
@@ -369,6 +414,31 @@ def render(
                 report["warnings"].append(f"Stem {track.name!r} exceeds full scale and {ending}")
             control.notify("export", index + 2, len(staged))
     return report
+
+
+def _verify_master_export(
+    path: Path, report: dict, wav_format: WavFormat, control: _RenderControl
+) -> None:
+    if "mastering" not in report:
+        return
+    measured = measure_exported(
+        path, wav_format, loudness="loudness" in report, cancel=control.cancel
+    )
+    report["encoded_measurements"] = measured
+    limiter = report["mastering"].get("limiter")
+    if limiter is not None:
+        peak = measured["true_peak_dbtp"]
+        measured["ceiling_met"] = peak is None or peak <= limiter["ceiling_dbtp"]
+        if not measured["ceiling_met"]:
+            if "preview" in report:
+                report["warnings"].append(
+                    "The exact preview cut introduces a boundary true peak "
+                    "above the full-mix ceiling."
+                )
+            else:
+                raise ValueError(
+                    "Encoded mix exceeds the true-peak ceiling; output was not published"
+                )
 
 
 def _format_report(report: dict, wav_format: WavFormat) -> None:
@@ -412,7 +482,8 @@ def _preview_result(
     normalize: bool,
     control: _RenderControl,
     target_lufs: float | None,
-    peak_ceiling_dbfs: float,
+    peak_ceiling_dbfs: float | None,
+    mastering: Mastering | None,
 ) -> RenderResult:
     start, end = _preview_bounds(song, start_seconds, duration_seconds)
     result = _render_audio(
@@ -421,11 +492,13 @@ def _preview_result(
         control=control,
         target_lufs=target_lufs,
         peak_ceiling_dbfs=peak_ceiling_dbfs,
+        mastering=mastering,
     )
     audio = result.audio[start:end].copy()
     report = {
         **result.report,
         "audio": _metrics(audio, song.sample_rate),
+        "true_peak": measure_true_peak(audio, song.sample_rate, cancel=control.cancel),
         "preview": {
             "requested_start_seconds": start_seconds,
             "requested_duration_seconds": duration_seconds,
@@ -434,6 +507,7 @@ def _preview_result(
             "start_seconds": start / song.sample_rate,
             "duration_seconds": (end - start) / song.sample_rate,
             "context_audio": result.report["audio"],
+            "context_true_peak": result.report["true_peak"],
             "normalization_scope": "full_render",
         },
     }
@@ -450,7 +524,8 @@ def render_preview_audio(
     progress: ProgressCallback | None = None,
     cancel: CancelCallback | None = None,
     target_lufs: float | None = None,
-    peak_ceiling_dbfs: float = -1.0,
+    peak_ceiling_dbfs: float | None = None,
+    mastering: Mastering | None = None,
 ) -> RenderResult:
     """Crop a full render, preserving seeds, effects, timing, and attenuation.
 
@@ -467,6 +542,7 @@ def render_preview_audio(
         _RenderControl(progress, cancel),
         target_lufs,
         peak_ceiling_dbfs,
+        mastering,
     )
 
 
@@ -481,7 +557,8 @@ def render_preview(
     progress: ProgressCallback | None = None,
     cancel: CancelCallback | None = None,
     target_lufs: float | None = None,
-    peak_ceiling_dbfs: float = -1.0,
+    peak_ceiling_dbfs: float | None = None,
+    mastering: Mastering | None = None,
 ) -> dict:
     """Write a context-preserving excerpt; see render_preview_audio for cost/bounds."""
     song = Song.model_validate(song.model_dump())
@@ -490,7 +567,14 @@ def render_preview(
     check_paths([destination])
     control = _RenderControl(progress, cancel)
     result = _preview_result(
-        song, start_seconds, duration_seconds, normalize, control, target_lufs, peak_ceiling_dbfs
+        song,
+        start_seconds,
+        duration_seconds,
+        normalize,
+        control,
+        target_lufs,
+        peak_ceiling_dbfs,
+        mastering,
     )
     report = {**result.report, "output": str(destination), "stems": []}
     _format_report(report, wav_format)
@@ -498,5 +582,6 @@ def render_preview(
         control.notify("export", 0, 1)
         _write_wav(staged[0], result.audio, song.sample_rate, wav_format)
         report["wav"] = analyze_wav(staged[0])
+        _verify_master_export(staged[0], report, wav_format, control)
         control.notify("export", 1, 1)
     return report
