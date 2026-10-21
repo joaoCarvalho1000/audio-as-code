@@ -109,8 +109,8 @@ GUIDES = [
 
 GUIDE_DESCRIPTIONS = {
     "quickstart": (
-        "Create your first soundtrack with Audio as Code. Give the instructions to your AI agent, "
-        "install the Python toolkit, and render editable music to WAV and MIDI."
+        "Make your first soundtrack: give Audio as Code to a coding agent like Claude Code or "
+        "Codex, or install the Python package. Get WAV, MIDI and an editable score."
     ),
     "composition": (
         "Compose music in Python with notes, chords, motifs, song forms and instrument controls. "
