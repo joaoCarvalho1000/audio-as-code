@@ -3,7 +3,22 @@
 Audio as Code is an early prototype. Package versions and score schema versions
 are separate.
 
-## Unreleased
+## 0.5.0 - 2026-10-17
+
+Published on [PyPI](https://pypi.org/project/audio-as-code/0.5.0/).
+
+- Website: a matched-loudness original before/after comparison, playback-position
+  switching, editable score/MIDI/composer downloads, and rhythm API
+  documentation. The build regenerates the comparison and verifies its loudness.
+
+- Composition: evenly spaced rhythm grids with `Pattern.euclidean`, boundary-aware
+  `.swing()` and rest-aware `.reverse()` transformations. Added an original
+  `examples/rhythm_sketch.py` groove with WAV/MIDI/JSON export. Existing score
+  formats, voices and rendering defaults are unchanged.
+- Phrase development: `.accent()` applies repeating velocity grids to beats and
+  chords; `.repeat(..., variations={...})` schedules same-length fills without
+  shifting later bars. Added an original loudness-matched before/after example
+  in `examples/groove_comparison.py`.
 
 - Fixed zero-release custom layers ending abruptly when another layer has a longer tail.
   Mastering dynamics, true-peak metering and encoded-file verification now check

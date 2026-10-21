@@ -1,7 +1,7 @@
 # Reference
 
-Audio as Code 0.4.0. Python distribution `audio-as-code`, import `audio_as_code`,
-command `aac`. Install `audio-as-code==0.4.0` from PyPI for the engine and CLI;
+Audio as Code 0.5.0. Python distribution `audio-as-code`, import `audio_as_code`,
+command `aac`. Install `audio-as-code==0.5.0` from PyPI for the engine and CLI;
 use the source workspace for the complete examples and portable skill. See the
 [quickstart](quickstart.md) for both routes. The early API may change; breaking score
 format changes will use a new `schema_version`. Expression fields are optional
@@ -19,7 +19,7 @@ Also runnable as `python -m audio_as_code`. With uv, prefix with `uv run`.
 
 | Command | Arguments | Does |
 | --- | --- | --- |
-| `aac --version` | | Print `{"version": "0.4.0"}` |
+| `aac --version` | | Print `{"version": "0.5.0"}` |
 | `aac init` | `DIRECTORY` | Create a starter in a new or empty folder; never install dependencies |
 | `aac doctor` | | Check the imported runtime and short synthesis path |
 | `aac instruments` | `[--all] [--family F] [--engine E]` | Print the catalog. Without `--all`, only playable voices |
@@ -235,6 +235,23 @@ effect state. These helpers do not add fields to score JSON.
 | `.stretch(factor)` | `Pattern`; scale beat timing and length by a positive factor; releases stay in seconds |
 | `.scale_velocity(factor)` | `Pattern`; multiply velocities by a positive factor, with every result in (0, 1] |
 | `.at(beat: float)` | `tuple[Note, ...]` on the absolute timeline |
+
+#### Pattern tools added in 0.5.0
+
+These additions are available in the source workspace and the PyPI 0.5.0 release.
+All return immutable patterns and compile to the existing version 1 score.
+
+| Method | Behavior |
+| --- | --- |
+| `Pattern.euclidean(pulses, steps, *, pitch=60, step=0.5, rotation=0, gate=0.8, velocity=0.8)` | Evenly distribute hits over a grid; positive rotation delays hits cyclically; zero pulses is silence |
+| `.swing(ratio=2/3, *, step=0.5)` | Warp note starts and ends over complete step pairs; ratio must be inside `(0, 1)`; `0.5` is straight |
+| `.reverse()` | Mirror written note intervals and rests; does not reverse audio |
+| `.accent(weights, *, step=0.5)` | Multiply velocities by a repeating beat grid; chords share weights; results must remain in `(0, 1]` |
+| `.repeat(times, *, variations=None)` | Optionally replace zero-based repetitions with equal-length patterns; later bars stay in place |
+
+Apply accents before swing when weights should follow the straight grid.
+See [composition tools](../composition-tools.md) for validation rules and
+[the audible comparison](../index.html#groove) for a complete example.
 
 ### Rendering
 

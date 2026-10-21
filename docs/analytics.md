@@ -69,7 +69,7 @@ The browser-visible project token and US ingestion host are committed in
 API key or secret. Normal production builds preserve it automatically:
 
 ```sh
-uv run python examples/build_site.py --strict
+uv run --extra loudness python examples/build_site.py --strict
 ```
 
 The production configuration restricts collection to `audioascode.com` and
@@ -78,8 +78,8 @@ region, and host list, or remove the config. An absent config disables analytics
 Explicit CLI overrides require the key and host together:
 
 ```sh
-uv run python examples/build_site.py --posthog-project-key phc_YOUR_PUBLIC_PROJECT_TOKEN --posthog-host https://us.i.posthog.com --strict
-uv run python examples/build_site.py --no-analytics --strict
+uv run --extra loudness python examples/build_site.py --posthog-project-key phc_YOUR_PUBLIC_PROJECT_TOKEN --posthog-host https://us.i.posthog.com --strict
+uv run --extra loudness python examples/build_site.py --no-analytics --strict
 ```
 
 EU projects use `https://eu.i.posthog.com`. Never use a personal `phx_` API key.

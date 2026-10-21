@@ -885,6 +885,13 @@
     const canvas = $("[data-mini-trace]", mini);
     const label = $("span", button);
     const original = label.textContent;
+    let failed = false;
+    const status = mini.parentElement.querySelector("[data-mini-status]");
+    const message = (text) => {
+      if (status) status.textContent = text;
+      else if (text.startsWith("Audio could")) label.textContent = "Couldn't play. Try again";
+    };
+    let pendingSeek = null;
     let envelope = [];
     try { envelope = JSON.parse(canvas.dataset.envelope); } catch { envelope = []; }
     let raf = 0;
@@ -905,17 +912,45 @@
       if (!timer && !raf && active()) timer = setTimeout(() => { timer = 0; raf = requestAnimationFrame(loop); }, reduced.matches ? 250 : FRAME_MS);
     };
     const wake = () => { stop(); draw(); schedule(); };
-    const set = (on) => { button.classList.toggle("is-playing", on); label.textContent = on ? "Pause" : original; wake(); };
-    const player = { release() { audio.pause(); set(false); } };
+    const set = (on) => {
+      button.classList.toggle("is-playing", on);
+      button.setAttribute("aria-pressed", String(on));
+      label.textContent = on ? `Pause ${mini.dataset.compare ? original.replace(/^Play /, "") : ""}`.trim() : original;
+      wake();
+    };
+    const player = {
+      group: mini.dataset.compare,
+      position: () => pendingSeek ?? audio.currentTime,
+      release() { pendingSeek = null; audio.pause(); set(false); message(""); },
+    };
     button.addEventListener("click", async () => {
-      if (owner === player && !audio.paused) { audio.pause(); return; }
+      if (owner === player && !audio.paused && !failed && !audio.error) { audio.pause(); return; }
+      const switching = owner !== player && player.group && owner?.group === player.group;
+      const position = switching && !audio.ended ? owner.position() : 0;
+      const changingSource = audio.dataset.src !== mini.dataset.src;
       claim(player, mini.dataset.src);
-      try { await audio.play(); } catch (error) { if (owner === player && error.name !== "AbortError") label.textContent = "Couldn't play"; }
+      pendingSeek = changingSource ? position : null;
+      if (audio.error || failed) audio.load();
+      failed = false;
+      message("Loading audio...");
+      try { await audio.play(); } catch (error) {
+        if (owner === player && error.name !== "AbortError") {
+          failed = true; set(false); message("Audio could not play. Try again or download the WAV.");
+        }
+      }
     });
-    audio.addEventListener("playing", () => owner === player && set(true));
-    audio.addEventListener("pause", () => owner === player && set(false));
-    audio.addEventListener("ended", () => owner === player && set(false));
-    audio.addEventListener("error", () => { if (owner === player) { set(false); label.textContent = "Couldn't load"; } });
+    audio.addEventListener("loadedmetadata", () => {
+      if (owner === player && pendingSeek !== null) {
+        audio.currentTime = Math.min(pendingSeek, audio.duration || 0);
+        pendingSeek = null;
+      }
+    });
+    audio.addEventListener("playing", () => { if (owner === player) { set(true); message(""); } });
+    audio.addEventListener("pause", () => { if (owner === player) { set(false); message(""); } });
+    audio.addEventListener("ended", () => { if (owner === player) { set(false); message("Finished. Play again or switch versions."); } });
+    audio.addEventListener("error", () => {
+      if (owner === player) { failed = true; set(false); message("Audio could not load. Try again or download the WAV."); }
+    });
     document.addEventListener("visibilitychange", wake);
     reduced.addEventListener("change", wake);
     new IntersectionObserver(entries => { visible = entries[0].isIntersecting; wake(); }).observe(mini);

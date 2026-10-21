@@ -14,7 +14,7 @@ uv run python examples/classic_showcase.py --ffmpeg ffmpeg
 uv run python examples/classic_reimaginations.py --ffmpeg ffmpeg
 uv run --extra loudness python examples/instrument_browser.py
 uv run --extra loudness python examples/electronic_music.py
-uv run python examples/build_site.py --strict
+uv run --extra loudness python examples/build_site.py --strict
 ```
 
 The homepage compares five public-domain works, each in two complete versions
@@ -74,6 +74,14 @@ its existing `catalog.json` without changing or rerendering any audio.
 Resume reuses a clip only when its source, score, runtime fingerprint and all
 output hashes match. A subset build can leave missing previews; finish the full
 batch before building the website. A synthesis change invalidates cached clips.
+
+The site builder also renders `examples/groove_comparison.py` on every build.
+The homepage's original before/after comparison publishes both WAVs, MIDI files,
+JSON scores, Python source and a measurement report under `groove/`. Both versions
+must reach -20 LUFS. Playback switches between versions at the current position;
+all homepage players share one audio output. The pattern helpers are included in the PyPI 0.5.0 release and source download. This build step
+requires the loudness extra: run the builder with `uv run --extra loudness` or
+use `--no-sync` after installing the browser/loudness groups.
 
 The site builder reads those outputs, copies the documentation and web assets,
 generates the downloadable source archive and machine-readable files, and
@@ -197,7 +205,7 @@ Useful paths relative to the built site root:
 | `docs/integrations.html` | Codex, Claude Code, Hyperframes, game and slide recipes |
 | `instruments/index.html` | 210-clip instrument library |
 | `source.html` | Source download, size, and SHA-256 |
-| `download/audio-as-code-0.4.0-source.zip` | Portable source snapshot; version follows the package |
+| `download/audio-as-code-0.5.0-source.zip` | Portable source snapshot; version follows the package |
 | `llms.txt` | Agent documentation index |
 | `schemas/song-v1.schema.json` | Versioned score contract |
 | `instruments.json` | Live catalog with explicit availability and controls |
@@ -208,7 +216,7 @@ Useful paths relative to the built site root:
 The source archive excludes generated media and operational files through a
 source allowlist and filters; it includes `.github/FUNDING.yml`. Its recipient
 installs from the extracted checkout to run the complete examples and site tools.
-For the engine and CLI in an existing project, install `audio-as-code==0.4.0`
+For the engine and CLI in an existing project, install `audio-as-code==0.5.0`
 from [PyPI](https://pypi.org/project/audio-as-code/). The website source ZIP is
 a separately built snapshot; its published hash identifies its contents, which can
 include documentation updates made after the registry release. The

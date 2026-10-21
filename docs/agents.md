@@ -5,7 +5,7 @@ It covers setup, interpreting a musical brief, composing, rendering, checking,
 delivering files, and revisions. Add the released library to an existing uv project:
 
 ```sh
-uv add "audio-as-code==0.4.0"
+uv add "audio-as-code==0.5.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
@@ -52,6 +52,18 @@ check finite samples and byte reproducibility; allow several minutes.
 The CLI is the initial agent integration. Call it through your existing shell tool; no framework-specific AI SDK is required. An MCP server is not implemented yet.
 
 ## Commands
+
+For compact rhythmic sketches, use `Pattern.euclidean(pulses, steps, pitch=...)`,
+then `.swing(ratio)` or `.reverse()` to create variations before placing notes
+with `.at(beat)`. Swing requires complete pairs of steps; phrase length stays
+fixed. See [composition tools](composition-tools.md) and
+`examples/rhythm_sketch.py` for a complete original groove. These helpers use
+the existing score format and procedural voices.
+Use `.accent(weights)` before swing for beat-aligned dynamics, and
+`.repeat(count, variations={index: replacement})` for planned fills with
+zero-based indices and equal phrase lengths. Run
+`uv run --extra loudness python examples/groove_comparison.py` to hear an
+original straight sketch beside its developed arrangement at matched loudness.
 
 | Operation | Command | JSON response |
 | --- | --- | --- |

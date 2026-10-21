@@ -175,6 +175,36 @@ A tiny dragon thinks this is the final boss fight. A 16-second battle cue for my
   </ol>
 </section>
 
+<section class="stock stock-paper groove" id="groove" aria-labelledby="groove-title">
+  <h2 id="groove-title">Hear a groove take shape</h2>
+  <p class="section-lede">One original piece, two arrangements. Keep the harmony and instruments. Give the rhythm a little more room to move.</p>
+  <div class="groove-takes">
+    <article aria-labelledby="groove-before-title">
+      <h3 id="groove-before-title">Before: the straight sketch</h3>
+      <p>A steady pulse, even accents and a melody that repeats.</p>
+      <div class="mini-player" data-mini data-compare="groove" data-src="groove/before.wav" data-title="Before: straight sketch">
+        <button type="button" class="mini-key" data-mini-play aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-play"><path d="M6.5 3.8v16.4L20 12z" fill="currentColor"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-pause"><path d="M5.5 4h5v16h-5zM13.5 4h5v16h-5z" fill="currentColor"/></svg><span>Play before</span></button>
+        <canvas class="mini-trace" data-mini-trace data-envelope='{{GROOVE_BEFORE_ENVELOPE}}' aria-hidden="true"></canvas>
+      </div>
+      <p class="mini-status" data-mini-status role="status"></p>
+      <ul class="files"><li><a href="groove/before.wav" download>Before WAV</a></li><li><a href="groove/before.json" download>Score</a></li><li><a href="groove/before.mid" download>MIDI</a></li></ul>
+    </article>
+    <article aria-labelledby="groove-after-title">
+      <h3 id="groove-after-title">After: a developing groove</h3>
+      <p>Swing, softer offbeats, answering phrases and a fill every fourth bar.</p>
+      <div class="mini-player" data-mini data-compare="groove" data-src="groove/after.wav" data-title="After: developing groove">
+        <button type="button" class="mini-key" data-mini-play aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-play"><path d="M6.5 3.8v16.4L20 12z" fill="currentColor"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-pause"><path d="M5.5 4h5v16h-5zM13.5 4h5v16h-5z" fill="currentColor"/></svg><span>Play after</span></button>
+        <canvas class="mini-trace" data-mini-trace data-envelope='{{GROOVE_AFTER_ENVELOPE}}' aria-hidden="true"></canvas>
+      </div>
+      <p class="mini-status" data-mini-status role="status"></p>
+      <ul class="files"><li><a href="groove/after.wav" download>After WAV</a></li><li><a href="groove/after.json" download>Score</a></li><li><a href="groove/after.mid" download>MIDI</a></li></ul>
+    </article>
+  </div>
+  <p class="groove-note">Switch versions at the same playback position. Each is {{GROOVE_SECONDS}} seconds, matched to {{GROOVE_LUFS}} LUFS. Same tempo, harmony, instruments and mix settings; only the written arrangement changes.</p>
+  <p class="groove-links"><a href="groove/before-then-after.wav" download>Download the full comparison</a> <a href="groove/groove_comparison.py" download>Get the Python composer</a> <a href="/docs/composition#rhythm-and-phrase-development">Make your own variation</a></p>
+  <p class="fineprint">The pattern tools are included in <a href="https://pypi.org/project/audio-as-code/0.5.0/">Audio as Code 0.5.0 on PyPI</a> and the <a href="/source">source download</a>. Audio here is rendered locally from code.</p>
+</section>
+
 <section class="stock stock-pink agents" id="agents" aria-labelledby="agents-title">
   <div class="agents-copy">
     <h2 id="agents-title">Keep the good bit. Change the rest.</h2>

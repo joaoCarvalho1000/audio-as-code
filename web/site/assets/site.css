@@ -478,6 +478,15 @@ html.js .prompt-card { padding-bottom: 34px; }
 .mini-key .i-pause, .mini-key.is-playing .i-play { display: none; }
 .mini-key.is-playing .i-pause { display: block; }
 .mini-trace { flex: 1; min-width: 0; height: 64px; }
+.groove h2 { max-width: 18ch; }
+.groove-takes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; margin-top: 48px; }
+.groove-takes article { min-width: 0; border-top: 2px solid var(--ink); padding-top: 24px; }
+.groove-takes h3 { font-size: clamp(24px, 2.3vw, 34px); line-height: 1.15; }
+.groove-takes article > p { margin-top: 12px; }
+.mini-status { min-height: 1.6em; font-size: 15px; }
+.groove-note { max-width: 72ch; margin-top: 36px; }
+.groove-links { display: flex; flex-wrap: wrap; gap: 16px 28px; margin: 24px 0; font-weight: 600; }
+@media (max-width: 760px) { .groove-takes { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
 .files { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 0; margin: 20px 0 0; font: 600 15px/1.4 var(--mono); }
 .cli-note { margin-top: 28px; font-weight: 600; }
 .meters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; margin: 24px 0 0; }

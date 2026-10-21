@@ -23,7 +23,7 @@ flowchart TD
 | --- | --- |
 | `__init__.py`, `__main__.py` | Public Python exports/version and `python -m audio_as_code` entry point. |
 | `model.py` | Immutable Pydantic score objects, strict validation, pitch conversion, piecewise tempo integration, and release/effect-tail duration. |
-| `pattern.py` | Explicit phrase length and composition transforms, including sequence, repeat, transpose, append, overlay, stretch, velocity scaling, and placement. |
+| `pattern.py` | Explicit phrase lengths; sequences and Euclidean rhythms; repeat with scheduled variations, reverse, swing, beat-grid accents, transpose, append, overlay, stretch, velocity scaling, and placement. |
 | `arrangement.py` | Timestamp placement, named section edits and measured loop previews; section metadata stays outside score JSON. |
 | `mixing.py` | Validated immutable gain/pan edits, automation-preserving trims, audition selection and score-setting reports. |
 | `project_setup.py`, `_project_templates/` | Installed project scaffolds and local runtime diagnostics. |
@@ -68,7 +68,7 @@ half-pedaling and sympathetic resonance are not modeled. See [piano sustain](pia
 `schemas/song-v1.schema.json` is generated from `Song.model_json_schema()`. Runtime
 checks additionally enforce unique track names, note bounds, supported controls,
 and cross-field relationships. Schema version `"1"` is independent of package
-version `0.4.0`. Breaking the score contract requires explicit version/migration
+version `0.5.0`. Breaking the score contract requires explicit version/migration
 work; adding a Python helper does not automatically change the score schema.
 
 Rendering revalidates scores and is limited to 300 seconds including tails. It

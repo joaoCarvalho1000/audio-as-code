@@ -1,4 +1,4 @@
-# Put the music in your project
+# Integrations for Codex, Claude Code and Hyperframes
 
 For a full landing on agent soundtracks (games cues, video beds, slide music),
 see [AI agent soundtrack with Python](/ai-agent-soundtrack-python/).
@@ -56,7 +56,7 @@ music and where it will go. The agent needs a shell and Python 3.10+.
 To add the released engine to an existing uv project, run:
 
 ```sh
-uv add "audio-as-code==0.4.0"
+uv add "audio-as-code==0.5.0"
 uv run --locked aac instruments
 uv run --locked aac schema
 ```
