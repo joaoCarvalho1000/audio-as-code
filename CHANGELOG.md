@@ -5,6 +5,13 @@ are separate.
 
 ## Unreleased
 
+- Website staging and local preview now enforce a content-derived CSP with
+  exact inline script/style hashes and explicit PostHog endpoints. Player
+  decorations use style properties without allowing arbitrary inline styles.
+- Added an original listening and target-player review pack combining existing
+  audition, pedal and loop studies with file hashes and browser wrap observations.
+  Observed browser timing is separate from pending human listening acceptance.
+
 - Listening evaluation now runs from source archives and without Git. Commit
   and dirty status are unknown when checkout provenance is unavailable; content
   hashes remain recorded, and unrelated parent checkouts are never attributed.

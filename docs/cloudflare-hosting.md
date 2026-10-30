@@ -51,7 +51,26 @@ but it disables HTML compression. Every static asset also receives baseline
 security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`,
 `Permissions-Policy` and `Strict-Transport-Security`); JavaScript, CSS, fonts,
 JSON and media get no caching rule. Large media streamed from R2 by the Worker
-does not pass through `_headers`. A Content-Security-Policy is not set yet. An existing source `_headers` causes staging
+does not pass through `_headers`.
+
+Each HTML route and alias also receives an enforced Content-Security-Policy.
+Staging hashes the exact inline executable scripts, style blocks and static
+style attributes in that page. Scripts have no `unsafe-inline` or `unsafe-eval`
+permission; inline event handlers, frames, objects, forms and base URLs are
+blocked. Styles use exact hashes with `unsafe-hashes` for the existing static
+attributes. Dynamic player decorations use JavaScript style properties.
+Fonts, audio, score fetches and downloads stay on the same origin. Images also
+allow `data:` for the gallery's decorative SVG background. When a page has
+analytics configured, only its selected US or EU PostHog ingest origin and
+the corresponding `/static/array.js` CDN script are allowed. Recording, surveys,
+external dependency loading and automatic collection remain disabled.
+
+The local preview server enforces the same content-derived policy, so the
+mandatory browser suite exercises real playback and privacy behavior under CSP.
+Staging checks the [Cloudflare header limits](https://developers.cloudflare.com/workers/static-assets/headers/)
+(100 rules and 2,000 characters per line) before writing. Rebuild and restage
+after editing HTML; a stale hash must not be patched by relaxing the policy.
+An existing source `_headers` causes staging
 to fail before writing anything; reconcile that policy explicitly before staging.
 
 Keep `output/site/` unchanged until uploads finish: the report refers to those

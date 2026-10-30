@@ -663,7 +663,10 @@
         const roll = rolls.get(piece.id);
         if (roll) {
           ui.rollMsg.textContent = "";
-          ui.rollKey.innerHTML = roll.tracks.map((t, i) => `<span class="swatch-item"><i class="swatch" style="${swatchCss(TRACK_INKS[i % TRACK_INKS.length])}"></i>${esc(t.name)}</span>`).join("");
+          ui.rollKey.innerHTML = roll.tracks.map(t => `<span class="swatch-item"><i class="swatch"></i>${esc(t.name)}</span>`).join("");
+          $$(".swatch", ui.rollKey).forEach((el, i) => {
+            el.style.cssText = swatchCss(TRACK_INKS[i % TRACK_INKS.length]);
+          });
         }
         buildPlates();
         render();
@@ -768,8 +771,11 @@
       ui.downloads.innerHTML = links.map(([href, label, size]) => `<li><a href="${esc(href)}" download><span>${esc(label)}${size ? `<small>${esc(size)}</small>` : ""}</span>${arrow}</a></li>`).join("");
       ui.frames.innerHTML = piece.sections.map((s, i) => {
         const at = (s.start_beat * 60) / piece.bpm;
-        return `<button type="button" data-at="${at}" style="--hang:${(i % 2 ? -1 : 1) * (1 + (i % 3) * 0.8)}deg" aria-label="Jump to ${esc(s.name)} at ${clock(at)}"><span>${clock(at)}</span><b>${esc(s.name)}</b></button>`;
+        return `<button type="button" data-at="${at}" aria-label="Jump to ${esc(s.name)} at ${clock(at)}"><span>${clock(at)}</span><b>${esc(s.name)}</b></button>`;
       }).join("");
+      $$("button", ui.frames).forEach((b, i) => {
+        b.style.setProperty("--hang", `${(i % 2 ? -1 : 1) * (1 + (i % 3) * 0.8)}deg`);
+      });
       $$("button", ui.frames).forEach((b) => b.addEventListener("click", () => {
         seek(Number(b.dataset.at));
         if (!playing()) play();

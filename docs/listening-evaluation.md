@@ -57,3 +57,43 @@ The generator does not perform a listening pass. Completion of the human record
 is required before treating an instrument evaluation as finished. All synthesis
 sources remain generated code; no recordings or measured impulse responses are
 inputs to this protocol or the voices.
+
+## Combined listening and target-player pack
+
+From the same Unreleased source checkout or extracted ZIP, run:
+
+```sh
+uv run python examples/audio_review_pack.py output/review-pack/baseline
+uv run python examples/serve_site.py --directory output/review-pack/baseline --port 8765
+```
+
+Open the printed localhost URL. The pack includes the ten original auditions,
+the lifted/half/held repeated-key study, dry/wet loop cycles and two-cycle
+previews. Editable scores, pedal sidecars in the experiment report, numerical
+reports, source/runtime provenance and file hashes remain alongside the WAVs.
+Every output directory must be new. Run the same source again into a separate
+folder to compare score and WAV hashes while preserving the baseline.
+
+The two cycle players enable the browser's native `loop` property. Keep the page
+foregrounded, play one cycle at a time for at least three wraps without seeking,
+then save the browser observations. These record user agent, playback errors and
+animation-frame samples around candidate wraps. Timer sampling can miss wraps;
+a manual backward seek can be counted. They do not measure device output gaps or
+prove audible continuity. Compare the two-cycle preview too, and record player
+and version when testing a downloaded cycle in another intended target player.
+
+Human acceptance checklist:
+
+- Record listener, date, playback software/version, equipment and listening level.
+- Complete all five rubric fields for every voice/state, including both velocities
+  and all three written pitches. Keep unpitched kick observations separate.
+- Compare lifted, half and held decay after key release, repeated attacks and final
+  lift. Record timestamps and whether intermediate damping is audibly useful.
+- Listen across three dry and wet joins in each intended player and compare the
+  preview. Record clicks, gaps, level changes or uncertainty with filenames.
+- Retain the baseline and any candidate, their pack manifests and saved browser
+  observations. Propose catalog changes only from actual observations.
+- Keep issues 3, 4 and 5 open until their human acceptance and, for issue 4,
+  the documented score-contract/MIDI/release-control decisions are complete.
+
+The pack and automated browser checks leave human listening as `not_listened`.

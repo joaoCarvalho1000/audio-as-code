@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from examples.site_security import content_security_policy
+
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "output/site"
 JS = ROOT / "web/site/assets/analytics.js"
@@ -63,6 +65,7 @@ def page_for(browser, *, config=None, init="", sdk=SDK, host="site.example", pat
             return
         if file.suffix == ".html":
             html = file.read_text(encoding="utf-8")
+            policy = content_security_policy(html)
             html = re.sub(r'<script id="aac-analytics-config".*?</script>', "", html, flags=re.S)
             html = re.sub(r'<script[^>]*src="[^"]*analytics.js"[^>]*></script>', "", html)
             injected = (
@@ -70,8 +73,11 @@ def page_for(browser, *, config=None, init="", sdk=SDK, host="site.example", pat
                 + json.dumps(config if config is not None else CONFIG)
                 + '</script><script src="/assets/analytics.js" defer></script>'
             )
+            html = html.replace("</body>", injected + "</body>")
             request.fulfill(
-                body=html.replace("</body>", injected + "</body>"), content_type="text/html"
+                body=html,
+                content_type="text/html",
+                headers={"Content-Security-Policy": policy},
             )
         else:
             request.fulfill(path=str(file))
@@ -109,7 +115,7 @@ def test_disabled_never_requests_sdk_or_media(browser, host, init, config):
 
 def test_events_exclude_content_and_auto_properties(browser):
     context, page, requests = page_for(browser)
-    page.wait_for_function("window.__events?.length === 1")
+    page.wait_for_function("() => window.__events?.length === 1")
     assert page.evaluate("__sdkOptions.autocapture") is False
     assert page.evaluate("__sdkOptions.disable_session_recording") is True
     assert not any(re.search(r"\.(mp3|wav)(\?|$)", url) for url in requests)
@@ -117,7 +123,7 @@ def test_events_exclude_content_and_auto_properties(browser):
     page.locator("[data-handoff-copy]").click()
     page.locator("[data-selector] [data-id]").nth(1).click()
     page.evaluate("document.querySelector('[data-play]').classList.add('is-playing')")
-    page.wait_for_function("__events.some(e=>e.event==='demo_play_started')")
+    page.wait_for_function("() => __events.some(e=>e.event==='demo_play_started')")
     page.evaluate("""() => {
       const a=document.createElement('a');a.href='https://ko-fi.com/joaothecarvalho';
       a.dataset.kofi='footer';a.onclick=e=>e.preventDefault();document.body.append(a);a.click();
@@ -154,7 +160,7 @@ def test_verification_mode_is_one_labeled_event(browser):
             "allowedHosts": ["audioascode.com"],
         },
     )
-    page.wait_for_function("window.__events?.length === 1")
+    page.wait_for_function("() => window.__events?.length === 1")
     assert page.evaluate("__events[0].event") == "analytics_verification"
     page.locator("[data-handoff-copy]").click()
     assert page.evaluate("__events.length") == 1
@@ -164,7 +170,7 @@ def test_verification_mode_is_one_labeled_event(browser):
 def test_queued_events_drop_when_opted_out_before_sdk_load(browser):
     # Delay the SDK loaded callback, then opt out with a pageview still queued.
     context, page, _ = page_for(browser, sdk="window.__delayed = () => {" + SDK + "}")
-    page.wait_for_function("typeof window.__delayed === 'function'")
+    page.wait_for_function("() => typeof window.__delayed === 'function'")
     page.evaluate("aacAnalytics.optOut(); __delayed()")
     assert page.evaluate("__events.length") == 0
     assert page.evaluate("__sdkOptedOut") is True
@@ -192,11 +198,11 @@ def test_builder_config_and_safe_bootstrap():
 
 def test_gallery_playback_state_and_optout_control(browser):
     context, page, requests = page_for(browser, path="instruments/index.html")
-    page.wait_for_function("window.__events?.length === 1")
+    page.wait_for_function("() => window.__events?.length === 1")
     assert not any(re.search(r"\.(mp3|wav)(\?|$)", url) for url in requests)
     page.locator(".instrument-select").nth(1).click()
     page.evaluate("document.getElementById('audio').dispatchEvent(new Event('playing'))")
-    page.wait_for_function("__events.some(e=>e.event==='demo_play_started')")
+    page.wait_for_function("() => __events.some(e=>e.event==='demo_play_started')")
     assert (
         page.evaluate("__events.find(e=>e.event==='demo_play_started').properties.player")
         == "instrument"
@@ -210,7 +216,7 @@ def test_gallery_playback_state_and_optout_control(browser):
 
 def test_gallery_pause_is_not_counted_as_another_play_request(browser):
     context, page, _ = page_for(browser, path="instruments/index.html")
-    page.wait_for_function("window.__events?.length === 1")
+    page.wait_for_function("() => window.__events?.length === 1")
     page.evaluate("""() => {
       const audio = document.getElementById('audio');
       let paused = true;
@@ -221,7 +227,7 @@ def test_gallery_pause_is_not_counted_as_another_play_request(browser):
     button = page.locator(".row-play").first
     button.click()
     assert page.evaluate("__events.filter(e => e.event === 'demo_play_requested').length") == 1
-    page.wait_for_function("document.querySelector('.instrument-row.is-playing') !== null")
+    page.wait_for_function("() => document.querySelector('.instrument-row.is-playing') !== null")
     button.click()
     assert page.evaluate("__events.filter(e => e.event === 'demo_play_requested').length") == 1
     # Choosing a different row while something is playing is a new request.
