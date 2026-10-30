@@ -1,5 +1,10 @@
 # Half-pedal contract proposal and damping experiment
 
+Availability: Unreleased source API, absent from published PyPI 0.5.0. Use a
+repository checkout or source ZIP containing `audio_as_code.experimental_pedal`
+under `src/` and run `uv sync --locked` from its root. Installing
+`audio-as-code==0.5.0` from PyPI alone does not provide this experiment.
+
 Status: experiment for evaluation, not a version 1 score feature. The public JSON
 schema and standard MIDI export still support only binary `Track.pedal`. No
 existing score ID, binary pedal rendering or catalog control is changed. Do not

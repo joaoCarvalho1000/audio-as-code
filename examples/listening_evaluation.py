@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -16,6 +17,31 @@ from audio_as_code import Note, Song, Track, render
 
 VOICES = ("piano", "violin", "flute", "marimba", "kick")
 RUBRIC = ("onset", "sustain", "release", "recognizability", "artifacts")
+
+
+def git_provenance(root: Path) -> dict:
+    """Report only this source tree's checkout, never an enclosing repository."""
+    unknown = {"source_commit": None, "source_dirty": None}
+    root = root.resolve()
+    # A worktree has a .git file; archives have neither a file nor a directory.
+    if not (root / ".git").exists():
+        return unknown
+    # Caller Git overrides must not redirect discovery to another checkout/index.
+    env = {key: value for key, value in os.environ.items() if not key.upper().startswith("GIT_")}
+
+    def git(*args: str) -> str:
+        return subprocess.check_output(
+            ["git", *args], cwd=root, env=env, text=True, stderr=subprocess.DEVNULL
+        ).strip()
+
+    try:
+        if Path(git("rev-parse", "--show-toplevel")).resolve() != root:
+            return unknown
+        commit = git("rev-parse", "--verify", "HEAD")
+        dirty = bool(git("status", "--porcelain", "--untracked-files=no"))
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return unknown
+    return {"source_commit": commit, "source_dirty": dirty}
 
 
 def audition_song(voice: str, state: str) -> Song:
@@ -90,7 +116,6 @@ def generate(output: Path, baseline: Path | None = None) -> dict:
         prior = None
     output.mkdir(parents=True, exist_ok=False)
     root = Path(__file__).resolve().parents[1]
-    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
     manifest = {
         "protocol": 1,
         "runtime": {
@@ -98,12 +123,7 @@ def generate(output: Path, baseline: Path | None = None) -> dict:
             "platform": platform.platform(),
             "numpy": np.__version__,
         },
-        "source_commit": commit,
-        "source_dirty": bool(
-            subprocess.check_output(
-                ["git", "status", "--porcelain", "--untracked-files=no"], cwd=root, text=True
-            ).strip()
-        ),
+        **git_provenance(root),
         "lock_sha256": hashlib.sha256((root / "uv.lock").read_bytes()).hexdigest(),
         "source_hashes": {
             path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()

@@ -1,6 +1,9 @@
 """Behavioral checks for periodic tails, depth experiments and audition provenance."""
 
 import json
+import shutil
+import subprocess
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -9,7 +12,8 @@ from audio_as_code import Delay, LoopRegion, Note, Reverb, Song, TempoChange, Tr
 from audio_as_code.arrangement import render_loop_preview, render_periodic_loop
 from audio_as_code.experimental_pedal import PedalDepth, render_pedal_depth
 from audio_as_code.render import render_audio
-from examples.listening_evaluation import generate
+from examples import listening_evaluation
+from examples.listening_evaluation import generate, git_provenance
 
 
 def loop_song(**changes):
@@ -177,3 +181,84 @@ def test_audition_reproducibility_and_baseline_preservation(tmp_path, monkeypatc
     assert (baseline / "manifest.json").read_bytes() == preserved
     with pytest.raises((ValueError, FileExistsError)):
         generate(baseline, baseline)
+
+
+@pytest.mark.parametrize("foreign_parent", [False, True])
+def test_archive_audition_keeps_hashes_without_borrowing_git(tmp_path, monkeypatch, foreign_parent):
+    if foreign_parent:
+        subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.test",
+                "commit",
+                "--allow-empty",
+                "-m",
+                "foreign checkout",
+            ],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+        )
+    root = Path(listening_evaluation.__file__).resolve().parents[1]
+    archive = tmp_path / "extracted source"
+    (archive / "examples").mkdir(parents=True)
+    shutil.copytree(root / "src/audio_as_code", archive / "src/audio_as_code")
+    shutil.copy2(root / "uv.lock", archive / "uv.lock")
+    script = archive / "examples/listening_evaluation.py"
+    shutil.copy2(listening_evaluation.__file__, script)
+    monkeypatch.setattr(listening_evaluation, "__file__", str(script))
+    monkeypatch.setattr(listening_evaluation, "VOICES", ("piano",))
+    manifest = generate(tmp_path / "audition")
+    assert manifest["source_commit"] is None
+    assert manifest["source_dirty"] is None
+    for field in ("lock_sha256", "protocol_source_sha256"):
+        assert len(manifest[field]) == 64
+    assert manifest["source_hashes"]
+    assert all(len(value) == 64 for value in manifest["source_hashes"].values())
+    assert all(len(clip["wav_sha256"]) == 64 for clip in manifest["clips"].values())
+    assert all(entry["status"] == "not_listened" for entry in manifest["listening"].values())
+
+
+def test_git_provenance_missing_executable(tmp_path, monkeypatch):
+    (tmp_path / ".git").mkdir()
+    monkeypatch.setenv("PATH", str(tmp_path / "no-executables"))
+    assert git_provenance(tmp_path) == {"source_commit": None, "source_dirty": None}
+
+
+def test_git_provenance_checks_own_root_and_ignores_environment(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.test",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "own checkout",
+        ],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    expected = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True
+    ).strip()
+    monkeypatch.setenv("GIT_DIR", str(tmp_path / "unrelated.git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(tmp_path / "other tree"))
+    assert git_provenance(tmp_path) == {"source_commit": expected, "source_dirty": False}
+    # A nested archive with an invalid marker must not inherit its parent's HEAD.
+    nested = tmp_path / "nested"
+    (nested / ".git").mkdir(parents=True)
+    assert git_provenance(nested) == {"source_commit": None, "source_dirty": None}
+
+
+def test_git_provenance_unborn_checkout(tmp_path):
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    assert git_provenance(tmp_path) == {"source_commit": None, "source_dirty": None}

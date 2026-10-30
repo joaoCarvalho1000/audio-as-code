@@ -108,6 +108,11 @@ player.
 
 ## Export a periodic cycle with releases and generated effects
 
+Availability: `render_periodic_loop` is an Unreleased source API, absent from
+published PyPI 0.5.0. Use a repository checkout or source ZIP containing this
+function in `src/audio_as_code/arrangement.py`, then run `uv sync --locked` from
+its root. Installing `audio-as-code==0.5.0` from PyPI alone does not provide it.
+
 `render_periodic_loop(song, LoopRegion(start, end))` returns two identical cycles
 and a report. It renders only notes whose written intervals fit inside the
 region, with their complete release and finite generated delay/reverb response.

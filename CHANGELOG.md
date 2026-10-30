@@ -5,6 +5,10 @@ are separate.
 
 ## Unreleased
 
+- Listening evaluation now runs from source archives and without Git. Commit
+  and dirty status are unknown when checkout provenance is unavailable; content
+  hashes remain recorded, and unrelated parent checkouts are never attributed.
+
 - Updated the locked hosting CLI to Wrangler 4.156.0 with patched undici 7.30.1
   after the high-severity npm audit failed. Removed the obsolete sharp override;
   the upstream Miniflare dependency now supplies sharp 0.35.5. Audits remain enabled.

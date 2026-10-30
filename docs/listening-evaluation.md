@@ -1,5 +1,10 @@
 # Reproducible instrument listening evaluation
 
+Availability: Unreleased source tooling, absent from published PyPI 0.5.0.
+Use a repository checkout or source ZIP containing `examples/listening_evaluation.py`.
+From its extracted root, run `uv sync --locked`, then the commands below; installing
+`audio-as-code==0.5.0` from PyPI alone does not provide this tooling.
+
 Generate original, isolated gestures for piano, violin, flute, marimba and kick:
 
 ```sh
@@ -17,7 +22,10 @@ checkout; keep the original scores and compare the same protocol version.
 
 The manifest stores score IDs, PCM WAV hashes, render settings, source commit,
 source hashes, dirty status, dependency-lock hash and Python/NumPy/platform
-versions. Each clip has an editable score and complete render report, including
+versions. Commit and dirty status are `null` (unknown) in source archives, when
+Git is unavailable, or when this source directory is not itself a Git checkout.
+An enclosing unrelated checkout is never used. Content hashes remain available
+in all these cases. Each clip has an editable score and complete render report, including
 encoded peak, RMS, full-scale sample count and silence. Tuning entries report a
 Hann-window spectral maximum within 10% of the nominal fundamental. This local
 measurement can follow a partial or noise and is not a general pitch detector.
