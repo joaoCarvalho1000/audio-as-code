@@ -15,7 +15,7 @@ the Worker streams large files listed in its generated media manifest. See the
 ## Prepare a release locally
 
 Finish the [website build](website.md), including a successful strict build.
-Install Node.js 22 or later and npm. The hosting package pins Wrangler 4.147.0;
+Install Node.js 24 and npm. The hosting package pins Wrangler 4.156.0;
 use its lockfile. Examples below use PowerShell from the repository root.
 Replace the account ID and choose a fresh staging directory for every release.
 Omit `--domain` options to deploy only to `workers.dev` initially.
