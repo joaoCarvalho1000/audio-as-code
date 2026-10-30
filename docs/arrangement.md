@@ -105,3 +105,57 @@ not prove a musically convincing repeat. The preview does not simulate continuou
 effect state from cycle to cycle, wrap a tail, crossfade, or guarantee gapless
 playback in a game engine. Listen to the repeated file and test it in the target
 player.
+
+## Export a periodic cycle with releases and generated effects
+
+Availability: `render_periodic_loop` is an Unreleased source API, absent from
+published PyPI 0.5.0. Use a repository checkout or source ZIP containing this
+function in `src/audio_as_code/arrangement.py`, then run `uv sync --locked` from
+its root. Installing `audio-as-code==0.5.0` from PyPI alone does not provide it.
+
+`render_periodic_loop(song, LoopRegion(start, end))` returns two identical cycles
+and a report. It renders only notes whose written intervals fit inside the
+region, with their complete release and finite generated delay/reverb response.
+All tail frames are added at their position modulo the exact cycle frame count.
+For these linear, time-invariant effect chains this is the periodic response of
+an indefinitely repeated identical excitation, without a warm-up guess. No tail
+is silently discarded. The built-in reverb uses an analytically generated finite
+network, not a measured impulse response.
+
+```python
+from audio_as_code import render_periodic_loop
+
+result = render_periodic_loop(song, LoopRegion(0, 8))
+frames = result.report["loop"]["cycle_frames"]
+cycle = result.audio[:frames]
+```
+
+The cycle has exactly `round(end_seconds*sample_rate) -
+round(start_seconds*sample_rate)` frames. Tempo changes and absolute sample
+rounding inside the region are retained. Only selected notes are rendered;
+material outside the region does not supply context. Selected notes use their
+region-local indices for seeded excitation, repeated identically every cycle.
+The original score and the existing dry preview path are unchanged.
+
+Written notes crossing either boundary fail. Pedal, automation, mastering and
+effects other than generated Delay/Reverb fail explicitly, because periodic
+folding is not valid for every processor. The context must fit the existing
+300-second render limit and at most 32 cycles; the two-cycle preview also fits
+300 seconds. These bounds reject long tails rather than truncate them. A single
+constant gain attenuates the folded cycle if its peak exceeds 0.95.
+
+The report records original crop frames, context and folded-tail frames,
+last-to-first sample jump, and the 50th/95th/99th/maximum adjacent step in a
+10-millisecond neighborhood on either side of the join. These values describe
+the float audio, not an encoded file or perceptual seamlessness. The example
+command below saves one-cycle PCM WAVs and exact two-cycle previews for a dry
+baseline and a sustained pad with delay and reverb:
+
+```sh
+uv run python examples/pending_audio_experiments.py output/loop-evaluation/v1
+```
+
+Play the middle join of each preview and record the listener, playback equipment,
+and dry/wet observations in the separate report listening fields. The script
+leaves these as `not_listened`; it cannot certify a convincing musical loop or
+gapless playback in the target player.

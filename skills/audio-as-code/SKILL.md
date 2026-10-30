@@ -170,6 +170,15 @@ need deliberate boundary handling. See [arrangement](../../docs/arrangement.md).
 The source example `examples/creative_workflows.py` implements three original
 briefs and constrained revisions; `docs/creative-workflows.md` explains the checks.
 
+For finite releases and generated Delay/Reverb chains, source revisions with
+`render_periodic_loop` can fold full tails into one periodic cycle. Automation,
+pedal, mastering and other effects are rejected. See `docs/arrangement.md` and
+`examples/pending_audio_experiments.py`; join statistics still require listening.
+Use `examples/listening_evaluation.py OUTPUT --baseline BASELINE` to preserve
+instrument comparisons with score/WAV hashes and a separate human rubric.
+The experimental piano depth API uses sidecars only; never put depth in version
+1 score JSON or claim that standard MIDI exports it.
+
 ## Render, inspect, revise
 
 Use your chosen environment prefix. These commands assume the composer already

@@ -63,6 +63,8 @@ RAW_DOCS = {
     "creative-workflows.md": "docs/creative-workflows.md",
     "project-setup.md": "docs/project-setup.md",
     "arrangement.md": "docs/arrangement.md",
+    "listening-evaluation.md": "docs/listening-evaluation.md",
+    "half-pedal-proposal.md": "docs/half-pedal-proposal.md",
     "articulations.md": "docs/articulations.md",
     "production-output.md": "docs/production-output.md",
     "mixing.md": "docs/mixing.md",

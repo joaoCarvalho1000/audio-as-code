@@ -7,6 +7,7 @@ from .arrangement import (
     beat_at_seconds,
     place_at_seconds,
     render_loop_preview,
+    render_periodic_loop,
 )
 from .inspection import inspect_score
 from .instruments import get_instrument, instrument_catalog, list_instruments
@@ -112,6 +113,7 @@ __all__ = [
     "render",
     "render_audio",
     "render_loop_preview",
+    "render_periodic_loop",
     "render_preview",
     "render_preview_audio",
 ]

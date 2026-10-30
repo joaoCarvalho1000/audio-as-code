@@ -10,7 +10,7 @@ import numpy as np
 
 from ._audio import _metrics
 from .effects import effects_tail
-from .model import Note, Song, Track
+from .model import Delay, Note, Reverb, Song, Track
 from .pattern import Pattern
 from .render import RenderResult, render_audio
 
@@ -246,3 +246,87 @@ def render_loop_preview(
         },
     }
     return RenderResult(repeated, report)
+
+
+def render_periodic_loop(song: Song, region: LoopRegion) -> RenderResult:
+    """Fold finite release and linear effect tails into one periodic cycle.
+
+    Returns two identical cycles. Unlike a crop, every rendered tail frame is
+    accumulated at its periodic position. Only generated Delay/Reverb chains
+    are supported. Nonlinear and time-varying processing is rejected.
+    """
+    song = Song.model_validate(song.model_dump())
+    if not isinstance(region, LoopRegion) or region.end_beat > song.beats:
+        raise ValueError("loop region must be a LoopRegion within the song")
+    if song.automation or song.mastering or any(t.automation or t.pedal for t in song.tracks):
+        raise ValueError("periodic loops do not support automation, pedal or mastering")
+    for chain in [song.effects, *(t.effects for t in song.tracks)]:
+        if any(not isinstance(effect, (Delay, Reverb)) for effect in chain):
+            raise ValueError("periodic loops support only generated delay and reverb effects")
+    first = round(song.beat_to_seconds(region.start_beat) * song.sample_rate)
+    last = round(song.beat_to_seconds(region.end_beat) * song.sample_rate)
+    frames = last - first
+    if frames < 1 or 2 * frames > 300 * song.sample_rate:
+        raise ValueError("periodic preview must contain 1 sample to 150 seconds per cycle")
+    tracks = []
+    for track in song.tracks:
+        notes = []
+        for note in track.notes:
+            end = note.start + note.duration
+            if note.start < region.start_beat < end or note.start < region.end_beat < end:
+                raise ValueError("a written note crosses the region boundary")
+            if region.start_beat <= note.start < region.end_beat:
+                notes.append(note.model_dump())
+        tracks.append({**track.model_dump(), "notes": notes})
+    context = Song.model_validate(
+        {
+            **song.model_dump(),
+            "beats": region.end_beat,
+            "tempo_map": [c for c in song.tempo_map if c.beat < region.end_beat],
+            "tracks": tracks,
+        }
+    )
+    # Keep original absolute timestamps through synthesis and effect processing.
+    # Cropping the silent prefix only afterward preserves sample-grid rounding.
+    context_frames = max(frames, round(context.render_seconds * song.sample_rate) - first)
+    if context_frames > 32 * frames:
+        raise ValueError("release/effect context exceeds the 32-cycle tail bound")
+    source = render_audio(context, normalize=False)
+    response = source.audio[first:]
+    cycle = np.zeros((frames, 2), dtype=np.float32)
+    for offset in range(0, len(response), frames):
+        block = response[offset : offset + frames]
+        cycle[: len(block)] += block
+    peak = float(np.max(np.abs(cycle)))
+    gain = min(1.0, 0.95 / peak) if peak else 1.0
+    cycle *= gain
+    preview = np.tile(cycle, (2, 1))
+    window = min(frames, round(0.01 * song.sample_rate))
+    nearby = np.concatenate((cycle[-window:], cycle[:window]))
+    steps = np.max(np.abs(np.diff(nearby, axis=0)), axis=1)
+    report = {
+        "audio": _metrics(preview, song.sample_rate),
+        "source": source.report,
+        "loop": {
+            "method": "finite-tail-periodic-overlap-add",
+            "start_frame": first,
+            "end_frame": last,
+            "cycle_frames": frames,
+            "preview_frames": len(preview),
+            "context_frames": len(response),
+            "tail_frames_folded": max(0, len(response) - frames),
+            "tail_handling": "all rendered release/delay/reverb frames wrapped modulo cycle_frames",
+            "gain_applied": gain,
+            "boundary_jump": float(np.max(np.abs(cycle[0] - cycle[-1]))),
+            "nearby_step_percentiles": dict(
+                zip(
+                    ("p50", "p95", "p99", "max"),
+                    (float(v) for v in np.percentile(steps, [50, 95, 99, 100])),
+                    strict=True,
+                )
+            ),
+            "nearby_window_frames": window,
+            "seed_policy": "region-local note indices, identical excitation each cycle",
+        },
+    }
+    return RenderResult(preview, report)

@@ -3,6 +3,25 @@
 Audio as Code is an early prototype. Package versions and score schema versions
 are separate.
 
+## Unreleased
+
+- Listening evaluation now runs from source archives and without Git. Commit
+  and dirty status are unknown when checkout provenance is unavailable; content
+  hashes remain recorded, and unrelated parent checkouts are never attributed.
+
+- Updated the locked hosting CLI to Wrangler 4.156.0 with patched undici 7.30.1
+  after the high-severity npm audit failed. Removed the obsolete sharp override;
+  the upstream Miniflare dependency now supplies sharp 0.35.5. Audits remain enabled.
+
+- Added a deterministic five-family listening-evaluation command with preserved
+  baselines, source/WAV hashes, numerical reports and separate human rubric fields.
+- Added periodic loop export by folding complete finite release and generated
+  delay/reverb tails, with bounded context and join-step reports. Existing dry
+  previews and default rendering remain unchanged.
+- Added a non-serialized piano depth damping experiment and future contract
+  proposal. Version 1 scores and MIDI retain binary pedal support. Human
+  listening and a serialized/MIDI integration decision remain pending.
+
 ## 0.5.0 - 2026-10-17
 
 Published on [PyPI](https://pypi.org/project/audio-as-code/0.5.0/).
