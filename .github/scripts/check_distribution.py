@@ -91,6 +91,12 @@ SDIST_ROOTS = {
     "PKG-INFO",
 }
 REQUIRED_SOURCE = {
+    "src/audio_as_code/experimental_pedal.py",
+    "docs/listening-evaluation.md",
+    "docs/half-pedal-proposal.md",
+    "examples/listening_evaluation.py",
+    "examples/pending_audio_experiments.py",
+    "tests/test_pending_audio.py",
     "src/audio_as_code/custom.py",
     "src/audio_as_code/mastering.py",
     "docs/custom-instruments.md",
