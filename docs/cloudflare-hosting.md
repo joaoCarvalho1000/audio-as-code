@@ -170,12 +170,13 @@ analytics.
 
 ## Releases from GitHub
 
-The hosting lockfile overrides Miniflare `5.20261001.0-alpha`'s pinned `sharp`
-with patch version `0.35.5` to address
-[GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w).
-Keep the audit enabled; remove the scoped override when upgrading to a Miniflare
-release that already includes a patched version. Python runtime dependencies are
-independent of these hosting tools.
+The hosting lockfile pins Wrangler `4.156.0`, whose Miniflare dependency uses
+patched `undici` `7.30.1` and `sharp` `0.35.5`. This removes the earlier scoped
+sharp override and addresses the undici advisories that failed the hosting audit,
+including [GHSA-2m5v-pch6-74hx](https://github.com/advisories/GHSA-2m5v-pch6-74hx).
+Keep the audit enabled. Python runtime dependencies are independent of these
+hosting tools. Upgrading the local tool does not deploy a Worker or change its
+configured compatibility date.
 
 After the complete CI gate passes on `main`, the website job preserves the tested
 site with a commit marker and SHA-256 file manifest. The deployment job downloads
