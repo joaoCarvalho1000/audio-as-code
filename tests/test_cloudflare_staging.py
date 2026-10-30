@@ -82,7 +82,10 @@ def test_html_headers_cover_file_clean_and_directory_urls_only(tmp_path):
         "/source.html",
     }
     headers = [line for line in lines if line.startswith("  ")]
-    assert headers == ["  Cache-Control: public, max-age=0, must-revalidate"] * len(routes)
+    assert headers[::2] == ["  Cache-Control: public, max-age=0, must-revalidate"] * len(routes)
+    assert all(
+        line.startswith("  Content-Security-Policy: default-src 'none'") for line in headers[1::2]
+    )
     assert not (site / "_headers").exists()
     for name in ("index.html", "app.js", "style.css", "font.woff2", "music/song.wav"):
         assert (output / "assets" / name).read_bytes() == (site / name).read_bytes()

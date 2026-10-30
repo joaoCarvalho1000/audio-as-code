@@ -96,6 +96,8 @@ REQUIRED_SOURCE = {
     "docs/half-pedal-proposal.md",
     "examples/listening_evaluation.py",
     "examples/pending_audio_experiments.py",
+    "examples/audio_review_pack.py",
+    "examples/site_security.py",
     "tests/test_pending_audio.py",
     "src/audio_as_code/custom.py",
     "src/audio_as_code/mastering.py",

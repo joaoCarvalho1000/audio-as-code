@@ -15,6 +15,11 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
+if __name__ == "__main__":
+    from site_security import content_security_policy
+else:
+    from examples.site_security import content_security_policy
+
 
 class SiteHandler(SimpleHTTPRequestHandler):
     """Serve files inside one directory, including single HTTP byte ranges."""
@@ -98,6 +103,10 @@ class SiteHandler(SimpleHTTPRequestHandler):
                 "Cache-Control": "no-cache",
                 "Accept-Ranges": "bytes",
             }
+            if path.suffix == ".html":
+                headers["Content-Security-Policy"] = content_security_policy(
+                    path.read_text(encoding="utf-8")
+                )
             if compressible:
                 headers["Vary"] = "Accept-Encoding"
             matches = self.headers.get("If-None-Match")

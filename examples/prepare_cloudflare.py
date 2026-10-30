@@ -10,12 +10,16 @@ import re
 import shutil
 from pathlib import Path
 
+if __name__ == "__main__":
+    from site_security import content_security_policy
+else:
+    from examples.site_security import content_security_policy
+
 ROOT = Path(__file__).resolve().parents[1]
 ASSET_LIMIT = 25 * 1024 * 1024
 
 
-# Baseline hardening for every static asset. A Content-Security-Policy is not set
-# yet because pages use inline scripts and optional PostHog analytics.
+# Baseline hardening for every static asset. HTML gets a content-derived CSP below.
 SECURITY_HEADERS = (
     "/*\n"
     "  X-Content-Type-Options: nosniff\n"
@@ -73,20 +77,26 @@ def prepare(
         }
         media["/" + relative] = entry
         uploads.append({"site_path": relative, **entry})
-    html_routes = set()
+    html_routes = {}
     for source in files:
         relative = source.relative_to(site)
         route = "/" + relative.as_posix()
         if relative.suffix != ".html" or route in media:
             continue
-        html_routes.update((route, route.removesuffix(".html")))
+        policy = content_security_policy(source.read_text(encoding="utf-8"))
+        aliases = {route, route.removesuffix(".html")}
         if relative.name == "index.html":
             directory = route.removesuffix("index.html")
-            html_routes.update((directory, directory.rstrip("/") or "/"))
+            aliases.update((directory, directory.rstrip("/") or "/"))
+        for alias in aliases:
+            html_routes[alias] = policy
     html_headers = SECURITY_HEADERS + "".join(
-        f"{route}\n  Cache-Control: public, max-age=0, must-revalidate\n\n"
-        for route in sorted(html_routes)
+        f"{route}\n  Cache-Control: public, max-age=0, must-revalidate\n"
+        f"  Content-Security-Policy: {policy}\n\n"
+        for route, policy in sorted(html_routes.items())
     )
+    if len(html_routes) + 1 > 100 or any(len(line) > 2000 for line in html_headers.splitlines()):
+        raise ValueError("generated security headers exceed Cloudflare limits")
     output.mkdir(parents=True)
     for source in files:
         relative = source.relative_to(site)

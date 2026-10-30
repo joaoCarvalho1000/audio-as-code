@@ -48,6 +48,88 @@ def test_groove_downloads_match_the_published_comparison(browser):
     assert (SITE / "groove/groove_comparison.py").is_file()
 
 
+def test_csp_blocks_unapproved_script_eval_style_and_connections(browser, site_url):
+    context = browser.new_context()
+    page = context.new_page()
+    page.goto(site_url)
+    page.route(
+        "**/probe.js",
+        lambda route: route.fulfill(
+            content_type="text/javascript",
+            body="""
+        try { eval('window.evalRan = true'); } catch { window.evalBlocked = true; }
+        try { new Function('window.functionRan = true')(); }
+        catch { window.functionBlocked = true; }
+        window.probeLoaded = true;""",
+        ),
+    )
+    page.evaluate("""() => {
+      const inline = document.createElement('script');
+      inline.textContent = 'window.inlineRan = true'; document.body.append(inline);
+      const probe = document.createElement('script');
+      probe.src = '/probe.js'; document.body.append(probe);
+      const style = document.createElement('style');
+      style.textContent = 'body { --unapproved: 1 }'; document.head.append(style);
+      const element = document.createElement('b'); element.id = 'csp-probe';
+      element.setAttribute('style', '--unapproved: 1'); document.body.append(element);
+      fetch('https://unapproved.invalid/test').then(() => window.fetchRan = true)
+        .catch(() => window.fetchBlocked = true);
+    }""")
+    page.wait_for_function("() => window.probeLoaded && window.fetchBlocked")
+    assert page.evaluate(
+        "evalBlocked && functionBlocked && !window.inlineRan && "
+        "!window.evalRan && !window.functionRan && !window.fetchRan"
+    )
+    assert page.evaluate("getComputedStyle(document.body).getPropertyValue('--unapproved')") == ""
+    assert (
+        page.locator("#csp-probe").evaluate(
+            "el => getComputedStyle(el).getPropertyValue('--unapproved')"
+        )
+        == ""
+    )
+    context.close()
+
+
+def test_original_review_pack_native_loops(browser, tmp_path):
+    import json
+
+    from examples.audio_review_pack import generate
+
+    pack = tmp_path / "pack"
+    generate(pack)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(SiteHandler, directory=str(pack)))
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    context = browser.new_context()
+    page = context.new_page()
+    try:
+        page.goto(f"http://127.0.0.1:{server.server_port}/")
+        for name in ("dry", "wet"):
+            audio = page.locator(f'audio[src="experiments/{name}-cycle.wav"]')
+            audio.evaluate("el => el.play()")
+            page.wait_for_function(
+                "key => reviewObservations.files[key].wraps.length >= 3",
+                arg=f"experiments/{name}-cycle.wav",
+                timeout=20000,
+            )
+            audio.evaluate("el => el.pause()")
+            assert audio.evaluate("el => el.readyState >= 2 && el.error === null")
+        observed = page.evaluate("reviewObservations")
+        for name in ("dry", "wet"):
+            data = observed["files"][f"experiments/{name}-cycle.wav"]
+            assert data["playing"] >= 1 and data["errors"] == []
+        artifacts = ROOT / "output/browser-checks"
+        artifacts.mkdir(parents=True, exist_ok=True)
+        (artifacts / "review-pack-loops.json").write_text(
+            json.dumps(observed, indent=2), encoding="utf-8"
+        )
+    finally:
+        context.close()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
 @pytest.mark.parametrize("width", [390, 1440])
 def test_generated_pages_load_without_script_errors(browser, site_url, width):
     context = browser.new_context(viewport={"width": width, "height": 900})
@@ -55,6 +137,9 @@ def test_generated_pages_load_without_script_errors(browser, site_url, width):
     page = context.new_page()
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
+    page.add_init_script("""window.cspViolations = [];
+      document.addEventListener('securitypolicyviolation', e =>
+        cspViolations.push({directive:e.effectiveDirective, blocked:e.blockedURI}));""")
     artifacts = ROOT / "output/browser-checks"
     artifacts.mkdir(parents=True, exist_ok=True)
     try:
@@ -66,6 +151,8 @@ def test_generated_pages_load_without_script_errors(browser, site_url, width):
             assert response.status == 200, route
             assert page.title(), route
             assert not errors, f"{route}: {errors}"
+            assert response.headers.get("content-security-policy"), route
+            assert not page.evaluate("cspViolations"), route
             if route == "source.html":
                 page.locator('nav [data-key="listen"]').click()
                 page.wait_for_url(f"{site_url}/#listen")
@@ -101,12 +188,12 @@ def test_groove_switches_at_same_position_and_retries_failed_audio(browser, site
         before.focus()
         before.press("Space")
         page.wait_for_function(
-            "window.lastPlayed && !lastPlayed.paused && lastPlayed.currentTime > .05"
+            "() => window.lastPlayed && !lastPlayed.paused && lastPlayed.currentTime > .05"
         )
         page.evaluate("lastPlayed.currentTime = 5")
         after.click()
         page.wait_for_function(
-            "lastPlayed.currentSrc.endsWith('/after.wav') && !lastPlayed.paused "
+            "() => lastPlayed.currentSrc.endsWith('/after.wav') && !lastPlayed.paused "
             "&& lastPlayed.currentTime >= 5"
         )
         assert page.evaluate("lastPlayed.currentTime < 8")
@@ -117,10 +204,10 @@ def test_groove_switches_at_same_position_and_retries_failed_audio(browser, site
           document.querySelector('[data-src="groove/before.wav"] button').click();
           document.querySelector('[data-src="groove/after.wav"] button').click();
         }""")
-        page.wait_for_function("lastPlayed.readyState >= 3 && !lastPlayed.paused")
+        page.wait_for_function("() => lastPlayed.readyState >= 3 && !lastPlayed.paused")
         assert 5 <= page.evaluate("lastPlayed.currentTime") < 9
         after.click()
-        page.wait_for_function("lastPlayed.paused")
+        page.wait_for_function("() => lastPlayed.paused")
         # Fail the next selection, then recover without reloading the page.
         page.route("**/groove/before.wav", lambda route: route.abort())
         before.click()
@@ -131,12 +218,14 @@ def test_groove_switches_at_same_position_and_retries_failed_audio(browser, site
         page.unroute("**/groove/before.wav")
         before.click()
         page.wait_for_function(
-            "lastPlayed.currentSrc.endsWith('/before.wav') && !lastPlayed.paused "
+            "() => lastPlayed.currentSrc.endsWith('/before.wav') && !lastPlayed.paused "
             "&& lastPlayed.currentTime > .05"
         )
         # The main player takes ownership, leaving both comparison controls stopped.
         page.locator("[data-console] [data-play]").click()
-        page.wait_for_function("!lastPlayed.currentSrc.includes('/groove/') && !lastPlayed.paused")
+        page.wait_for_function(
+            "() => !lastPlayed.currentSrc.includes('/groove/') && !lastPlayed.paused"
+        )
         assert before.get_attribute("aria-pressed") == "false"
         assert after.get_attribute("aria-pressed") == "false"
     finally:
@@ -169,11 +258,11 @@ def test_players_decode_and_pause_real_audio(browser, site_url, route, selector)
         button = page.locator(selector).first
         button.click()
         page.wait_for_function(
-            "window.lastPlayed && !lastPlayed.paused && lastPlayed.currentTime > 0.05",
+            "() => window.lastPlayed && !lastPlayed.paused && lastPlayed.currentTime > 0.05",
             timeout=15000,
         )
         assert page.evaluate("lastPlayed.error === null && lastPlayed.duration > 0")
         button.click()
-        page.wait_for_function("lastPlayed.paused")
+        page.wait_for_function("() => lastPlayed.paused")
     finally:
         context.close()
