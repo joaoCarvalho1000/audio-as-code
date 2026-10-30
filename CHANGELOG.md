@@ -3,6 +3,17 @@
 Audio as Code is an early prototype. Package versions and score schema versions
 are separate.
 
+## Unreleased
+
+- Added a deterministic five-family listening-evaluation command with preserved
+  baselines, source/WAV hashes, numerical reports and separate human rubric fields.
+- Added periodic loop export by folding complete finite release and generated
+  delay/reverb tails, with bounded context and join-step reports. Existing dry
+  previews and default rendering remain unchanged.
+- Added a non-serialized piano depth damping experiment and future contract
+  proposal. Version 1 scores and MIDI retain binary pedal support. Human
+  listening and a serialized/MIDI integration decision remain pending.
+
 ## 0.5.0 - 2026-10-17
 
 Published on [PyPI](https://pypi.org/project/audio-as-code/0.5.0/).

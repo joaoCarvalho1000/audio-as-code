@@ -240,3 +240,9 @@ the score length: verify actual WAV duration for fixed media cuts. See the
 The renderer uses the entire arrangement length plus automatic release/effect tails and limits the total to 300 seconds. `Song.seconds` is the score duration; `Song.render_seconds` includes tails. MIDI carries tempo changes but omits automation, effects, releases and audio tails, with a warning. Stems omit master effects; their sum differs from a master-processed mix. The score itself may describe longer music for MIDI export. Very short notes can disappear on the sample grid; very high notes can be silent at a low sample rate when their fundamental exceeds Nyquist. MIDI export rejects notes that quantize to zero duration or overlap another occurrence of the same pitch on the same channel.
 
 Keep the input score, dependency lock, runtime/platform information, and report beside any audio you intend to reproduce. Use listening to assess phrasing, harmony, timbre, and overall musical quality.
+
+For preserved model comparisons, run the [listening evaluation](listening-evaluation.md).
+For sustained loops with generated Delay/Reverb, `render_periodic_loop` folds
+finite tails and reports joins; see [arrangement](arrangement.md) for exclusions.
+The [half-pedal experiment](half-pedal-proposal.md) uses an explicit sidecar API,
+not a supported JSON score control or standard MIDI export feature.
