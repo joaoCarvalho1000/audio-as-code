@@ -66,6 +66,20 @@ def render_pedal_depth(song: Song, events: tuple[PedalDepth, ...]) -> RenderResu
     frames = musical_frames + round(0.25 * rate)
     if frames > 300 * rate:
         raise ValueError("depth experiment including damper tail exceeds 300 seconds")
+    # Bound dense scores as well as wall-clock duration before allocating audio.
+    # Voices are synthesized independently through song end, one at a time.
+    if len(track.notes) > 4096:
+        raise ValueError("depth experiment exceeds 4096 notes")
+    scheduled = [
+        (
+            round(song.beat_to_seconds(note.start) * rate),
+            round(song.beat_to_seconds(note.start + note.duration) * rate),
+        )
+        for note in track.notes
+    ]
+    voice_frames = sum(frames - start for start, off in scheduled if off > start)
+    if voice_frames > 20_000_000:
+        raise ValueError("depth experiment exceeds 20000000 synthesized voice frames")
     depth = np.zeros(frames, dtype=np.float64)
     for index, event in enumerate(events):
         start = round(song.beat_to_seconds(event.beat) * rate)
@@ -79,8 +93,7 @@ def render_pedal_depth(song: Song, events: tuple[PedalDepth, ...]) -> RenderResu
     integral = np.concatenate(([0.0], np.cumsum(damping)))
     mono = np.zeros(frames, dtype=np.float32)
     for index, note in enumerate(track.notes):
-        start = round(song.beat_to_seconds(note.start) * rate)
-        off = round(song.beat_to_seconds(note.start + note.duration) * rate)
+        start, off = scheduled[index]
         if off <= start:
             continue
         voice = _voice(
@@ -113,6 +126,9 @@ def render_pedal_depth(song: Song, events: tuple[PedalDepth, ...]) -> RenderResu
             "experimental": True,
             "gain_applied": gain,
             "depth_range": [0, 1],
+            "finite": bool(np.all(np.isfinite(audio))),
+            "musical_frames": musical_frames,
+            "synthesized_voice_frames": voice_frames,
             "damper_tail_seconds": 0.25,
             "events": [{"beat": e.beat, "depth": e.depth} for e in events],
             "midi_cc64_proposal": [

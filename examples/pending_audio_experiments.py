@@ -1,6 +1,7 @@
 """Original loop and depth experiments. Does not record a human listening pass."""
 
 import argparse
+import hashlib
 import json
 import wave
 from pathlib import Path
@@ -11,6 +12,11 @@ from audio_as_code import Delay, LoopRegion, Note, Reverb, Song, TempoChange, Tr
 from audio_as_code._audio import _write_wav
 from audio_as_code.arrangement import render_loop_preview, render_periodic_loop
 from audio_as_code.experimental_pedal import PedalDepth, render_pedal_depth
+
+if not __package__:
+    from listening_evaluation import tuning_measurements
+else:
+    from examples.listening_evaluation import tuning_measurements
 
 
 def generate(output: Path) -> None:
@@ -84,8 +90,29 @@ def generate(output: Path) -> None:
     piano.save(output / "depth-score.json")
     for name, depth in (("lifted", 0), ("half", 0.5), ("held", 1)):
         result = render_pedal_depth(piano, (PedalDepth(0, 1), PedalDepth(0.75, depth)))
-        _write_wav(output / f"depth-{name}.wav", result.audio, piano.sample_rate)
+        path = output / f"depth-{name}.wav"
+        _write_wav(path, result.audio, piano.sample_rate)
+        # Quiet interval after first release and depth change, before repeat.
+        start, stop = (round(t * piano.sample_rate) for t in (0.4, 0.49))
+        result.report["comparison"] = {
+            "window_seconds": [0.4, 0.49],
+            "release_energy": float(np.sum(result.audio[start:stop].astype(np.float64) ** 2)),
+            "tuning": tuning_measurements(piano, result.audio),
+            "wav_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+        (output / f"depth-{name}-events.json").write_text(
+            json.dumps(result.report["events"], indent=2) + "\n", encoding="utf-8"
+        )
         reports[f"depth-{name}"] = result.report
+    energies = [
+        reports[f"depth-{name}"]["comparison"]["release_energy"]
+        for name in ("lifted", "half", "held")
+    ]
+    reports["depth_comparison"] = {
+        "ordered_release_energy": 0 < energies[0] < energies[1] < energies[2],
+        "method": "sum of squared stereo samples, identical gain and pre-repeat window",
+        "human_listening": "not_listened",
+    }
     reports["listening"] = {
         "status": "not_listened",
         "listener": None,

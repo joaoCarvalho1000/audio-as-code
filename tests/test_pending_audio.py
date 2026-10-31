@@ -3,6 +3,7 @@
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -166,6 +167,120 @@ def test_depth_rejects_invalid_timeline(events):
 def test_depth_range(depth):
     with pytest.raises(ValueError):
         PedalDepth(0, depth)
+
+
+def test_depth_sample_ordering_key_release_and_song_end():
+    song = piano_song()
+    # Events at the release sample apply immediately. Pressing earlier while
+    # the key is held has the same result, with no discontinuity at key-off.
+    at_off = render_pedal_depth(song, (PedalDepth(0.5, 1),))
+    earlier = render_pedal_depth(song, (PedalDepth(0, 1),))
+    np.testing.assert_array_equal(at_off.audio, earlier.audio)
+    # Song-end auto lift wins over an explicit final held event.
+    at_end = render_pedal_depth(song, (PedalDepth(0, 1), PedalDepth(song.beats, 0.5)))
+    np.testing.assert_array_equal(at_end.audio, earlier.audio)
+    # Distinct beats may round to the same sample; the last depth wins.
+    collapsed = render_pedal_depth(song, (PedalDepth(0, 0.2), PedalDepth(1e-8, 1)))
+    np.testing.assert_array_equal(collapsed.audio, earlier.audio)
+    # The first held interval and a repeated attack are unaffected by depth.
+    lifted = render_pedal_depth(song, ())
+    np.testing.assert_array_equal(lifted.audio[:5512], earlier.audio[:5512])
+
+
+def test_depth_tempo_mapping_and_repeated_voice_superposition():
+    song = piano_song().model_copy(update={"tempo_map": (TempoChange(beat=1, bpm=90),)})
+    result = render_pedal_depth(song, (PedalDepth(0, 1), PedalDepth(1.5, 0.5)))
+    assert len(result.audio) == round(song.seconds * song.sample_rate) + round(
+        0.25 * song.sample_rate
+    )
+    from audio_as_code._voices import _voice
+    from audio_as_code.render import _note_seed
+
+    track = song.tracks[0]
+    # During both keys' held/sustained interval at beat 1..1.5, their sum
+    # must retain the first note, rather than replacing it on the repeat.
+    start = round(song.beat_to_seconds(1) * song.sample_rate)
+    stop = round(song.beat_to_seconds(1.5) * song.sample_rate)
+    expected = np.zeros(stop - start, dtype=np.float32)
+    for index, note in enumerate(track.notes):
+        onset = round(song.beat_to_seconds(note.start) * song.sample_rate)
+        voice = _voice(
+            "piano",
+            69,
+            len(result.audio) - onset,
+            song.sample_rate,
+            _note_seed(song.seed, track.name, index),
+            note.velocity,
+            track.tone,
+            held_frames=round(song.seconds * song.sample_rate) - onset,
+        )
+        expected += voice[start - onset : stop - onset] * note.velocity
+    np.testing.assert_allclose(
+        result.audio[start:stop, 0],
+        expected * np.cos(np.pi / 4) * track.gain * song.master_gain,
+        atol=1e-8,
+    )
+
+
+def test_depth_bounds_reject_before_synthesis(monkeypatch):
+    def unexpected(*args, **kwargs):
+        pytest.fail("over-budget experiment reached synthesis")
+
+    monkeypatch.setattr("audio_as_code.experimental_pedal._voice", unexpected)
+    track = piano_song().tracks[0]
+    for song, message in (
+        (piano_song().model_copy(update={"beats": 600}), "300 seconds"),
+        (
+            piano_song().model_copy(
+                update={"tracks": (track.model_copy(update={"notes": (track.notes[0],) * 4097}),)}
+            ),
+            "4096 notes",
+        ),
+        (
+            piano_song().model_copy(
+                update={
+                    "beats": 100,
+                    "tracks": (track.model_copy(update={"notes": (track.notes[0],) * 20}),),
+                }
+            ),
+            "voice frames",
+        ),
+    ):
+        with pytest.raises(ValueError, match=message):
+            render_pedal_depth(song, ())
+
+
+def test_depth_pack_reports_measured_reproducible_comparison(tmp_path):
+    from examples.pending_audio_experiments import generate
+
+    generate(tmp_path / "first")
+    generate(tmp_path / "second")
+    first = json.loads((tmp_path / "first/report.json").read_text())
+    second = json.loads((tmp_path / "second/report.json").read_text())
+    assert first == second
+    assert first["depth_comparison"]["ordered_release_energy"]
+    for name in ("lifted", "half", "held"):
+        report = first[f"depth-{name}"]
+        assert report["finite"]
+        assert report["audio"]["clipped_samples"] == 0
+        assert report["audio"]["frames"] == 49612
+        assert all(abs(t["local_peak_cents"]) < 15 for t in report["comparison"]["tuning"])
+        assert (tmp_path / f"first/depth-{name}.wav").read_bytes() == (
+            tmp_path / f"second/depth-{name}.wav"
+        ).read_bytes()
+    assert first["listening"]["status"] == "not_listened"
+
+
+def test_review_pack_script_imports_shared_measurement_helper(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, str(root / "examples/audio_review_pack.py"), "--help"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "output" in result.stdout
 
 
 def test_audition_reproducibility_and_baseline_preservation(tmp_path, monkeypatch):

@@ -72,11 +72,11 @@ def audition_song(voice: str, state: str) -> Song:
     )
 
 
-def tuning_measurements(song: Song) -> list[dict]:
+def tuning_measurements(song: Song, audio: np.ndarray | None = None) -> list[dict]:
     """Local spectral peak near nominal f0, not a general pitch/realism estimator."""
     from audio_as_code import render_audio
 
-    audio = render_audio(song).audio.mean(axis=1)
+    audio = (render_audio(song).audio if audio is None else audio).mean(axis=1)
     results = []
     for note in song.tracks[0].notes:
         expected = 440 * 2 ** ((note.pitch - 69) / 12)
