@@ -177,7 +177,11 @@ pedal, mastering and other effects are rejected. See `docs/arrangement.md` and
 Use `examples/listening_evaluation.py OUTPUT --baseline BASELINE` to preserve
 instrument comparisons with score/WAV hashes and a separate human rubric.
 The experimental piano depth API uses sidecars only; never put depth in version
-1 score JSON or claim that standard MIDI exports it.
+1 score JSON or claim that standard MIDI exports it. The experiment rejects more
+than 300 seconds including its tail, 4,096 notes or 20,000,000 synthesized voice
+frames. Its comparison writes sidecars, WAV hashes, release energy and local tuning
+estimates; these measurements do not replace human listening. See
+`docs/half-pedal-proposal.md` for event ordering and the pending compatibility decision.
 
 ## Render, inspect, revise
 

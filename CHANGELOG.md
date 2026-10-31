@@ -5,6 +5,11 @@ are separate.
 
 ## Unreleased
 
+- The sidecar-only piano depth experiment now rejects excessive note and voice-frame
+  work before synthesis. Its existing comparison tool writes reproducible sidecars,
+  WAV hashes, release-energy comparisons and tuning estimates. Version 1 scores,
+  rendering, MIDI and schema remain unchanged; listening acceptance is pending.
+
 - Website staging and local preview now enforce a content-derived CSP with
   exact inline script/style hashes and explicit PostHog endpoints. Player
   decorations use style properties without allowing arbitrary inline styles.
