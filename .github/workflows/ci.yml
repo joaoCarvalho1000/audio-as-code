@@ -92,7 +92,8 @@ jobs:
   website:
     outputs:
       artifact: ${{ steps.release.outputs.artifact-id }}
-    runs-on: ubuntu-latest
+    # Pin 24.04: Playwright 1.58.0 cannot install Chromium on ubuntu-latest (26.04).
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       AAC_REQUIRE_BROWSER: '1'

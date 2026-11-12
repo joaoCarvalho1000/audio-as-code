@@ -1,4 +1,4 @@
-# Quickstart: make music with your AI coding agent or Python
+# Make your first piece
 
 The quickest route is to give Audio as Code to your coding agent. On the website,
 choose **Copy agent prompt**, paste it into the agent, and describe the music.
